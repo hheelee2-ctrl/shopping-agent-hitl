@@ -1,4 +1,4 @@
-# Shopping Agent HITL Console
+# Nod — Shopping Agent HITL Console
 
 에이전트가 쇼핑을 대행할 때 **사람은 어디서 개입해야 하는가**를 다루는 프로토타입.
 목데이터 쇼핑몰(상품 34개) 위에서 사람과 에이전트가 같은 장바구니·재고 state를 조작한다.

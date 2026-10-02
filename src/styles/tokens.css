@@ -1,6 +1,6 @@
 /* Geist-style system: monochrome, hairlines, mono for machine data. Dark default, light via [data-theme='light']. */
 :root {
-  --font-sans: 'Geist', 'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+  --font-sans: 'Pretendard Variable', 'Pretendard', 'Geist', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* shape */
@@ -13,6 +13,19 @@
 
   /* brand accent: 승인(Nod) 순간에만 쓴다. 시맨틱 ok와 같은 색이라 의미가 겹친다. */
   --accent: var(--ok);
+
+  /* Nod 초록: 면(히어로·섹션)과 마크 재질에 쓴다. 승인 순간의 accent(--ok)와 같은 계열. */
+  --brand: #12b87c;
+  --brand-deep: #057a52;
+  --brand-hi: #6ff0b4;
+  --brand-ink: #03261a;
+  --on-brand: #ffffff;
+  --brand-wash: #effcf6;
+  --brand-wash-2: #cdf3e0;
+  --brand-grad: linear-gradient(150deg, var(--brand-hi) -20%, var(--brand) 38%, var(--brand-deep) 120%);
+  /* 면 위 흰 글씨 대비를 위해 글이 놓이는 왼쪽이 가장 깊다 */
+  --brand-field: linear-gradient(235deg, var(--brand) -25%, var(--brand-deep) 52%, #046547 118%);
+  --r-card: 28px;
 
   /* motion: critically damped feel (expo-out), no overshoot */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -53,7 +66,7 @@
   --glass-shadow: rgba(0, 0, 0, 0.55);
 
   --grid-line: rgba(255, 255, 255, 0.05);
-  --glow: rgba(59, 155, 255, 0.18);
+  --glow: rgba(18, 184, 124, 0.2);
 
   --sw-black: #1d1d1d; --sw-white: #cfcfcf; --sw-navy: #1f2a48; --sw-beige: #8d8068;
   --sw-gray: #4b4b4b; --sw-brown: #5a4233; --sw-khaki: #5a5a3a; --sw-blue: #35527f;
@@ -61,15 +74,15 @@
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #ffffff;
-  --bg-2: #fafafa;
+  --bg: #f2f5f3;
+  --bg-2: #e9eeeb;
   --surface: #ffffff;
-  --surface-2: #f5f5f5;
-  --line: #ebebeb;
-  --line-strong: #cfcfcf;
-  --ink: #171717;
-  --ink-2: #666666;
-  --ink-3: #8f8f8f;
+  --surface-2: #f3f6f4;
+  --line: #e2e8e4;
+  --line-strong: #c9d2cd;
+  --ink: #111815;
+  --ink-2: #4f5b55;
+  --ink-3: #7f8b85;
   --on-ink: #ffffff;
   --white: #ffffff;
   --hover: rgba(0, 0, 0, 0.05);
@@ -84,13 +97,13 @@
   --danger-soft: rgba(209, 36, 47, 0.09);
   --info-soft: rgba(0, 104, 214, 0.1);
 
-  --glass: rgba(255, 255, 255, 0.68);
+  --glass: rgba(255, 255, 255, 0.74);
   --glass-edge: rgba(255, 255, 255, 0.9);
   --glass-hi: rgba(255, 255, 255, 0.7);
   --glass-shadow: rgba(23, 23, 23, 0.22);
 
   --grid-line: rgba(0, 0, 0, 0.045);
-  --glow: rgba(0, 104, 214, 0.1);
+  --glow: rgba(18, 184, 124, 0.16);
 
   --sw-black: #cfcfcf; --sw-white: #f1f1f1; --sw-navy: #c4cde4; --sw-beige: #e7dcc7;
   --sw-gray: #dcdcdc; --sw-brown: #dccbbd; --sw-khaki: #dad9be; --sw-blue: #c9d8ee;

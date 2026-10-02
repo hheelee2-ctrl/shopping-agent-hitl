@@ -2,6 +2,7 @@ import type { Dial, L } from '../engine/types';
 
 export const LAND = {
   nav: [
+    { id: 'why', l: { ko: '왜 Nod', en: 'Why Nod' } },
     { id: 'how', l: { ko: '작동 방식', en: 'How it works' } },
     { id: 'approval', l: { ko: '승인 구조', en: 'Approval' } },
     { id: 'trust', l: { ko: '한도와 기록', en: 'Limits & log' } },
@@ -23,6 +24,21 @@ export const LAND = {
   demoDone: { ko: '담았습니다', en: 'Added' },
   demoDoneLine: { ko: '카트에 담았습니다', en: 'Added to your cart' },
   demoHint: { ko: '직접 눌러보세요. 승인하면 점이 끄덕입니다.', en: 'Try it. The dot nods when you approve.' },
+
+  whyTitle: { ko: '비교는 맡기고, 결정은 직접', en: 'Hand off the comparing. Keep the deciding' },
+  scenes: [
+    { t: { ko: '쌓이는 탭', en: 'Tabs piling up' }, d: { ko: '여러 곳에서 같은 코트를 비교합니다. 에이전트가 같은 카트 위에서 대신 찾고, 애매하면 나란히 보여줍니다.', en: 'Comparing the same coat across shops. The agent searches on the same cart, and lays candidates side by side when it is unsure.' } },
+    { t: { ko: '담는 순간의 재고', en: 'Stock at the moment of adding' }, d: { ko: '담기 직전에 재고를 다시 확인합니다. 없으면 담지 않고 대안을 묻습니다.', en: 'Stock is checked again right before adding. If it is gone, nothing is added and it asks about an alternative.' } },
+    { t: { ko: '승인한 가격', en: 'The price you approved' }, d: { ko: '승인한 뒤 가격이 바뀌면 담지 않고 다시 묻습니다. 승인한 가격만 담깁니다.', en: 'If the price changes after you approve, it does not add. It asks again. Only the approved price goes in.' } },
+  ] satisfies { t: L; d: L }[],
+  vis: {
+    stock1: { ko: '재고 1', en: 'Stock 1' },
+    stock0: { ko: '재고 0', en: 'Stock 0' },
+    alt: { ko: '대안 제안', en: 'Alternative' },
+    priceA: { ko: '178,000원', en: 'KRW 178,000' },
+    priceB: { ko: '199,000원', en: 'KRW 199,000' },
+    ask: { ko: '다시 확인', en: 'Ask again' },
+  },
 
   howTitle: { ko: '한 번에 한 단계씩', en: 'One step at a time' },
   steps: [

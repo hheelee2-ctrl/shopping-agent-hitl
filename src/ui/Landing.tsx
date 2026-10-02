@@ -68,12 +68,15 @@ function Approval({ lang }: { lang: Lang }) {
 }
 
 export function Landing({ lang, onLang, theme, onTheme }: Props) {
+  const rW = useReveal<HTMLDivElement>();
   const r1 = useReveal<HTMLDivElement>();
   const r2 = useReveal<HTMLDivElement>();
   const r3 = useReveal<HTMLDivElement>();
   const r4 = useReveal<HTMLDivElement>();
   const [nod, setNod] = useState(0);
   const [pulse, setPulse] = useState(0);
+  const [endNod, setEndNod] = useState(0);
+  useEffect(() => { const id = window.setInterval(() => setEndNod((n) => n + 1), 3600); return () => window.clearInterval(id); }, []);
   // 첫 진입 때 로고가 한 번 끄덕인다
   useEffect(() => { const id = window.setTimeout(() => setNod(1), 900); return () => window.clearTimeout(id); }, []);
 
@@ -98,6 +101,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
       </header>
 
       <section className="hero">
+       <div className="hero-field">
         <div className="hero-copy">
           <p className="mono kicker">{t(LAND.kicker, lang)}</p>
           <h1 className="hero-title">
@@ -113,6 +117,26 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
         <div className="hero-stage">
           <ParticleFrame pulse={pulse} />
           <HeroDemo lang={lang} onDone={() => setPulse((n) => n + 1)} />
+        </div>
+       </div>
+      </section>
+
+      <section className="sec why" id="why">
+        <div className="sec-in" ref={rW}>
+          <h2 className="sec-title"><Rise text={t(LAND.whyTitle, lang)} /></h2>
+          <div className="bento rv">
+            {LAND.scenes.map((s, i) => (
+              <article key={i} className={`scene s${i + 1}`}>
+                <div className="scene-v" aria-hidden>
+                  {i === 0 && (<>{[0, 1, 2, 3, 4].map((n) => <i key={n} className="tab" style={{ '--n': n } as React.CSSProperties} />)}<b className="pickcard"><Mark size={22} tone="brand" /></b></>)}
+                  {i === 1 && (<><span className="chip-stock a">{t(LAND.vis.stock1, lang)}</span><span className="chip-stock b">{t(LAND.vis.stock0, lang)}</span><span className="chip-alt">{t(LAND.vis.alt, lang)}</span></>)}
+                  {i === 2 && (<><span className="price-old">{t(LAND.vis.priceA, lang)}</span><span className="price-new">{t(LAND.vis.priceB, lang)}</span><span className="chip-ask">{t(LAND.vis.ask, lang)}</span></>)}
+                </div>
+                <h3>{t(s.t, lang)}</h3>
+                <p>{t(s.d, lang)}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -156,7 +180,8 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
       </section>
 
       <section className="sec end">
-        <div className="sec-in" ref={r4}>
+        <div className="end-field" ref={r4}>
+          <Mark size={84} tone="light" nod={endNod} className="end-mark" />
           <h2 className="end-title"><Rise text={t(LAND.endTitle, lang)} /></h2>
           <Cta lang={lang} />
         </div>
