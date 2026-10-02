@@ -1,0 +1,50 @@
+// Unsplash 무료 라이선스 이미지. 상품(가상)과 실제 관계 없음 — 분위기용.
+// 색·소재는 완전히 일치하지 않을 수 있어, 카드는 이미지 위에 상품 정보를 텍스트로 항상 함께 보여준다.
+type Photo = { id: string; by: string };
+
+const P: Record<string, Photo> = {
+  c1: { id: '1673105724583-44ee51e45011', by: 'Esra Afşar' },
+  c2: { id: '1619603364937-8d7af41ef206', by: 'Taras Chernus' },
+  c3: { id: '1683642765591-2370edc15193', by: 'Mohammad Hossein Mirzagol' },
+  c4: { id: '1781454230007-7c4beb40d34b', by: 'Margo Evardson' },
+  c5: { id: '1579921562939-d9cc7a7dbd8e', by: 'Seyi Ariyo' },
+  j1: { id: '1665407415286-2b29719f0daa', by: 'Petr Urbanek' },
+  j2: { id: '1617114919297-3c8ddb01f599', by: 'Mohamad Khosravi' },
+  j3: { id: '1544022613-e87ca75a784a', by: 'Toa Heftiba' },
+  j4: { id: '1516257984-b1b4d707412e', by: 'Isaac Ramirez' },
+  j5: { id: '1773259592395-144b30949978', by: 'Ndagire' },
+  j6: { id: '1633821879282-0c4e91f96232', by: 'Dane Moukao' },
+  s1: { id: '1544441892-794166f1e3be', by: 'Mukesh Naik' },
+  s2: { id: '1608229751021-ed4bd8677753', by: 'The DK Photography' },
+  s3: { id: '1600269452121-4f2416e55c28', by: 'Jeff Tumale' },
+  s4: { id: '1597350584914-55bb62285896', by: 'Brian Hall' },
+  s5: { id: '1512374382149-233c42b6a83b', by: 'Xavier Teo' },
+  l1: { id: '1615979474401-8a6a344de5bd', by: 'Noah Smith' },
+  l2: { id: '1676121270762-47c8d3a7b9d5', by: 'Nelibar Shoes' },
+  l3: { id: '1760616172899-0681b97a2de3', by: 'taha siddiqui' },
+  k1: { id: '1631541909061-71e349d1f203', by: 'Toa Heftiba' },
+  k2: { id: '1580331451062-99ff652288d7', by: 'Elizeu Dias' },
+  k3: { id: '1643015862949-5c8d15a4242e', by: 'Ruta Gudeliene' },
+  k4: { id: '1574201635302-388dd92a4c3f', by: 'Valna Studio' },
+  sh1: { id: '1603252110481-7ba873bf42ab', by: 'Nimble Made' },
+  sh2: { id: '1602810316693-3667c854239a', by: 'Nimble Made' },
+  sh3: { id: '1562157873-818bc0726f68', by: 'Md Salman' },
+  sh4: { id: '1642764873855-934ed87e79e1', by: 'farhad chaudhary' },
+  pt1: { id: '1761726065663-6e550c25a6ef', by: "Bien'arts" },
+  pt2: { id: '1633963643586-1a39077623be', by: 'Hamed darzi' },
+  pt3: { id: '1789110520148-bb52ba37759b', by: 'engin akyurt' },
+  pt4: { id: '1789110520465-efc5ff05c95e', by: 'engin akyurt' },
+  b1: { id: '1705909237050-7a7625b47fac', by: 'Mobina Ghazazani' },
+  b2: { id: '1473188588951-666fce8e7c68', by: 'Álvaro Serrano' },
+  b3: { id: '1605733513597-a8f8341084e6', by: 'mostafa mahmoudi' },
+};
+
+export const photoUrl = (productId: string, w = 640): string | null => {
+  const p = P[productId];
+  return p ? `https://images.unsplash.com/photo-${p.id}?auto=format&fit=crop&w=${w}&h=${w}&q=70` : null;
+};
+export const photoCredit = (productId: string): string | null => P[productId]?.by ?? null;
+
+/** 캠페인 히어로: 와이드 크롭 */
+export const heroPhoto = (w = 1600): string => `https://images.unsplash.com/photo-1781454230007-7c4beb40d34b?auto=format&fit=crop&w=${w}&h=${Math.round(w * 0.5)}&q=70`;
+export const HERO_CREDIT = 'Margo Evardson';

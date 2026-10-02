@@ -1,0 +1,81 @@
+/* Nike-style monochrome commerce (getdesign.md/nike): photography carries color, chrome stays neutral. */
+:root {
+  --canvas: #ffffff;
+  --cloud: #f5f5f5;
+  --ink: #111111;
+  --ink-2: #4b4b4b;
+  --ink-3: #8d8d8d;
+  --line: rgba(17, 17, 17, 0.12);
+  --line-strong: rgba(17, 17, 17, 0.4);
+  --hover: rgba(17, 17, 17, 0.06);
+  --on-ink: #ffffff;
+  --white: #ffffff;
+  --scrim: rgba(17, 17, 17, 0.45);
+  --scrim-soft: rgba(17, 17, 17, 0.12);
+
+  /* semantic (the only chroma in the UI) */
+  --sale: #d30005;
+  --success: #007d48;
+  --info: #1151ff;
+  --caution: #b45f00;
+  --ok: var(--success);
+  --danger: var(--sale);
+  --warn: var(--caution);
+  --ok-soft: rgba(0, 125, 72, 0.12);
+  --warn-soft: rgba(180, 95, 0, 0.13);
+  --danger-soft: rgba(211, 0, 5, 0.1);
+  --accent: var(--sale);
+  --accent-soft: rgba(211, 0, 5, 0.16);
+
+  /* floating dark glass — the only elevated surface */
+  --glass: rgba(17, 17, 17, 0.8);
+  --glass-edge: rgba(255, 255, 255, 0.22);
+  --glass-fill: rgba(255, 255, 255, 0.07);
+  --glass-shadow: rgba(0, 0, 0, 0.35);
+
+  /* fallback tile (photo failed) */
+  --sw-black: #2b2b2b;
+  --sw-white: #e9e9e9;
+  --sw-navy: #2a3550;
+  --sw-beige: #d3c4aa;
+  --sw-gray: #a5a5a5;
+  --sw-brown: #7a5a45;
+  --sw-khaki: #7d7d55;
+  --sw-blue: #6a8cbc;
+
+  /* type */
+  --display: 'Jost', 'Futura', 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  --sans: 'Pretendard', 'Inter', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+
+  /* shape: cards sharp, CTAs pill */
+  --r-card: 0;
+  --r-pill: 30px;
+  --r-search: 24px;
+  --r-glass: 28px;
+  --r-md: 14px;
+  --r-sm: 8px;
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur: 280ms;
+}
+
+/* inside dark glass, flip the neutral scale; semantic colors get lighter variants */
+.agent, .drawer {
+  --ink: #ffffff;
+  --ink-2: rgba(255, 255, 255, 0.78);
+  --ink-3: rgba(255, 255, 255, 0.52);
+  --line: rgba(255, 255, 255, 0.16);
+  --line-strong: rgba(255, 255, 255, 0.45);
+  --hover: rgba(255, 255, 255, 0.1);
+  --on-ink: #111111;
+  --ok: #4be39a;
+  --warn: #ffb347;
+  --danger: #ff6b66;
+  --info: #7a9bff;
+  --accent: #ff6b66;
+  --ok-soft: rgba(75, 227, 154, 0.16);
+  --warn-soft: rgba(255, 179, 71, 0.16);
+  --danger-soft: rgba(255, 107, 102, 0.16);
+  --accent-soft: rgba(255, 107, 102, 0.3);
+}

@@ -1,0 +1,143 @@
+import { describe, expect, it } from 'vitest';
+import type { AgentEvent, Dial } from '../engine/types';
+import { createStore } from '../store/store';
+import { RuleAgent } from './agent';
+
+const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+
+function setup(request: string, dial: Dial = 'auto', opts: { limit?: number; simulateStockout?: boolean } = {}) {
+  const store = createStore();
+  const events: AgentEvent[] = [];
+  const agent = new RuleAgent(store, () => Promise.resolve());
+  agent.start({ request, dial, limit: opts.limit ?? 300000, simulateStockout: opts.simulateStockout ?? false }, (e) => events.push(e));
+  const until = async (pred: (e: AgentEvent) => boolean) => {
+    for (let i = 0; i < 300; i++) {
+      if (events.some(pred)) return;
+      await tick();
+    }
+    throw new Error('timeout: ' + JSON.stringify(events.map((e) => e.type)));
+  };
+  return { store, agent, events, until };
+}
+const last = <T extends AgentEvent['type']>(events: AgentEvent[], type: T) =>
+  [...events].reverse().find((e) => e.type === type) as Extract<AgentEvent, { type: T }> | undefined;
+
+describe('S1 명확한 요청', () => {
+  it('질문 없이 담고 결제 직전에서만 멈춘다. 장바구니는 실제 store에 담긴다', async () => {
+    const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하');
+    await until((e) => e.type === 'payment_gate');
+    expect(events.some((e) => e.type === 'needs_input')).toBe(false);
+    expect(store.getState().cart).toMatchObject([{ productId: 'c1', addedBy: 'agent' }]);
+    expect(last(events, 'payment_gate')).toMatchObject({ total: 178000, exceeded: false });
+    agent.approve();
+    await until((e) => e.type === 'result');
+    expect(last(events, 'result')?.status).toBe('done');
+    expect(store.getState().orders).toHaveLength(1);
+    expect(store.getState().cart).toHaveLength(0);
+  });
+  it('확신도: 1순위 high, 울 혼방 medium, 예산 초과 low', async () => {
+    const { events, until } = setup('검정 울 코트, 20만원 이하');
+    await until((e) => e.type === 'payment_gate');
+    const lv = (id: string) => events.find((e) => e.type === 'confidence' && e.itemId === id);
+    expect(lv('c1')).toMatchObject({ level: 'high' });
+    expect(lv('c3')).toMatchObject({ level: 'medium' });
+    expect(lv('c5')).toMatchObject({ level: 'low' });
+  });
+  it('Dial=always: 계획 승인 전에는 tool_call이 없다 (Intent Preview)', async () => {
+    const { agent, events, until } = setup('검정 울 코트, 20만원 이하', 'always');
+    await until((e) => e.type === 'plan');
+    await tick();
+    expect(events.some((e) => e.type === 'tool_call')).toBe(false);
+    agent.approve();
+    await until((e) => e.type === 'tool_call' && e.status === 'done');
+  });
+});
+
+describe('Escalation은 계산된 조건에서 나온다', () => {
+  it('후보 점수가 비슷하면(가을 자켓) 사람에게 고르게 한다', async () => {
+    const { store, agent, events, until } = setup('가을에 입기 좋은 자켓');
+    await until((e) => e.type === 'needs_input');
+    const q = last(events, 'needs_input')!;
+    expect(q.id).toBe('q-pick');
+    expect(q.options).toHaveLength(3);
+    expect(store.getState().cart).toHaveLength(0);
+    agent.answer(q.options[0].id);
+    await until((e) => e.type === 'payment_gate');
+    expect(store.getState().cart[0].productId).toBe(q.options[0].id);
+  });
+  it('종류를 모르면 종류부터 묻는다', async () => {
+    const { events, until } = setup('검정 20만원 이하');
+    await until((e) => e.type === 'needs_input');
+    expect(last(events, 'needs_input')?.id).toBe('q-category');
+  });
+  it('해석하지 못한 표현이 있으면 멈추고 묻는다', async () => {
+    const { events, until } = setup('코트 힙한 느낌');
+    await until((e) => e.type === 'needs_input');
+    expect(last(events, 'needs_input')?.id).toBe('q-unknown');
+  });
+  it('조건에 맞는 상품이 없으면 예산 완화를 묻고, 그래도 없으면 실패', async () => {
+    const { agent, events, until } = setup('검정 울 코트 10만원 이하');
+    await until((e) => e.type === 'needs_input');
+    expect(last(events, 'needs_input')?.id).toBe('q-relax');
+    agent.answer('relax');
+    await until((e) => e.type === 'result');
+    expect(last(events, 'result')?.status).toBe('failed');
+  });
+});
+
+describe('S3 재고 변동·한도 (store가 실제로 바뀐다)', () => {
+  it('담기 직전 다른 구매자가 재고를 가져가면 실패 후 대안을 제시한다', async () => {
+    const { store, agent, until } = setup('화이트 스니커즈 한 켤레', 'auto', { simulateStockout: true });
+    await until((e) => e.type === 'needs_input');
+    agent.answer('s1'); // 동점 후보 중 마지막 1개 남은 s1
+    await until((e) => e.type === 'tool_call' && e.status === 'failed');
+    expect(store.getProduct('s1')!.stock).toBe(0);
+    await until((e) => e.type === 'needs_input' && e.id === 'q-alt1');
+    expect(store.getState().cart).toHaveLength(0);
+  });
+  it('대안이 한도를 넘으면 Dial=auto여도 exceeded', async () => {
+    const { agent, events, until } = setup('화이트 스니커즈 한 켤레', 'auto', { simulateStockout: true });
+    await until((e) => e.type === 'needs_input');
+    agent.answer('s1');
+    await until((e) => e.type === 'needs_input' && e.id === 'q-alt1');
+    agent.answer('s3');
+    await until((e) => e.type === 'payment_gate');
+    expect(last(events, 'payment_gate')).toMatchObject({ total: 342000, limit: 300000, exceeded: true });
+  });
+});
+
+describe('Action Audit / 되돌리기', () => {
+  it('결제 전 되돌리면 store에서 빠지고, 비면 게이트가 종료된다', async () => {
+    const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하');
+    await until((e) => e.type === 'payment_gate');
+    agent.undo('t-cart1');
+    await until((e) => e.type === 'result');
+    expect(store.getState().cart).toHaveLength(0);
+    expect(last(events, 'undo')).toMatchObject({ status: 'done' });
+    expect(last(events, 'result')?.summary.ko).toContain('모두 되돌려서');
+  });
+  it('사람이 장바구니에서 직접 빼도 게이트가 갱신된다', async () => {
+    const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하');
+    await until((e) => e.type === 'payment_gate');
+    store.addToCart('sh1', 'user');
+    await tick();
+    expect(last(events, 'payment_gate')?.total).toBe(178000 + 69000);
+    agent.reject();
+    await until((e) => e.type === 'result');
+  });
+  it('결제 승인 후에는 되돌리기가 blocked', async () => {
+    const { agent, events, until } = setup('검정 울 코트, 20만원 이하');
+    await until((e) => e.type === 'payment_gate');
+    agent.approve();
+    await until((e) => e.type === 'result');
+    agent.undo('t-cart1');
+    expect(last(events, 'undo')?.status).toBe('blocked');
+  });
+  it('stop 후에는 이벤트가 더 나오지 않는다', async () => {
+    const { agent, events } = setup('가을에 입기 좋은 자켓');
+    agent.stop();
+    const n = events.length;
+    await tick(); await tick();
+    expect(events.length).toBe(n);
+  });
+});
