@@ -62,6 +62,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const [nod, setNod] = useState(0);
   const [cmpClosed, setCmpClosed] = useState(false);
   const [stockout, setStockout] = useState(false);
+  const [priceChange, setPriceChange] = useState(false);
 
   const { phase } = state;
   const running = !['idle', 'done', 'failed', 'cancelled', 'undone'].includes(phase);
@@ -88,8 +89,8 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const run = useCallback(() => {
     setCmpClosed(false);
     emit({ type: 'start' }, 'user');
-    agent.start({ request, dial, limit, simulateStockout: stockout }, (event) => emit({ type: 'event', event }));
-  }, [agent, request, dial, limit, stockout, emit]);
+    agent.start({ request, dial, limit, simulateStockout: stockout, simulatePriceChange: priceChange }, (event) => emit({ type: 'event', event }));
+  }, [agent, request, dial, limit, stockout, priceChange, emit]);
 
   const reset = useCallback(() => {
     agent.stop();
@@ -137,10 +138,10 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         <AgentPanel
           lang={lang} store={store} state={vState} cartIds={cartIds}
           readOnly={replaying} frames={frames} cursor={cursor} onCursor={setCursor}
-          request={request} dial={dial} limit={limit} stockout={stockout} running={running}
+          request={request} dial={dial} limit={limit} stockout={stockout} priceChange={priceChange} running={running}
           onRequest={setRequest}
-          onPreset={(text, so) => { setRequest(text); setStockout(so); }}
-          onDial={setDial} onLimit={setLimit} onStockout={setStockout}
+          onPreset={(text, so, pc) => { setRequest(text); setStockout(so); setPriceChange(pc); }}
+          onDial={setDial} onLimit={setLimit} onStockout={setStockout} onPriceChange={setPriceChange}
           onRun={run} onReset={reset}
           onApprove={ack(() => agent.approve())} onReject={ack(() => agent.reject())} onAnswer={(id) => ack(() => agent.answer(id))()}
           onUndo={(id) => agent.undo(id)}
@@ -155,7 +156,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         />
       )}
 
-      {!replaying && !cmpClosed && state.phase === 'needs-input' && state.question?.id === 'q-pick' && (
+      {!replaying && !cmpClosed && state.phase === 'needs-input' && state.question?.id.startsWith('q-pick') && (
         <Compare
           lang={lang} store={store} state={state}
           onPick={(id) => ack(() => agent.answer(id))()} onClose={() => setCmpClosed(true)}

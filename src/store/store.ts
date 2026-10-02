@@ -14,6 +14,8 @@ export interface Store {
   checkout(): Order | null;
   /** 시연용: 다른 구매자가 재고를 가져가는 등 쇼핑몰 쪽 변화를 만든다. */
   setStock(id: string, stock: number): void;
+  /** 시연용: 승인한 뒤 판매처가 가격을 바꾸는 경우. 이미 담긴 줄은 담은 시점 가격(priceAtAdd)을 유지한다. */
+  setPrice(id: string, price: number): void;
   reset(): void;
 }
 
@@ -65,6 +67,11 @@ export function createStore(): Store {
       const p = state.products[id];
       if (!p) return;
       set({ ...state, products: { ...state.products, [id]: { ...p, stock } } });
+    },
+    setPrice(id, price) {
+      const p = state.products[id];
+      if (!p) return;
+      set({ ...state, products: { ...state.products, [id]: { ...p, price } } });
     },
     reset() {
       set(fresh());

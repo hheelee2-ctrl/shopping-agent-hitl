@@ -413,3 +413,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 @media (max-width: 760px) { .cmp-cols { grid-template-columns: 1fr !important; } .cmp-ph { aspect-ratio: 16 / 7; } }
 @media (prefers-reduced-motion: reduce) { .cmp, .cmp-col, .cmp-scrim { animation: none; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+.price.repriced { animation: repriced 1400ms var(--ease) both; }
+@keyframes repriced { 0% { color: var(--warn); transform: translateY(-5px); opacity: 0; } 25% { opacity: 1; } 100% { color: inherit; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .price.repriced { animation: none; } }

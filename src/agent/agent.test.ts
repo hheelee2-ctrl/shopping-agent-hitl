@@ -5,11 +5,11 @@ import { RuleAgent } from './agent';
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
-function setup(request: string, dial: Dial = 'auto', opts: { limit?: number; simulateStockout?: boolean } = {}) {
+function setup(request: string, dial: Dial = 'auto', opts: { limit?: number; simulateStockout?: boolean; simulatePriceChange?: boolean } = {}) {
   const store = createStore();
   const events: AgentEvent[] = [];
   const agent = new RuleAgent(store, () => Promise.resolve());
-  agent.start({ request, dial, limit: opts.limit ?? 300000, simulateStockout: opts.simulateStockout ?? false }, (e) => events.push(e));
+  agent.start({ request, dial, limit: opts.limit ?? 300000, simulateStockout: opts.simulateStockout ?? false, simulatePriceChange: opts.simulatePriceChange }, (e) => events.push(e));
   const until = async (pred: (e: AgentEvent) => boolean) => {
     for (let i = 0; i < 300; i++) {
       if (events.some(pred)) return;
@@ -139,5 +139,86 @@ describe('Action Audit / 되돌리기', () => {
     const n = events.length;
     await tick(); await tick();
     expect(events.length).toBe(n);
+  });
+});
+
+describe('낡은 승인 방지 (Stale Approval)', () => {
+  it('승인받는 화면에 가격이 보인다', async () => {
+    const { events, until } = setup('검정 울 코트, 20만원 이하', 'cart-only');
+    await until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
+    const t = events.find((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
+    expect(t && t.type === 'tool_call' && t.label.ko).toContain('178,000원');
+  });
+  it('승인 직후 가격이 오르면 담지 않고 다시 묻는다. 새 가격으로 담으면 그 가격이 장바구니에 기록된다', async () => {
+    const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하', 'cart-only', { simulatePriceChange: true });
+    await until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
+    agent.approve();
+    await until((e) => e.type === 'needs_input');
+    expect(last(events, 'needs_input')?.id).toBe('q-stale1');
+    expect(last(events, 'needs_input')?.question.ko).toContain('178,000원 → 199,000원');
+    expect(store.getState().cart).toHaveLength(0);
+    agent.answer('accept');
+    await until((e) => e.type === 'payment_gate');
+    expect(store.getState().cart[0].priceAtAdd).toBe(199000);
+    expect(last(events, 'payment_gate')?.total).toBe(199000);
+  });
+  it('새 가격을 거절하면 아무것도 담기지 않고 끝난다', async () => {
+    const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하', 'cart-only', { simulatePriceChange: true });
+    await until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
+    agent.approve();
+    await until((e) => e.type === 'needs_input');
+    agent.answer('skip');
+    await until((e) => e.type === 'result');
+    expect(last(events, 'result')?.status).toBe('cancelled');
+    expect(store.getState().cart).toHaveLength(0);
+  });
+  it('승인 단계가 없는 Dial=auto에서는 낡을 승인이 없으므로 묻지 않는다', async () => {
+    const { events, until } = setup('검정 울 코트, 20만원 이하', 'auto', { simulatePriceChange: true });
+    await until((e) => e.type === 'payment_gate');
+    expect(events.some((e) => e.type === 'needs_input')).toBe(false);
+  });
+});
+
+describe('다중 상품 + 합계 예산', () => {
+  const REQ = '검정 울 코트 20만원 이하랑 검정 가죽 로퍼, 합쳐서 35만원';
+  const answerUntilBudget = async (h: ReturnType<typeof setup>) => {
+    await h.until((e) => e.type === 'needs_input' && e.id === 'q-pick-i2');
+    h.agent.answer('l1'); // 289,000원 — 코트(178,000원)와 합치면 예산 초과
+    await h.until((e) => e.type === 'needs_input' && e.id.startsWith('q-budget'));
+  };
+  it('요청을 항목으로 나누고, 합계 예산을 항목과 별개로 해석한다', async () => {
+    const { events, until } = setup(REQ);
+    await until((e) => e.type === 'understood');
+    const u = last(events, 'understood')!;
+    expect(u.chips.map((c) => c.label.ko)).toEqual(['항목 1', '항목 2', '합계 예산']);
+  });
+  it('담기 전에 예산 초과를 감지해 멈추고, 더 저렴한 대안을 제안한다', async () => {
+    const h = setup(REQ);
+    await answerUntilBudget(h);
+    const q = last(h.events, 'needs_input')!;
+    expect(h.store.getState().cart.map((l) => l.productId)).toEqual(['c1']); // 두 번째는 아직 담기지 않았다
+    expect(q.options.map((o) => o.id)).toEqual(['l3', 'over', 'skip', 'stop']);
+    h.agent.answer('l3');
+    await h.until((e) => e.type === 'payment_gate');
+    expect(last(h.events, 'payment_gate')).toMatchObject({ total: 178000 + 159000 });
+  });
+  it('"예산을 넘겨 담기"는 사람이 그렇게 정했을 때만 담긴다', async () => {
+    const h = setup(REQ);
+    await answerUntilBudget(h);
+    h.agent.answer('over');
+    await h.until((e) => e.type === 'payment_gate');
+    expect(last(h.events, 'payment_gate')?.total).toBe(178000 + 289000);
+  });
+  it('"이 항목 빼기"는 그 항목만 빼고 계속한다', async () => {
+    const h = setup(REQ);
+    await answerUntilBudget(h);
+    h.agent.answer('skip');
+    await h.until((e) => e.type === 'payment_gate');
+    expect(h.store.getState().cart.map((l) => l.productId)).toEqual(['c1']);
+  });
+  it('항목이 하나로 안 나뉘는 요청은 기존 단일 흐름 그대로다', async () => {
+    const { events, until } = setup('검정 울 코트, 20만원 이하');
+    await until((e) => e.type === 'understood');
+    expect(last(events, 'understood')!.chips.some((c) => c.label.ko.startsWith('항목'))).toBe(false);
   });
 });

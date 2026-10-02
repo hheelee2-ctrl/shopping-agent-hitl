@@ -50,7 +50,7 @@ const STYLES: Dict<Style> = [
 const STOP = new Set([
   '추천', '해줘', '해주세요', '찾아줘', '찾아', '사줘', '좀', '한', '켤레', '개', '입기', '좋은', '있는', '같은',
   '정도', '이하', '이상', '원', '만', '에서', '으로', '하고', '그리고', '주세요', '싶어', '싶은', '어울리는',
-  '요즘', '오늘', 'a', 'an', 'the', 'for', 'me', 'find', 'under', 'good',
+  '요즘', '오늘', '같이', '둘다', '모두', '각각', '합쳐서', '합쳐', '합계', '해서', '총', 'and', 'a', 'an', 'the', 'for', 'me', 'find', 'under', 'good',
 ]);
 
 function take<T extends string>(text: string, dict: Dict<T>): { found: T[]; rest: string } {
@@ -137,4 +137,41 @@ export function describeCriteria(c: Criteria): Chip[] {
     chips.push({ label: DIM_L.budget, value: { ko: `${v.ko} 이상`, en: `from ${v.en}` } });
   }
   return chips;
+}
+
+export interface Parsed {
+  items: Criteria[];
+  /** 요청 전체에 걸린 합계 예산("합쳐서 30만원"). 항목별 가격 상한(maxPrice)과 다르다. */
+  budget?: number;
+}
+
+const BUDGET_RE = /(?:합쳐서|합쳐|합계|총|다 합쳐서|전부 해서|모두 해서)\s*(\d+(?:\.\d+)?)\s*만\s*원?\s*(?:이하|미만|까지|안쪽|이내|아래|으로|에)?/;
+const EN_BUDGET_RE = /\b(?:in total|total|combined|altogether)\s*(?:of\s*)?(?:under|up to|max|within)?\s*(\d[\d,]{3,})/i;
+const SPLIT_RE = /(?:이랑|랑|하고|과|와|,|그리고|및)\s+|\s+and\s+/;
+export const MAX_ITEMS = 3;
+
+/**
+ * 한 요청에 여러 상품이 있으면 항목으로 나눈다("검정 울 코트랑 가죽 로퍼, 합쳐서 35만원").
+ * 나눈 조각마다 종류가 하나씩 잡힐 때만 나눈다 — 그렇지 않으면 단일 요청으로 둔다(오탐 방지).
+ */
+export function parseMulti(input: string): Parsed {
+  let text = input;
+  let budget: number | undefined;
+  const m = text.toLowerCase().match(BUDGET_RE);
+  const en = text.match(EN_BUDGET_RE);
+  if (m) {
+    budget = num(m[1]) * 10000;
+    text = text.replace(new RegExp(BUDGET_RE.source, 'i'), ' ');
+  } else if (en) {
+    budget = num(en[1]);
+    text = text.replace(EN_BUDGET_RE, ' ');
+  }
+  const parts = text.split(SPLIT_RE).map((x) => x.trim()).filter(Boolean);
+  if (parts.length >= 2 && parts.length <= MAX_ITEMS) {
+    const items = parts.map(parseRequest);
+    if (items.every((c) => c.category)) return { items, budget };
+  }
+  const single = parseRequest(text);
+  // 상품이 하나뿐이면 합계 예산은 그 상품의 가격 상한과 같다
+  return { items: [budget !== undefined && single.maxPrice === undefined ? { ...single, maxPrice: budget } : single], budget: undefined };
 }

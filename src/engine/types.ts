@@ -52,6 +52,8 @@ export interface RunOptions {
   limit: number;
   /** 시연용: 담기 직전에 다른 구매자가 마지막 재고를 가져간다 (쇼핑몰 state를 실제로 바꾼다). */
   simulateStockout: boolean;
+  /** 시연용: 사람이 담기를 승인한 직후 판매처가 가격을 올린다. 승인 단계가 있을 때만 의미가 있다. */
+  simulatePriceChange?: boolean;
 }
 
 /** 규칙 기반 에이전트와 (향후) LLM 에이전트가 같은 인터페이스를 구현한다. */

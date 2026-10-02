@@ -102,7 +102,7 @@ export function Dock({ lang, state, request, running, nod, onRequest, onRun, onA
             {mode === 'ask' && question && (
               <>
                 <span className="dock-line">{t(question.question, lang)}</span>
-                {question.id === 'q-pick' && onCompare && <button className="btn sm primary" onClick={onCompare}>{t(C.compare, lang)}</button>}
+                {question.id.startsWith('q-pick') && onCompare && <button className="btn sm primary" onClick={onCompare}>{t(C.compare, lang)}</button>}
                 {question.options.map((o) => <button key={o.id} className="btn sm" onClick={() => onAnswer(o.id)}>{t(o.label, lang)}</button>)}
               </>
             )}

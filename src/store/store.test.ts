@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseRequest } from './parser';
+import { parseMulti, parseRequest } from './parser';
 import { isEligible, searchProducts } from './search';
 import { createStore } from './store';
 
@@ -69,5 +69,34 @@ describe('store', () => {
     s.addToCart('c1', 'agent');
     s.setStock('c1', 0);
     expect(n).toBe(2);
+  });
+});
+
+describe('setPrice', () => {
+  it('상품 가격은 바뀌지만 이미 담긴 줄은 담은 시점 가격을 유지한다', () => {
+    const s = createStore();
+    s.addToCart('c1', 'agent');
+    s.setPrice('c1', 199000);
+    expect(s.getProduct('c1')!.price).toBe(199000);
+    expect(s.cartTotal()).toBe(178000);
+  });
+});
+
+describe('parseMulti', () => {
+  it('한국어: 항목 둘 + 합계 예산', () => {
+    const r = parseMulti('검정 울 코트 20만원 이하랑 검정 가죽 로퍼, 합쳐서 35만원');
+    expect(r.items.map((c) => c.category)).toEqual(['coat', 'loafers']);
+    expect(r.items[0].maxPrice).toBe(200000);
+    expect(r.budget).toBe(350000);
+  });
+  it('English: and + total', () => {
+    const r = parseMulti('black wool coat under 200000 and black leather loafers, total 350000');
+    expect(r.items.map((c) => c.category)).toEqual(['coat', 'loafers']);
+    expect(r.budget).toBe(350000);
+  });
+  it('쉼표가 있어도 조각마다 종류가 없으면 단일 요청이다', () => {
+    const r = parseMulti('검정 울 코트, 20만원 이하');
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0].maxPrice).toBe(200000);
   });
 });

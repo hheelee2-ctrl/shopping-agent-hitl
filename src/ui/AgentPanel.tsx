@@ -18,12 +18,14 @@ interface Props {
   dial: Dial;
   limit: number;
   stockout: boolean;
+  priceChange: boolean;
   running: boolean;
   onRequest: (s: string) => void;
-  onPreset: (text: string, stockout: boolean) => void;
+  onPreset: (text: string, stockout: boolean, priceChange: boolean) => void;
   onDial: (d: Dial) => void;
   onLimit: (n: number) => void;
   onStockout: (b: boolean) => void;
+  onPriceChange: (b: boolean) => void;
   onRun: () => void;
   onReset: () => void;
   onApprove: () => void;
@@ -74,8 +76,8 @@ export function AgentPanel(p: Props) {
         />
         <div className="presets" aria-label={t(C.presets, lang)}>
           {PRESETS.map((x, i) => (
-            <button key={i} className="chip btnchip" disabled={p.running} onClick={() => p.onPreset(t(x.text, lang), !!x.stockout)}>
-              {t(x.text, lang)}
+            <button key={i} className="chip btnchip" disabled={p.running} onClick={() => p.onPreset(t(x.text, lang), !!x.stockout, !!x.priceChange)}>
+              {t(x.label ?? x.text, lang)}
             </button>
           ))}
         </div>
@@ -96,6 +98,10 @@ export function AgentPanel(p: Props) {
       <label className="check">
         <input type="checkbox" checked={p.stockout} disabled={p.running} onChange={(e) => p.onStockout(e.target.checked)} />
         <span>{t(C.stockout, lang)}</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={p.priceChange} disabled={p.running} onChange={(e) => p.onPriceChange(e.target.checked)} />
+        <span>{t(C.priceChange, lang)}</span>
       </label>
 
       <div className="row section">

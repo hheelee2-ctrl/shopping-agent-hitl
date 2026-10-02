@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Lang, Level } from '../engine/types';
 import type { ConsoleState } from '../state/console';
 import { CATEGORY_L, COLOR_L, MATERIAL_L } from '../store/labels';
@@ -84,6 +84,9 @@ function Card({ p, lang, cart, agent, onAdd, readOnly }: { p: Product; lang: Lan
   const left = p.stock - (line?.qty ?? 0);
   const conf = agent.confidence[p.id];
   const [broken, setBroken] = useState(false);
+  const prevPrice = useRef(p.price);
+  const repriced = prevPrice.current !== p.price;
+  useEffect(() => { prevPrice.current = p.price; });
   const src = photoUrl(p.id);
   const credit = photoCredit(p.id);
   const level: Level | undefined = agent.candidates.includes(p.id) ? conf?.level : undefined;
@@ -106,7 +109,7 @@ function Card({ p, lang, cart, agent, onAdd, readOnly }: { p: Product; lang: Lan
         {level && conf?.reason && <p className="reason">{t(conf.reason, lang)}</p>}
         <div className="buy">
           <div>
-            <div className="price">{money(p.price, lang)}</div>
+            <div className={`price ${repriced ? 'repriced' : ''}`}>{money(p.price, lang)}</div>
             <div className="stock">{p.stock === 0 ? t(C.soldOut, lang) : `${t(C.left, lang)} ${left}`}</div>
           </div>
           <button className="btn sm" disabled={left <= 0 || readOnly} onClick={() => onAdd(p.id)}>{t(C.add, lang)}</button>
