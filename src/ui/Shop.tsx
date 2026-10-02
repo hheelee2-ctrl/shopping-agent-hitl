@@ -81,7 +81,7 @@ function Card({ p, lang, cart, agent, onAdd }: { p: Product; lang: Lang; cart: C
         {src && !broken && (
           <img className="ph" src={src} alt={t(p.name, lang)} loading="lazy" title={credit ? `Photo: ${credit} / Unsplash` : undefined} onError={() => setBroken(true)} />
         )}
-        <span className="glyph">{p.category.slice(0, 2).toUpperCase()}</span>
+        {(!src || broken) && <span className="glyph">{p.category.slice(0, 2).toUpperCase()}</span>}
         {level && <span className={`pill ${level}`}>{t(LEVEL[level], lang)}</span>}
         {line && <span className="incart">{line.addedBy === 'agent' ? t(C.byAgent, lang) : t(C.cart, lang)} ×{line.qty}</span>}
       </div>

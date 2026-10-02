@@ -3,7 +3,7 @@
 type Photo = { id: string; by: string };
 
 const P: Record<string, Photo> = {
-  c1: { id: '1673105724583-44ee51e45011', by: 'Esra Afşar' },
+  c1: { id: '1779153249388-5b80de105ec7', by: 'ola szkolda' },
   c2: { id: '1619603364937-8d7af41ef206', by: 'Taras Chernus' },
   c3: { id: '1683642765591-2370edc15193', by: 'Mohammad Hossein Mirzagol' },
   c4: { id: '1781454230007-7c4beb40d34b', by: 'Margo Evardson' },
@@ -18,14 +18,14 @@ const P: Record<string, Photo> = {
   s2: { id: '1608229751021-ed4bd8677753', by: 'The DK Photography' },
   s3: { id: '1600269452121-4f2416e55c28', by: 'Jeff Tumale' },
   s4: { id: '1597350584914-55bb62285896', by: 'Brian Hall' },
-  s5: { id: '1512374382149-233c42b6a83b', by: 'Xavier Teo' },
-  l1: { id: '1615979474401-8a6a344de5bd', by: 'Noah Smith' },
+  s5: { id: '1720019315323-5e2b98a58ba8', by: 'Grailify' },
+  l1: { id: '1784822041003-504771076494', by: 'McFollis' },
   l2: { id: '1676121270762-47c8d3a7b9d5', by: 'Nelibar Shoes' },
   l3: { id: '1760616172899-0681b97a2de3', by: 'taha siddiqui' },
   k1: { id: '1631541909061-71e349d1f203', by: 'Toa Heftiba' },
-  k2: { id: '1580331451062-99ff652288d7', by: 'Elizeu Dias' },
+  k2: { id: '1752486268240-0507bb1ebc7e', by: 'Nice M Nshuti' },
   k3: { id: '1643015862949-5c8d15a4242e', by: 'Ruta Gudeliene' },
-  k4: { id: '1574201635302-388dd92a4c3f', by: 'Valna Studio' },
+  k4: { id: '1611312449297-a69dc9c3987b', by: 'Caio Coelho' },
   sh1: { id: '1603252110481-7ba873bf42ab', by: 'Nimble Made' },
   sh2: { id: '1602810316693-3667c854239a', by: 'Nimble Made' },
   sh3: { id: '1562157873-818bc0726f68', by: 'Md Salman' },
@@ -33,10 +33,10 @@ const P: Record<string, Photo> = {
   pt1: { id: '1761726065663-6e550c25a6ef', by: "Bien'arts" },
   pt2: { id: '1633963643586-1a39077623be', by: 'Hamed darzi' },
   pt3: { id: '1789110520148-bb52ba37759b', by: 'engin akyurt' },
-  pt4: { id: '1789110520465-efc5ff05c95e', by: 'engin akyurt' },
+  pt4: { id: '1714030282710-4f003762bfb1', by: 'sattar kazemi' },
   b1: { id: '1705909237050-7a7625b47fac', by: 'Mobina Ghazazani' },
   b2: { id: '1473188588951-666fce8e7c68', by: 'Álvaro Serrano' },
-  b3: { id: '1605733513597-a8f8341084e6', by: 'mostafa mahmoudi' },
+  b3: { id: '1591534577302-1696205bb2bc', by: 'Yucel M' },
 };
 
 export const photoUrl = (productId: string, w = 640): string | null => {
