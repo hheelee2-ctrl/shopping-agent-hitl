@@ -3,6 +3,10 @@ import type { Dial, Lang } from '../engine/types';
 import type { ConsoleState, Phase } from '../state/console';
 import type { Store } from '../store/store';
 import { AuditLog } from './AuditLog';
+import { ConfRing } from './ConfRing';
+import { Scrubber } from './Scrubber';
+import { Seg } from './Seg';
+import type { Frame } from '../state/timeline';
 import { C, DIAL, LEVEL, PHASE, PRESETS, money, t } from './copy';
 
 interface Props {
@@ -26,6 +30,10 @@ interface Props {
   onReject: () => void;
   onAnswer: (id: string) => void;
   onUndo: (id: string) => void;
+  readOnly: boolean;
+  frames: Frame[];
+  cursor: number | null;
+  onCursor: (i: number | null) => void;
 }
 
 const LIMITS = [200000, 300000, 500000];
@@ -49,12 +57,14 @@ export function AgentPanel(p: Props) {
   }, [phase, question?.id, payment?.total, pendingCart?.id]);
 
   return (
-    <aside className="agent" ref={panel} aria-label={t(C.agent, lang)}>
+    <aside className={`agent ${p.readOnly ? 'replay' : ''}`} ref={panel} aria-label={t(C.agent, lang)}>
       <header className="agent-head">
-        <div className="eyebrow">AX · Human-in-the-Loop</div>
+        <div className="eyebrow">Nod</div>
         <h1>{t(C.agent, lang)}</h1>
         <p className="sub">{t(C.agentSub, lang)}</p>
       </header>
+
+      <fieldset className="plain" disabled={p.readOnly}>
 
       <div className="section">
         <label className="label" htmlFor="req">{t(C.request, lang)}</label>
@@ -74,21 +84,11 @@ export function AgentPanel(p: Props) {
       <div className="section two">
         <div>
           <p className="label">{t(C.dial, lang)}</p>
-          <div className="seg" role="group" aria-label={t(C.dial, lang)}>
-            {(Object.keys(DIAL) as Dial[]).map((d) => (
-              <button key={d} aria-pressed={d === p.dial} disabled={p.running} onClick={() => p.onDial(d)}>{t(DIAL[d], lang)}</button>
-            ))}
-          </div>
+          <Seg options={(Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }))} value={p.dial} onChange={p.onDial} label={t(C.dial, lang)} disabled={p.running} />
         </div>
         <div>
           <p className="label">{t(C.limit, lang)}</p>
-          <div className="seg" role="group" aria-label={t(C.limit, lang)}>
-            {LIMITS.map((n) => (
-              <button key={n} aria-pressed={n === p.limit} disabled={p.running} onClick={() => p.onLimit(n)}>
-                {money(n, lang).replace('KRW ', '')}
-              </button>
-            ))}
-          </div>
+          <Seg options={LIMITS.map((n) => ({ value: n, label: money(n, lang).replace('KRW ', '') }))} value={p.limit} onChange={p.onLimit} label={t(C.limit, lang)} disabled={p.running} />
         </div>
       </div>
       <p className="note">{t(C.dialNote, lang)}</p>
@@ -147,7 +147,7 @@ export function AgentPanel(p: Props) {
                 return (
                   <li key={id}>
                     <span className="n">{t(prod.name, lang)}</span>
-                    {c && <span className={`pill ${c.level}`}>{t(LEVEL[c.level], lang)}</span>}
+                    {c && <span className="conf"><ConfRing level={c.level} /><span className={`pill ${c.level}`}>{t(LEVEL[c.level], lang)}</span></span>}
                   </li>
                 );
               })}
@@ -196,6 +196,9 @@ export function AgentPanel(p: Props) {
 
         <AuditLog lang={lang} log={log} phase={phase} cartIds={p.cartIds} onUndo={p.onUndo} />
       </div>
+      </fieldset>
+
+      <Scrubber lang={lang} frames={p.frames} cursor={p.cursor} onCursor={p.onCursor} />
     </aside>
   );
 }

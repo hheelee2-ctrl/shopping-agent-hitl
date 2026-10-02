@@ -44,7 +44,3 @@ export const photoUrl = (productId: string, w = 640): string | null => {
   return p ? `https://images.unsplash.com/photo-${p.id}?auto=format&fit=crop&w=${w}&h=${w}&q=70` : null;
 };
 export const photoCredit = (productId: string): string | null => P[productId]?.by ?? null;
-
-/** 캠페인 히어로: 와이드 크롭 */
-export const heroPhoto = (w = 1600): string => `https://images.unsplash.com/photo-1781454230007-7c4beb40d34b?auto=format&fit=crop&w=${w}&h=${Math.round(w * 0.5)}&q=70`;
-export const HERO_CREDIT = 'Margo Evardson';

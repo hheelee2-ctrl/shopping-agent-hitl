@@ -43,7 +43,7 @@ src/store/    쇼핑몰 도메인: 카탈로그, state(store), 요청 파서, �
 src/agent/    RuleAgent: store 위에서 일하는 에이전트
 src/engine/   에이전트 ↔ UI 경계 (AgentEvent, AgentAdapter)
 src/state/    이벤트 → 화면 State 머신 (순수 reducer)
-src/ui/       쇼핑몰 화면 + 에이전트 패널
+src/ui/       랜딩, 쇼핑몰 화면, 에이전트 패널, 하단 승인 바, 모션 엔진(motion.ts)
 ```
 
 ## 에이전트 교체 지점
@@ -55,7 +55,7 @@ LLM 에이전트는 store의 검색·담기 기능을 tool로 노출하고, 결�
 ## 한계
 
 - 요청 해석은 규칙 기반이라 카테고리·색상·소재·계절·스타일·가격만 인식한다. 그 밖의 표현은 해석하지 못했다고 알리고 묻는다.
-- 상품 상세 페이지와 이미지는 없다 (색상 타일로 대체).
+- 상품 상세 페이지는 없다. 이미지는 분위기용 사진이며 상품과 실제 관계가 없어, 카드에 상품 정보를 텍스트로 함께 보여준다.
 - 모든 상품·브랜드·가격은 가상이다.
 
 ## 검사 게이트
@@ -67,6 +67,6 @@ LLM 에이전트는 store의 검색·담기 기능을 tool로 노출하고, 결�
 
 All products, brands and prices are fictional mock data. Photography is from [Unsplash](https://unsplash.com) (free license), used as mood imagery only — it does not depict the fictional products.
 
-Photographers: Esra Afşar, Taras Chernus, Mohammad Hossein Mirzagol, Margo Evardson, Seyi Ariyo, Petr Urbanek, Mohamad Khosravi, Toa Heftiba, Isaac Ramirez, Ndagire, Dane Moukao, Mukesh Naik, The DK Photography, Jeff Tumale, Brian Hall, Xavier Teo, Noah Smith, Nelibar Shoes, taha siddiqui, Elizeu Dias, Ruta Gudeliene, Valna Studio, Nimble Made, Md Salman, farhad chaudhary, Bien'arts, Hamed darzi, engin akyurt, Álvaro Serrano, Mobina Ghazazani, mostafa mahmoudi.
+Photographers: ola szkolda, Taras Chernus, Mohammad Hossein Mirzagol, Margo Evardson, Seyi Ariyo, Petr Urbanek, Mohamad Khosravi, Toa Heftiba, Isaac Ramirez, Ndagire, Dane Moukao, Mukesh Naik, The DK Photography, Jeff Tumale, Brian Hall, Grailify, McFollis, Nelibar Shoes, taha siddiqui, Nice M Nshuti, Ruta Gudeliene, Caio Coelho, Nimble Made, Md Salman, farhad chaudhary, Bien'arts, Hamed darzi, engin akyurt, sattar kazemi, Mobina Ghazazani, Álvaro Serrano, Yucel M.
 
 Design tokens follow the Nike DESIGN.md analysis from [getdesign.md](https://getdesign.md) (independent analysis, not affiliated with Nike).

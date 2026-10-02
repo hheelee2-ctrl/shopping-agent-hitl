@@ -1,0 +1,95 @@
+import { useEffect, useRef, useState } from 'react';
+import type { Dial, Lang } from '../engine/types';
+import { DEFAULT_LIMIT } from '../store/catalog';
+import { DIAL, t } from './copy';
+import { SETUP } from './landCopy';
+import { LimitSlider } from './LimitSlider';
+import { Magnetic } from './Magnetic';
+import { Mark } from './Mark';
+import type { MarkPhase } from './Mark';
+import { Rise } from './Rise';
+import { Seg } from './Seg';
+import { ThemeButton } from './ThemeButton';
+
+export interface Config { dial: Dial; limit: number }
+
+interface Props {
+  lang: Lang;
+  onLang: (l: Lang) => void;
+  theme: 'dark' | 'light';
+  onTheme: () => void;
+  onConfirm: (c: Config) => void;
+}
+
+/**
+ * 에이전트 실행 전 첫 단계. 확정하면 마크가 끄덕이고(승인), 링으로 돌다가(준비 중), 체크로 닫힌 뒤 워크스페이스로 넘어간다.
+ */
+export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
+  const [dial, setDial] = useState<Dial>('cart-only');
+  const [limit, setLimit] = useState(DEFAULT_LIMIT);
+  const [nod, setNod] = useState(0);
+  const [phase, setPhase] = useState<MarkPhase>('idle');
+  const [leaving, setLeaving] = useState(false);
+  const timers = useRef<number[]>([]);
+  useEffect(() => () => timers.current.forEach(window.clearTimeout), []);
+
+  const go = () => {
+    if (leaving) return;
+    setLeaving(true);
+    setNod(1);
+    const at = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
+    at(() => setPhase('busy'), 260);
+    at(() => setPhase('done'), 1200);
+    at(() => onConfirm({ dial, limit }), 1900);
+  };
+
+  const label = !leaving ? t(SETUP.go, lang) : phase === 'done' ? t(SETUP.ready, lang) : t(SETUP.preparing, lang);
+
+  return (
+    <div className={`setup ${leaving ? 'leaving' : ''}`}>
+      <header className="land-top">
+        <a className="logo" href="#/" aria-label="Nod"><Mark size={22} follow /><span>Nod</span></a>
+        <span />
+        <div className="top-r">
+          <ThemeButton theme={theme} onToggle={onTheme} lang={lang} />
+          <div className="lang" role="group" aria-label="language">
+            <button aria-pressed={lang === 'ko'} onClick={() => onLang('ko')}>KO</button>
+            <button aria-pressed={lang === 'en'} onClick={() => onLang('en')}>EN</button>
+          </div>
+        </div>
+      </header>
+
+      <main className="setup-in">
+        <div className="setup-mark"><Mark size={84} nod={nod} phase={phase} follow /></div>
+        <h1 className="setup-title"><Rise text={t(SETUP.title, lang)} /></h1>
+        <p className="sec-sub">{t(SETUP.sub, lang)}</p>
+
+        <section className="setup-block">
+          <p className="label">{t(SETUP.dial, lang)}</p>
+          <Seg
+            options={(Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }))}
+            value={dial} onChange={setDial} label={t(SETUP.dial, lang)} disabled={leaving}
+          />
+          <p className="setup-desc" aria-live="polite"><span key={`${dial}-${lang}`} className="swap">{t(SETUP.dialDesc[dial], lang)}</span></p>
+        </section>
+
+        <section className="setup-block">
+          <p className="label">{t(SETUP.limit, lang)}</p>
+          <LimitSlider value={limit} onChange={setLimit} lang={lang} label={t(SETUP.limit, lang)} disabled={leaving} />
+          <p className="setup-desc">{t(SETUP.limitNote, lang)}</p>
+        </section>
+
+        <div className="setup-actions">
+          <Magnetic>
+            <button className={`btn primary cta ${phase === 'done' ? 'ok' : ''}`} onClick={go} disabled={leaving}>
+              <span key={`${leaving}-${phase}-${lang}`} className="swap">{label}</span>
+              <span className="cta-i" aria-hidden>→</span>
+            </button>
+          </Magnetic>
+          <a className="link" href="#/">{t(SETUP.back, lang)}</a>
+        </div>
+        <p className="mono setup-mock">{t(SETUP.mock, lang)}</p>
+      </main>
+    </div>
+  );
+}

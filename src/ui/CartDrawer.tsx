@@ -9,9 +9,10 @@ interface Props {
   onClose: () => void;
   onRemove: (id: string) => void;
   onCheckout: () => void;
+  readOnly?: boolean;
 }
 
-export function CartDrawer({ lang, open, state, onClose, onRemove, onCheckout }: Props) {
+export function CartDrawer({ lang, open, state, onClose, onRemove, onCheckout, readOnly }: Props) {
   const total = state.cart.reduce((s, l) => s + l.priceAtAdd * l.qty, 0);
   return (
     <aside className={`drawer ${open ? 'open' : ''}`} aria-hidden={!open} aria-label={t(C.cart, lang)}>
@@ -31,7 +32,7 @@ export function CartDrawer({ lang, open, state, onClose, onRemove, onCheckout }:
                   <div className="name">{t(p.name, lang)} ×{l.qty}</div>
                   <div className="stock">{money(l.priceAtAdd * l.qty, lang)}{l.addedBy === 'agent' ? ` · ${t(C.byAgent, lang)}` : ''}</div>
                 </div>
-                <button className="btn sm" onClick={() => onRemove(l.productId)}>{t(C.remove, lang)}</button>
+                <button className="btn sm" disabled={readOnly} onClick={() => onRemove(l.productId)}>{t(C.remove, lang)}</button>
               </li>
             );
           })}
@@ -41,7 +42,7 @@ export function CartDrawer({ lang, open, state, onClose, onRemove, onCheckout }:
         <span>{t(C.total, lang)}</span>
         <strong>{money(total, lang)}</strong>
       </div>
-      <button className="btn primary" disabled={state.cart.length === 0} onClick={onCheckout}>{t(C.checkout, lang)}</button>
+      <button className="btn primary" disabled={state.cart.length === 0 || readOnly} onClick={onCheckout}>{t(C.checkout, lang)}</button>
       {state.orders.length > 0 && <p className="note">{t(C.orders, lang)}: {state.orders.length}</p>}
     </aside>
   );

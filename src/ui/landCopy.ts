@@ -1,0 +1,84 @@
+import type { Dial, L } from '../engine/types';
+
+export const LAND = {
+  nav: [
+    { id: 'how', l: { ko: '작동 방식', en: 'How it works' } },
+    { id: 'approval', l: { ko: '승인 구조', en: 'Approval' } },
+    { id: 'trust', l: { ko: '한도와 기록', en: 'Limits & log' } },
+  ] satisfies { id: string; l: L }[],
+  kicker: { ko: 'Nod · 쇼핑 에이전트', en: 'Nod · shopping agent' },
+  heroA: { ko: '말하면 찾고,', en: 'Say it.' },
+  heroB: { ko: '끄덕이면 담아요', en: 'Nod to add it.' },
+  heroSub: {
+    ko: '에이전트는 같은 카트와 재고 위에서 일합니다. 사람은 승인만 합니다. 결제는 하지 않습니다.',
+    en: 'The agent works on the same cart and stock you do. You only approve. It never pays.',
+  },
+  start: { ko: '쇼핑 에이전트 시작하기', en: 'Start the shopping agent' },
+  startShort: { ko: '시작하기', en: 'Start' },
+  how: { ko: '작동 방식', en: 'How it works' },
+  demoTag: { ko: '예시', en: 'Example' },
+  demoLine: { ko: '화이트 스니커즈를 담을게요', en: 'Add white sneakers to cart' },
+  demoBtn: { ko: '승인', en: 'Approve' },
+  demoBusy: { ko: '담는 중', en: 'Adding' },
+  demoDone: { ko: '담았습니다', en: 'Added' },
+  demoDoneLine: { ko: '카트에 담았습니다', en: 'Added to your cart' },
+  demoHint: { ko: '직접 눌러보세요. 승인하면 점이 끄덕입니다.', en: 'Try it. The dot nods when you approve.' },
+
+  howTitle: { ko: '한 번에 한 단계씩', en: 'One step at a time' },
+  steps: [
+    { t: { ko: '요청', en: 'Ask' }, d: { ko: '찾을 것을 말합니다', en: 'Say what you want' } },
+    { t: { ko: '미리보기', en: 'Preview' }, d: { ko: '담기 전에 계획부터 보여줍니다', en: 'The plan comes before the action' } },
+    { t: { ko: '승인', en: 'Approve' }, d: { ko: '끄덕이면 담고, 아니면 멈춥니다', en: 'Nod and it adds. Otherwise it stops' } },
+    { t: { ko: '결제 직전', en: 'Before payment' }, d: { ko: '결제는 직접 합니다', en: 'You pay yourself' } },
+  ] satisfies { t: L; d: L }[],
+
+  approvalTitle: { ko: '전부 맡기는 대신, 단계마다 정합니다', en: 'Not all at once. Step by step' },
+  approvalSub: { ko: '자율도를 바꿔보세요. 승인이 필요한 단계가 달라집니다.', en: 'Change the autonomy level. The steps that need you change with it.' },
+  rows: [
+    { ko: '계획 시작', en: 'Start the plan' },
+    { ko: '장바구니 담기', en: 'Add to cart' },
+    { ko: '결제', en: 'Payment' },
+  ] satisfies L[],
+  you: { ko: '내 승인', en: 'You approve' },
+  auto: { ko: '자동', en: 'Auto' },
+  pay: { ko: '직접 결제', en: 'You pay' },
+  payNote: { ko: '결제는 어느 단계에서도 직접 합니다.', en: 'Payment is yours at every level.' },
+
+  trustTitle: { ko: '한도와 기록', en: 'Limits and log' },
+  trust: [
+    { t: { ko: '한도를 넘으면 직접 확인합니다', en: 'Over the limit, you review it' }, d: { ko: '자율도와 상관없이, 결제 직전 합계가 한도를 넘으면 경고를 띄웁니다.', en: 'At any autonomy level, a total above your limit raises a warning before payment.' } },
+    { t: { ko: '확신이 낮으면 묻습니다', en: 'Low confidence, it asks' }, d: { ko: '후보가 비슷하거나 조건이 모호하면 직접 고르게 합니다.', en: 'When candidates tie or the request is vague, you choose.' } },
+    { t: { ko: '한 일은 전부 기록됩니다', en: 'Every action is logged' }, d: { ko: '결제 전 행동은 되돌릴 수 있고, 타임라인으로 그 시점을 다시 볼 수 있습니다.', en: 'Actions before payment can be undone, and the timeline replays any moment.' } },
+  ] satisfies { t: L; d: L }[],
+
+  endTitle: { ko: '한 번 맡겨보세요', en: 'Hand one off' },
+  foot: {
+    ko: '포트폴리오 프로젝트입니다. 상품과 재고는 가상 데이터이고, 결제는 구현하지 않았습니다.',
+    en: 'A portfolio project. Products and stock are mock data. Payment is not implemented.',
+  },
+} as const;
+
+/** 자율도별로 사람이 승인하는 단계. agent.ts의 실제 동작과 같다: always→계획+담기, cart-only→담기, auto→없음. 결제는 항상 사람. */
+export const APPROVES: Record<Dial, [boolean, boolean]> = {
+  always: [true, true],
+  'cart-only': [false, true],
+  auto: [false, false],
+};
+
+export const SETUP = {
+  title: { ko: '맡길 범위부터 정합니다', en: 'Set how much you hand off' },
+  sub: { ko: '나중에 에이전트 패널에서 바꿀 수 있습니다.', en: 'You can change this later in the agent panel.' },
+  dial: { ko: '자율도', en: 'Autonomy' },
+  dialDesc: {
+    always: { ko: '계획 시작과 담기를 모두 내가 승인합니다', en: 'You approve the plan and every add' },
+    'cart-only': { ko: '계획은 바로 실행하고, 담기 전에 묻습니다', en: 'Runs the plan, asks before adding' },
+    auto: { ko: '담기까지 알아서 합니다. 결제는 직접 합니다', en: 'Adds on its own. You still pay' },
+  } satisfies Record<Dial, L>,
+  limit: { ko: '결제 한도', en: 'Payment limit' },
+  limitNote: { ko: '결제 직전 합계가 한도를 넘으면 경고합니다.', en: 'A total above this raises a warning before payment.' },
+  go: { ko: '이 설정으로 시작', en: 'Start with these' },
+  preparing: { ko: '준비하는 중', en: 'Getting ready' },
+  ready: { ko: '준비됐습니다', en: 'Ready' },
+  back: { ko: '처음으로', en: 'Back' },
+  mock: { ko: '가상 데이터 · 결제 미구현', en: 'Mock data · no payment' },
+} as const;

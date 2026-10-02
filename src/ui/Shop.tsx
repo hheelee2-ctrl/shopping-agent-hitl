@@ -5,8 +5,10 @@ import { CATEGORY_L, COLOR_L, MATERIAL_L } from '../store/labels';
 import { describeCriteria } from '../store/parser';
 import type { Scored } from '../store/search';
 import type { Category, CartLine, Criteria, Product } from '../store/types';
-import { HERO_CREDIT, heroPhoto, photoCredit, photoUrl } from '../store/photos';
-import { C, LEVEL, money, t } from './copy';
+import { photoCredit, photoUrl } from '../store/photos';
+import { useFlip } from './useFlip';
+import { useFlight } from './useFlight';
+import { C, LEVEL, PHASE, money, t } from './copy';
 
 interface Props {
   lang: Lang;
@@ -17,24 +19,31 @@ interface Props {
   cart: CartLine[];
   agent: ConsoleState;
   onAdd: (id: string) => void;
+  readOnly?: boolean;
 }
 
 const CATS = Object.keys(CATEGORY_L) as Category[];
 
-export function Shop({ lang, results, criteria, category, onCategory, cart, agent, onAdd }: Props) {
+export function Shop({ lang, results, criteria, category, onCategory, cart, agent, onAdd, readOnly }: Props) {
   const chips = criteria ? describeCriteria(criteria) : [];
-  const [heroBroken, setHeroBroken] = useState(false);
+  const gridRef = useFlip<HTMLDivElement>(results.map((r) => r.product.id).join());
+  useFlight(cart, !readOnly);
+  const scanKey = criteria ? JSON.stringify(criteria) : category ?? '';
   const focusAgent = () => document.getElementById('req')?.focus();
   return (
     <section aria-label="shop">
       {!criteria && !category && (
-        <div className="hero">
-          {!heroBroken && <img className="ph" src={heroPhoto()} alt="" title={`Photo: ${HERO_CREDIT} / Unsplash`} onError={() => setHeroBroken(true)} />}
-          <div className="hero-copy">
-            <span className="hero-kicker">{t(C.heroKicker, lang)}</span>
-            <h2 className="hero-title">THE<br />COAT<br />EDIT</h2>
-            <p className="hero-sub">{t(C.heroSub, lang)}</p>
-            <button className="btn outline" onClick={focusAgent}>{t(C.heroCta, lang)}</button>
+        <div className="intro">
+          <span className="intro-kicker">{t(C.heroKicker, lang)}</span>
+          <h2 className="intro-title">{t(C.heroTitle, lang).split('\n').map((line, i) => <span key={i}>{i > 0 && <br />}{i === 1 ? <em>{line}</em> : line}</span>)}</h2>
+          <p className="intro-sub">{t(C.heroSub, lang)}</p>
+          <div className="stats">
+            <span className="stat">{results.length} <b>{t(C.statItems, lang)}</b></span>
+            <span className="stat">{cart.reduce((n, l) => n + l.qty, 0)} <b>{t(C.statCart, lang)}</b></span>
+            <span className="stat">{t(C.statAgent, lang)} <b>{t(PHASE[agent.phase], lang)}</b></span>
+          </div>
+          <div className="row intro-cta">
+            <button className="btn primary" onClick={focusAgent}>{t(C.heroCta, lang)}</button>
           </div>
         </div>
       )}
@@ -57,17 +66,20 @@ export function Shop({ lang, results, criteria, category, onCategory, cart, agen
       {results.length === 0 ? (
         <p className="empty">{t(C.noResult, lang)}</p>
       ) : (
-        <div className="grid">
+        <div className="grid-wrap">
+        {scanKey && <div className="scan" key={scanKey} aria-hidden="true" />}
+        <div className="grid" ref={gridRef}>
           {results.map(({ product }) => (
-            <Card key={product.id} p={product} lang={lang} cart={cart} agent={agent} onAdd={onAdd} />
+            <Card key={product.id} p={product} lang={lang} cart={cart} agent={agent} onAdd={onAdd} readOnly={!!readOnly} />
           ))}
+        </div>
         </div>
       )}
     </section>
   );
 }
 
-function Card({ p, lang, cart, agent, onAdd }: { p: Product; lang: Lang; cart: CartLine[]; agent: ConsoleState; onAdd: (id: string) => void }) {
+function Card({ p, lang, cart, agent, onAdd, readOnly }: { p: Product; lang: Lang; cart: CartLine[]; agent: ConsoleState; onAdd: (id: string) => void; readOnly: boolean }) {
   const line = cart.find((l) => l.productId === p.id);
   const left = p.stock - (line?.qty ?? 0);
   const conf = agent.confidence[p.id];
@@ -76,7 +88,7 @@ function Card({ p, lang, cart, agent, onAdd }: { p: Product; lang: Lang; cart: C
   const credit = photoCredit(p.id);
   const level: Level | undefined = agent.candidates.includes(p.id) ? conf?.level : undefined;
   return (
-    <article className={`prod ${level ? `lv-${level}` : ''} ${p.stock === 0 ? 'out' : ''}`}>
+    <article data-flip={p.id} data-pid={p.id} className={`prod ${level ? `lv-${level}` : ''} ${p.stock === 0 ? 'out' : ''}`}>
       <div className={`sw sw-${p.colors[0]}`}>
         {src && !broken && (
           <img className="ph" src={src} alt={t(p.name, lang)} loading="lazy" title={credit ? `Photo: ${credit} / Unsplash` : undefined} onError={() => setBroken(true)} />
@@ -97,7 +109,7 @@ function Card({ p, lang, cart, agent, onAdd }: { p: Product; lang: Lang; cart: C
             <div className="price">{money(p.price, lang)}</div>
             <div className="stock">{p.stock === 0 ? t(C.soldOut, lang) : `${t(C.left, lang)} ${left}`}</div>
           </div>
-          <button className="btn sm" disabled={left <= 0} onClick={() => onAdd(p.id)}>{t(C.add, lang)}</button>
+          <button className="btn sm" disabled={left <= 0 || readOnly} onClick={() => onAdd(p.id)}>{t(C.add, lang)}</button>
         </div>
       </div>
     </article>
