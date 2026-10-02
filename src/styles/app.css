@@ -417,3 +417,22 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .price.repriced { animation: repriced 1400ms var(--ease) both; }
 @keyframes repriced { 0% { color: var(--warn); transform: translateY(-5px); opacity: 0; } 25% { opacity: 1; } 100% { color: inherit; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .price.repriced { animation: none; } }
+
+/* ---- intervention cost ---- */
+.cost-rows { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
+.cost-row { width: 100%; display: grid; grid-template-columns: 76px 1fr auto; align-items: center; gap: 12px; padding: 8px 10px; border-radius: var(--r-md); border: 1px solid transparent; background: transparent; color: var(--ink-2); cursor: pointer; font: inherit; text-align: left; transition: background var(--dur-fast), border-color var(--dur) var(--ease), color var(--dur-fast); }
+.cost-row:hover:not(:disabled) { background: var(--hover); }
+.cost li.now .cost-row { border-color: var(--line-strong); color: var(--ink); background: var(--surface-2); }
+.cost-name { font-size: 13px; font-weight: 500; }
+.cost-sq { display: flex; gap: 5px; flex-wrap: wrap; min-height: 14px; }
+.cost-n { font-family: var(--font-mono); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.sq { display: inline-block; width: 14px; height: 14px; border-radius: 4px; background: var(--ink-3); animation: sqIn 520ms var(--ease) both; animation-delay: calc(var(--r, 0) * 120ms + var(--i, 0) * 70ms); }
+.sq.plan { background: var(--ink-2); }
+.sq.cart { background: var(--ink); }
+.sq.ask { background: var(--warn); }
+.sq.pay { background: transparent; border: 2px solid var(--ink); }
+.cost-key { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; color: var(--ink-3); margin-bottom: 8px; }
+.cost-key span { display: inline-flex; align-items: center; gap: 6px; }
+.cost-key .sq { width: 10px; height: 10px; border-radius: 3px; animation: none; }
+@keyframes sqIn { from { opacity: 0; transform: scale(0.3) rotate(-12deg); } 60% { transform: scale(1.12); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sq { animation: none; } }

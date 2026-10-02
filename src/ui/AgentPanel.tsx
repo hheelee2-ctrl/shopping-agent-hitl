@@ -3,6 +3,7 @@ import type { Dial, Lang } from '../engine/types';
 import type { ConsoleState, Phase } from '../state/console';
 import type { Store } from '../store/store';
 import { AuditLog } from './AuditLog';
+import { CostMeter } from './CostMeter';
 import { ConfRing } from './ConfRing';
 import { Scrubber } from './Scrubber';
 import { Seg } from './Seg';
@@ -199,6 +200,13 @@ export function AgentPanel(p: Props) {
         )}
 
         {result && <div className="card"><p className="result">{t(result.summary, lang)}</p></div>}
+
+        {result && (
+          <CostMeter
+            lang={lang} request={p.request} limit={p.limit} stockout={p.stockout} priceChange={p.priceChange}
+            dial={p.dial} disabled={p.running} onPick={p.onDial}
+          />
+        )}
 
         <AuditLog lang={lang} log={log} phase={phase} cartIds={p.cartIds} onUndo={p.onUndo} />
       </div>

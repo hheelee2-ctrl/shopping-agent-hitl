@@ -1,9 +1,9 @@
 import type { AgentAdapter, AgentEvent, L, Level, PlanStep, RunOptions } from '../engine/types';
-import { CATEGORY_L } from '../store/labels';
+import { CATEGORY_L, COLOR_L } from '../store/labels';
 import { describeCriteria, parseMulti } from '../store/parser';
 import { isEligible, reasonOf, searchProducts, type Scored } from '../store/search';
 import type { Store } from '../store/store';
-import type { Category, Criteria } from '../store/types';
+import type { Category, Color, Criteria } from '../store/types';
 
 type Delay = (ms: number) => Promise<void>;
 const realDelay: Delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -242,7 +242,7 @@ export class RuleAgent implements AgentAdapter {
     const d = (ms: number) => this.delay(ms);
     const ok = () => this.alive(id);
     const { dial } = this.opts;
-    const sfx = idx === 0 ? '' : `-i${idx + 1}`;
+    const base = idx === 0 ? '' : `-i${idx + 1}`;
     const tag = (l: L): L => (ctx.multi && start.category
       ? { ko: `${l.ko} · ${CATEGORY_L[start.category].ko}`, en: `${l.en} · ${CATEGORY_L[start.category].en}` }
       : l);
@@ -253,6 +253,12 @@ export class RuleAgent implements AgentAdapter {
       return 'end';
     };
     let criteria = start;
+    // 사람이 담기를 거절하며 알려준 이유는 다음 검색의 제외 조건이 된다
+    const excluded = { ids: new Set<string>(), brands: new Set<string>(), colors: new Set<Color>() };
+
+    // 4~6을 한 바퀴로 하고, 거절 사유가 오면 조건을 고쳐 다시 돈다 (최대 2번)
+    redo: for (let round0 = 0; ; round0++) {
+    const sfx = round0 ? `${base}-r${round0}` : base;
 
     // 4) 검색 (쇼핑몰 현재 state를 읽는다)
     let eligible: Scored[] = [];
@@ -263,7 +269,9 @@ export class RuleAgent implements AgentAdapter {
       this.emit({ type: 'tool_call', id: sid, tool: 'search', label: slabel, status: 'running' });
       await d(900);
       if (!ok()) return 'end';
-      const inStock = Object.values(this.store.getState().products).filter((p) => p.stock > 0);
+      const inStock = Object.values(this.store.getState().products).filter(
+        (p) => p.stock > 0 && !excluded.ids.has(p.id) && !excluded.brands.has(p.brand) && !p.colors.some((c) => excluded.colors.has(c)),
+      );
       const all = searchProducts(inStock, criteria);
       eligible = all.filter(isEligible);
       const near = eligible.filter((s) => eligible[0].score - s.score < TIE_GAP);
@@ -383,8 +391,37 @@ export class RuleAgent implements AgentAdapter {
         const a = await this.wait();
         if (!ok()) return 'end';
         if (a === 'reject') {
-          this.finish('cancelled', { ko: '담기를 승인하지 않아 중단했어요.', en: 'Add-to-cart not approved — stopped.' });
-          return 'end';
+          const stopMsg: L = { ko: '담기를 승인하지 않아 중단했어요.', en: 'Add-to-cart not approved — stopped.' };
+          // 거절한 담기는 승인 대기로 남지 않게 기록을 닫는다
+          this.emit({ type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: 'failed', itemIds: [pick.product.id], note: { ko: '담지 않기로 했어요', en: 'You chose not to add it' } });
+          if (round0 >= 2) { this.finish('cancelled', stopMsg); return 'end'; }
+          // 거절을 중단으로 끝내지 않고, 어디가 아쉬웠는지 물어 조건을 고쳐 다시 찾는다
+          const p = pick.product;
+          this.emit({
+            type: 'needs_input', id: `q-why${round0 + 1}${sfx}`,
+            question: { ko: `${name(pick).ko}은(는) 담지 않을게요. 어떤 점이 아쉬웠나요? 그 조건을 반영해 다시 찾아볼게요.`, en: `Okay, not adding ${name(pick).en}. What was off? I'll search again with that in mind.` },
+            options: [
+              { id: 'price', label: { ko: '너무 비싸요', en: 'Too expensive' } },
+              { id: 'brand', label: { ko: `${p.brand} 말고 다른 브랜드`, en: `Not ${p.brand}` } },
+              { id: 'color', label: { ko: `${p.colors.map((c) => COLOR_L[c].ko).join('·')} 말고 다른 색`, en: `Not ${p.colors.map((c) => COLOR_L[c].en).join('/')}` } },
+              { id: 'cancel', label: { ko: '그만두기', en: 'Stop' } },
+            ],
+          });
+          const why = await this.wait();
+          if (!ok()) return 'end';
+          if (!['price', 'brand', 'color'].includes(why)) { this.finish('cancelled', stopMsg); return 'end'; }
+          excluded.ids.add(p.id);
+          if (why === 'price') criteria = { ...criteria, maxPrice: Math.floor((seen * 0.85) / 1000) * 1000 };
+          if (why === 'brand') excluded.brands.add(p.brand);
+          if (why === 'color') p.colors.forEach((c) => excluded.colors.add(c));
+          if (!ctx.multi) {
+            const extra = [
+              ...(excluded.brands.size ? [{ label: { ko: '제외 브랜드', en: 'Excluded brand' }, value: { ko: [...excluded.brands].join(' · '), en: [...excluded.brands].join(' · ') } }] : []),
+              ...(excluded.colors.size ? [{ label: { ko: '제외 색상', en: 'Excluded color' }, value: { ko: [...excluded.colors].map((c) => COLOR_L[c].ko).join(' · '), en: [...excluded.colors].map((c) => COLOR_L[c].en).join(' · ') } }] : []),
+            ];
+            this.emit({ type: 'understood', chips: [...describeCriteria(criteria), ...extra], unknown: [] });
+          }
+          continue redo;
         }
       }
       await d(600);
@@ -451,6 +488,7 @@ export class RuleAgent implements AgentAdapter {
         return 'end';
       }
       pick = alt;
+    }
     }
   }
 }

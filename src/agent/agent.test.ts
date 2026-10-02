@@ -222,3 +222,56 @@ describe('다중 상품 + 합계 예산', () => {
     expect(last(events, 'understood')!.chips.some((c) => c.label.ko.startsWith('항목'))).toBe(false);
   });
 });
+
+describe('거절 사유 되먹임', () => {
+  const rejectAtCart = async () => {
+    const h = setup('검정 울 코트, 20만원 이하', 'cart-only');
+    await h.until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
+    h.agent.reject();
+    await h.until((e) => e.type === 'needs_input');
+    return h;
+  };
+  it('담기를 거절하면 중단하지 않고 이유를 묻는다', async () => {
+    const h = await rejectAtCart();
+    const q = last(h.events, 'needs_input')!;
+    expect(q.id).toBe('q-why1');
+    expect(q.options.map((o) => o.id)).toEqual(['price', 'brand', 'color', 'cancel']);
+    expect(h.events.some((e) => e.type === 'result')).toBe(false);
+    // 거절한 담기가 승인 대기로 남아 있으면 화면에 낡은 승인 카드가 계속 뜬다
+    expect(last(h.events.filter((e) => e.type === 'tool_call' && e.id === 't-cart1') as AgentEvent[], 'tool_call')).toMatchObject({ status: 'failed' });
+  });
+  it('"다른 브랜드"를 고르면 그 브랜드를 빼고 다시 찾아 다른 상품의 담기 승인을 요청한다', async () => {
+    const h = await rejectAtCart();
+    h.agent.answer('brand');
+    await h.until((e) => e.type === 'tool_call' && e.id === 't-cart1-r1' && e.status === 'awaiting-approval');
+    const t = h.events.find((e) => e.type === 'tool_call' && e.id === 't-cart1-r1');
+    expect(t && t.type === 'tool_call' && t.itemIds?.[0]).not.toBe('c1');
+    const chips = last(h.events, 'understood')!.chips.map((c) => c.label.ko);
+    expect(chips).toContain('제외 브랜드');
+    expect(h.store.getState().cart).toHaveLength(0);
+  });
+  it('"그만두기"는 기존처럼 중단한다', async () => {
+    const h = await rejectAtCart();
+    h.agent.answer('cancel');
+    await h.until((e) => e.type === 'result');
+    expect(last(h.events, 'result')?.status).toBe('cancelled');
+  });
+  it('거절은 두 번까지만 되먹임하고 그다음은 중단한다', async () => {
+    const h = setup('자켓', 'cart-only');
+    let rejects = 0, asked = 0, lastQ = '', lastC = '';
+    for (let i = 0; i < 400 && !h.events.some((e) => e.type === 'result'); i++) {
+      const e = h.events[h.events.length - 1];
+      if (!e) { await tick(); continue; }
+      if (e.type === 'needs_input' && e.id !== lastQ) {
+        lastQ = e.id;
+        if (e.id.startsWith('q-why')) { asked++; h.agent.answer('brand'); } else h.agent.answer(e.options[0].id);
+      } else if (e.type === 'tool_call' && e.status === 'awaiting-approval' && e.id !== lastC) {
+        lastC = e.id; rejects++; h.agent.reject();
+      }
+      await tick();
+    }
+    expect(last(h.events, 'result')?.status).toBe('cancelled');
+    expect(rejects).toBe(3);
+    expect(asked).toBe(2);
+  });
+});
