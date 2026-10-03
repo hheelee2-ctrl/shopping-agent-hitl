@@ -40,7 +40,7 @@ export const LAND = {
     ask: { ko: '다시 확인', en: 'Ask again' },
   },
 
-  howTitle: { ko: '한 번에 한 단계씩', en: 'One step at a time' },
+  howTitle: { ko: '직접 한 번 따라가 보세요', en: 'Walk through it once' },
   steps: [
     { t: { ko: '요청', en: 'Ask' }, d: { ko: '찾을 것을 말합니다', en: 'Say what you want' } },
     { t: { ko: '미리보기', en: 'Preview' }, d: { ko: '담기 전에 계획부터 보여줍니다', en: 'The plan comes before the action' } },
@@ -80,6 +80,41 @@ export const APPROVES: Record<Dial, [boolean, boolean]> = {
   'cart-only': [false, true],
   auto: [false, false],
 };
+
+/** 가이드 투어 — 실제 앱의 상품·가격(미드나잇 울 싱글 코트 178,000원)과 같은 값을 쓴다 */
+export const TOUR = {
+  price: 178000,
+  stageTitle: { ko: '쇼핑 에이전트 · 예시', en: 'Shopping agent · example' },
+  cart: { ko: '장바구니', en: 'Cart' },
+  reqLabel: { ko: '요청', en: 'Request' },
+  request: { ko: '검정 울 코트, 20만원 이하', en: 'black wool coat under 200000' },
+  chips: [
+    { ko: '색상 · 검정', en: 'Color · black' },
+    { ko: '소재 · 울', en: 'Material · wool' },
+    { ko: '종류 · 코트', en: 'Type · coat' },
+    { ko: '예산 · 20만원 이하', en: 'Budget · under 200,000' },
+  ] satisfies L[],
+  planLabel: { ko: '에이전트의 계획', en: "Agent's plan" },
+  plan: [
+    { ko: '조건에 맞는 상품 검색', en: 'Search products that match' },
+    { ko: '재고와 가격 확인', en: 'Check stock and price' },
+    { ko: '가장 맞는 한 개를 장바구니에 담기', en: 'Add the best match to the cart' },
+  ] satisfies L[],
+  planNote: { ko: '아직 아무것도 담지 않았습니다. 계획만 보여드립니다.', en: 'Nothing is added yet. This is only the plan.' },
+  addLabel: { ko: '담기 승인', en: 'Approve add to cart' },
+  product: { ko: '미드나잇 울 싱글 코트', en: 'Midnight Wool Single Coat' },
+  brand: { ko: 'NOIR LAB', en: 'NOIR LAB' },
+  conf: { ko: '확신 높음', en: 'High confidence' },
+  approve: { ko: '담기 승인', en: 'Approve' },
+  skip: { ko: '담지 않기', en: "Don't add" },
+  added: { ko: '담았습니다', en: 'Added' },
+  toPay: { ko: '결제 직전으로', en: 'To payment' },
+  payLabel: { ko: '결제 직전 승인', en: 'Pre-payment approval' },
+  limitShort: { ko: '한도', en: 'Limit' },
+  limitLabel: { ko: '결제 한도', en: 'Payment limit' },
+  over: { ko: '한도를 넘었습니다. 자율도와 관계없이 직접 확인이 필요합니다.', en: 'Over your limit. Needs your review regardless of autonomy level.' },
+  payNote: { ko: '한도를 바꿔보세요. Nod는 결제를 대신하지 않습니다.', en: 'Change the limit. Nod never pays for you.' },
+} as const;
 
 export const SETUP = {
   title: { ko: '맡길 범위부터 정합니다', en: 'Set how much you hand off' },

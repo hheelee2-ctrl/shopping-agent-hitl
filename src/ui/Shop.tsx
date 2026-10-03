@@ -8,7 +8,7 @@ import type { Category, CartLine, Criteria, Product } from '../store/types';
 import { photoCredit, photoUrl } from '../store/photos';
 import { useFlip } from './useFlip';
 import { useFlight } from './useFlight';
-import { C, LEVEL, PHASE, money, t } from './copy';
+import { C, LEVEL, money, t } from './copy';
 
 interface Props {
   lang: Lang;
@@ -29,24 +29,8 @@ export function Shop({ lang, results, criteria, category, onCategory, cart, agen
   const gridRef = useFlip<HTMLDivElement>(results.map((r) => r.product.id).join());
   useFlight(cart, !readOnly);
   const scanKey = criteria ? JSON.stringify(criteria) : category ?? '';
-  const focusAgent = () => document.getElementById('req')?.focus();
   return (
     <section aria-label="shop">
-      {!criteria && !category && (
-        <div className="intro">
-          <span className="intro-kicker">{t(C.heroKicker, lang)}</span>
-          <h2 className="intro-title">{t(C.heroTitle, lang).split('\n').map((line, i) => <span key={i}>{i > 0 && <br />}{i === 1 ? <em>{line}</em> : line}</span>)}</h2>
-          <p className="intro-sub">{t(C.heroSub, lang)}</p>
-          <div className="stats">
-            <span className="stat">{results.length} <b>{t(C.statItems, lang)}</b></span>
-            <span className="stat">{cart.reduce((n, l) => n + l.qty, 0)} <b>{t(C.statCart, lang)}</b></span>
-            <span className="stat">{t(C.statAgent, lang)} <b>{t(PHASE[agent.phase], lang)}</b></span>
-          </div>
-          <div className="row intro-cta">
-            <button className="btn primary" onClick={focusAgent}>{t(C.heroCta, lang)}</button>
-          </div>
-        </div>
-      )}
       <div className="cats" role="group" aria-label="category">
         <button aria-pressed={category === null} onClick={() => onCategory(null)}>{t(C.all, lang)}</button>
         {CATS.map((c) => (

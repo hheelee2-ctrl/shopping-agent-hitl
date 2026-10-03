@@ -9,6 +9,7 @@ import { Mark } from './Mark';
 import { reducedMotion } from './motion';
 import { Rise } from './Rise';
 import { Seg } from './Seg';
+import { Tour } from './Tour';
 import { ThemeButton } from './ThemeButton';
 import { useReveal } from './useReveal';
 
@@ -143,15 +144,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
       <section className="sec" id="how">
         <div className="sec-in" ref={r1}>
           <h2 className="sec-title"><Rise text={t(LAND.howTitle, lang)} /></h2>
-          <ol className="steps4 rv">
-            {LAND.steps.map((s, i) => (
-              <li key={i}>
-                <span className="mono num">{String(i + 1).padStart(2, '0')}</span>
-                <h3>{t(s.t, lang)}</h3>
-                <p>{t(s.d, lang)}</p>
-              </li>
-            ))}
-          </ol>
+          <div className="rv"><Tour lang={lang} /></div>
         </div>
       </section>
 
