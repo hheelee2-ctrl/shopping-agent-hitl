@@ -17,12 +17,16 @@ export const SIZE_SETS: Record<SizeKind, string[]> = {
 export const sizeKindOf = (c: Category): SizeKind =>
   c === 'sneakers' || c === 'loafers' ? 'shoe' : c === 'pants' ? 'bottom' : c === 'bag' ? 'free' : 'top';
 
+/**
+ * 상품. 실제 가격·재고는 판매처별 오퍼(Offer)에 있고,
+ * price·sizes·stock은 오퍼에서 계산한 요약이다 (price = 국내 판매처 최저 판매가, 재고 = 전 판매처 합).
+ */
 export interface Product {
   id: string;
   name: L;
   brand: string;
   price: number;
-  /** 사이즈별 재고. stock은 이 값의 합이다. */
+  /** 사이즈별 재고(전 판매처 합). stock은 이 값의 합이다. */
   sizes: Record<string, number>;
   stock: number;
   category: Category;
@@ -32,22 +36,42 @@ export interface Product {
   styles: Style[];
 }
 
+/** 한 판매처가 한 상품을 파는 조건. 같은 상품도 판매처마다 가격·재고가 다르다. */
+export interface Offer {
+  id: string;
+  productId: string;
+  sellerId: string;
+  price: number;
+  sizes: Record<string, number>;
+  stock: number;
+}
+
 export interface CartLine {
   productId: string;
+  sellerId: string;
   qty: number;
   addedBy: 'user' | 'agent';
   size: string;
   priceAtAdd: number;
 }
 
+/** 판매처 하나에 대한 주문. 결제 한 번에 판매처 수만큼 주문이 생긴다. */
 export interface Order {
   id: string;
+  sellerId: string;
   lines: CartLine[];
+  subtotal: number;
+  shipping: number;
   total: number;
+  placedAt: number;
+  shipAt: number;
+  arriveAt: number;
+  by: 'user' | 'agent';
 }
 
 export interface StoreState {
   products: Record<string, Product>;
+  offers: Record<string, Offer>;
   cart: CartLine[];
   orders: Order[];
 }
@@ -63,5 +87,7 @@ export interface Criteria {
   minPrice?: number;
   /** 요청에서 말한 사이즈. 없으면 내 사이즈(프로필)를 쓰거나 묻는다. */
   size?: string;
+  /** "금요일까지", "내일까지" 같은 도착 마감 */
+  deliverBy?: { weekday?: number; days?: number };
   unknown: string[];
 }

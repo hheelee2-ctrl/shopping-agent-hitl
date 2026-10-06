@@ -1,4 +1,5 @@
-import { SIZE_SETS, sizeKindOf, type Category, type Color, type Material, type Product, type Season, type Style } from './types';
+import { officialId, SELLERS } from './sellers';
+import { SIZE_SETS, sizeKindOf, type Category, type Color, type Material, type Offer, type Product, type Season, type Style } from './types';
 import type { SizeProfile } from '../engine/types';
 
 // 전부 가상 데이터. 실제 브랜드·가격·재고와 무관.
@@ -67,13 +68,53 @@ export function allocate(category: Category, total: number): Record<string, numb
   return out;
 }
 
-export function buildCatalog(): Record<string, Product> {
-  return Object.fromEntries(
-    ROWS.map(([id, category, ko, en, brand, price, stock, colors, materials, seasons, styles]) => [
-      id,
-      { id, category, name: { ko, en }, brand, price, sizes: allocate(category, stock), stock, colors, materials, seasons, styles } satisfies Product,
-    ]),
-  );
+const SHELF = new Set(['NOIR LAB', 'MAISON ARC', 'OAKWARD', 'STRIDE']);
+const ABROAD = new Set(['ATELIER 9', 'STRIDE', 'TRAIL & CO']);
+/** 판매처별 가격을 따로 정한 상품. 표시가 최저인 판매처가 배송비를 더하면 최저가 아닌 경우를 만든다. */
+const OVERRIDE: Record<string, Partial<Record<string, number>>> = {
+  sh1: { shelf: 68000, daero: 69900 },
+  k3: { shelf: 84000, daero: 88900 },
+  b2: { daero: 59900 },
+  s2: { shelf: 76000, daero: 79900 },
+  pt3: { shelf: 76000 },
+};
+const r1k = (n: number) => Math.round(n / 1000) * 1000;
+const r100 = (n: number) => Math.round(n / 100) * 100;
+
+/** 오퍼에서 상품 요약(price·sizes·stock)을 다시 계산한다. price는 재고 있는 국내 판매처의 최저 판매가. */
+export function summarize(p: Product, offers: Offer[]): Product {
+  const mine = offers.filter((o) => o.productId === p.id);
+  const sizes = Object.fromEntries(SIZE_SETS[sizeKindOf(p.category)].map((z) => [z, 0])) as Record<string, number>;
+  for (const o of mine) for (const [z, n] of Object.entries(o.sizes)) sizes[z] = (sizes[z] ?? 0) + n;
+  const domestic = mine.filter((o) => !SELLERS[o.sellerId]?.overseas);
+  const live = domestic.filter((o) => o.stock > 0);
+  const price = Math.min(...(live.length ? live : domestic.length ? domestic : mine).map((o) => o.price));
+  return { ...p, sizes, stock: Object.values(sizes).reduce((a, b) => a + b, 0), price };
+}
+
+export function buildCatalog(): { products: Record<string, Product>; offers: Record<string, Offer> } {
+  const offers: Offer[] = [];
+  const products: Product[] = [];
+  for (const [id, category, ko, en, brand, price, stock, colors, materials, seasons, styles] of ROWS) {
+    const ov = OVERRIDE[id] ?? {};
+    const shelf = SHELF.has(brand);
+    const nOff = Math.ceil(stock * 0.5);
+    const nShelf = shelf ? Math.floor(stock * 0.25) : 0;
+    const nDaero = stock - nOff - nShelf;
+    const mk = (sellerId: string, p: number, n: number) => {
+      const sizes = allocate(category, n);
+      offers.push({ id: `${id}@${sellerId}`, productId: id, sellerId, price: p, sizes, stock: n });
+    };
+    mk(officialId(brand), ov.official ?? price, nOff);
+    if (shelf) mk('shelf', ov.shelf ?? r1k(price * 1.02), nShelf);
+    mk('daero', ov.daero ?? r1k(price * 1.05) - 100, nDaero);
+    if (ABROAD.has(brand)) mk('abroad', ov.abroad ?? r100(price * 0.86), 3);
+    products.push({ id, category, name: { ko, en }, brand, price, sizes: {}, stock: 0, colors, materials, seasons, styles });
+  }
+  return {
+    products: Object.fromEntries(products.map((p) => [p.id, summarize(p, offers)])),
+    offers: Object.fromEntries(offers.map((o) => [o.id, o])),
+  };
 }
 
 /** 처음 시작할 때 채워 두는 내 사이즈. 재고가 가장 많이 배분되는 사이즈다. */

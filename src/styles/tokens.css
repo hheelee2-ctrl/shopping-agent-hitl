@@ -1,7 +1,8 @@
-/* Geist-style system: monochrome, hairlines, mono for machine data. Dark default, light via [data-theme='light']. */
+/* Nod tokens. 세이지 종이 바탕 + 초록 잉크. 초록은 승인·완료에만, 앰버는 '내 차례'(승인·답 대기)에만 쓴다. 숫자는 같은 서체의 고정폭 숫자. */
 :root {
-  --font-sans: 'Pretendard Variable', 'Pretendard', 'Geist', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+  /* 별도 모노 서체는 쓰지 않는다. 숫자는 tabular-nums로 맞춘다. */
+  --font-mono: var(--font-sans);
 
   /* shape */
   --r-xs: 4px;
@@ -53,6 +54,8 @@
 
   --ok: #3ecf8e;
   --warn: #f5a524;
+  --wait: #f0ad45;
+  --wait-soft: rgba(240, 173, 69, 0.16);
   --danger: #ff5c5c;
   --info: #3b9bff;
   --ok-soft: rgba(62, 207, 142, 0.14);
@@ -74,22 +77,24 @@
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #f2f5f3;
-  --bg-2: #e9eeeb;
+  --bg: #edf0ea;
+  --bg-2: #e3e8e1;
   --surface: #ffffff;
-  --surface-2: #f3f6f4;
-  --line: #e2e8e4;
-  --line-strong: #c9d2cd;
-  --ink: #111815;
-  --ink-2: #4f5b55;
-  --ink-3: #7f8b85;
+  --surface-2: #f4f6f2;
+  --line: #dde3db;
+  --line-strong: #c3ccc2;
+  --ink: #0f1a15;
+  --ink-2: #4a564f;
+  --ink-3: #7c8781;
   --on-ink: #ffffff;
   --white: #ffffff;
   --hover: rgba(0, 0, 0, 0.05);
   --scrim: rgba(0, 0, 0, 0.35);
 
   --ok: #0f7b4d;
-  --warn: #a35a00;
+  --warn: #b26a00;
+  --wait: #e39a2d;
+  --wait-soft: rgba(227, 154, 45, 0.16);
   --danger: #d1242f;
   --info: #0068d6;
   --ok-soft: rgba(15, 123, 77, 0.1);

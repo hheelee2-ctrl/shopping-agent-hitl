@@ -1,6 +1,6 @@
 import type { Lang } from '../engine/types';
 import type { LogEntry, Phase } from '../state/console';
-import { C, t } from './copy';
+import { C, TH, t } from './copy';
 
 interface Props {
   lang: Lang;
@@ -20,8 +20,8 @@ const STATUS = {
 export function AuditLog({ lang, log, phase, cartIds, onUndo }: Props) {
   const canUndo = phase === 'payment-gate' || phase === 'cancelled' || phase === 'done';
   return (
-    <div className="section">
-      <p className="label">{t(C.audit, lang)}</p>
+    <details className="audit">
+      <summary>{t(TH.log, lang)}{log.length > 0 && <span className="cnt">{log.length}</span>}</summary>
       {log.length === 0 ? (
         <p className="note">{t(C.auditEmpty, lang)}</p>
       ) : (
@@ -35,10 +35,8 @@ export function AuditLog({ lang, log, phase, cartIds, onUndo }: Props) {
             return (
               <li key={l.id} className={l.status}>
                 <div className={`t ${l.undone || removed ? 'undone' : ''}`}>{t(l.label, lang)}</div>
-                <div className="s">
-                  {t(status, lang)}
-                  {l.note ? ` · ${t(l.note, lang)}` : ''}
-                </div>
+                <div className="s">{t(status, lang)}</div>
+                {l.note && <div className="nt">{t(l.note, lang)}</div>}
                 {l.undoBlocked && <div className="blocked">{t(l.undoBlocked, lang)}</div>}
                 {l.undoable && !l.undone && !removed && canUndo && !ordered && (
                   <button className="btn sm" onClick={() => onUndo(l.id)}>{t(C.undo, lang)}</button>
@@ -51,6 +49,6 @@ export function AuditLog({ lang, log, phase, cartIds, onUndo }: Props) {
           })}
         </ul>
       )}
-    </div>
+    </details>
   );
 }

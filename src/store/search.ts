@@ -63,7 +63,7 @@ export function searchProducts(products: Product[], c: Criteria): Scored[] {
 
 export const isEligible = (s: Scored) => !s.missed.includes('budget') && !s.missed.includes('size') && s.product.stock > 0;
 
-const list = (dims: Dim[], lang: keyof L) => dims.map((d) => DIM_L[d][lang]).join('·');
+const list = (dims: Dim[], lang: keyof L) => dims.map((d) => DIM_L[d][lang]).join(lang === 'ko' ? '·' : '/');
 
 /** 일치/불일치 근거를 한 줄로. */
 export function reasonOf(s: Scored): L {
@@ -78,7 +78,7 @@ export function reasonOf(s: Scored): L {
     if (budget) out.push(lang === 'ko' ? '예산 초과' : 'over budget');
     if (noSize) out.push(lang === 'ko' ? '요청한 사이즈 없음' : 'size unavailable');
     if (out.length === 0) out.push(lang === 'ko' ? '종류만 일치 (구분할 조건이 적음)' : 'Type only (few criteria to tell apart)');
-    return out.join(' · ');
+    return out.join(', ');
   };
   return { ko: part('ko'), en: part('en') };
 }

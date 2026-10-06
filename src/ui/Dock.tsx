@@ -71,8 +71,8 @@ export function Dock({ lang, state, request, running, nod, onRequest, onRun, onA
     <div className={`dock ${decision ? 'decide' : ''}`} role="region" aria-label={t(C.agent, lang)}>
       <div className="dock-box" ref={box}>
         <div className="dock-in" ref={inner}>
-          <div className="dock-c" key={mode}>
-            <Mark size={22} phase={mp} nod={nod} />
+          <div className={`dock-c m-${mode}`} key={mode}>
+            <Mark variant="dot" size={26} phase={mp} nod={nod} />
             {mode === 'input' && (
               <>
                 <input

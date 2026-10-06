@@ -63,7 +63,7 @@ describe('store', () => {
     s.addToCart('c1', 'user', s.availableSizes('c1')[0]);
     const before = s.getProduct('c1')!.stock;
     const order = s.checkout();
-    expect(order?.total).toBe(178000);
+    expect(order?.[0].total).toBe(178000);
     expect(s.getProduct('c1')!.stock).toBe(before - 1);
     expect(s.getState().cart).toHaveLength(0);
   });
@@ -125,5 +125,42 @@ describe('size', () => {
     const before = s.getProduct('c1')!.sizes.M;
     s.checkout();
     expect(s.getProduct('c1')!.sizes.M).toBe(before - 1);
+  });
+});
+
+describe('판매처·배송비', () => {
+  const TUE = new Date(2026, 9, 6, 10, 0).getTime();
+  it('합계에는 판매처별 배송비가 들어가고, 무료배송 기준은 판매처마다 따로 본다', () => {
+    const s = createStore({ now: () => TUE });
+    s.addToCart('sh1', 'user', 'M', 'shelf'); // 68,000 + 배송비 2,500 (15만원 이상 무료)
+    expect(s.cartTotal()).toBe(70500);
+    s.addToCart('pt1', 'user', '32', 'shelf');
+    expect(s.quote()).toHaveLength(1);
+    expect(s.cartTotal()).toBe(68000 + s.getOffer('pt1', 'shelf')!.price); // 합이 15만원을 넘어 무료
+  });
+  it('판매처 순위는 배송비 포함 총액, 해외직구는 맨 뒤', () => {
+    const s = createStore({ now: () => TUE });
+    const r = s.rankOffers('sh1', 'M');
+    expect(r[0].seller.id).toBe('daero');
+    const b = s.rankOffers('b1');
+    expect(b[b.length - 1].seller.overseas).toBe(true);
+  });
+  it('결제하면 판매처마다 주문이 생기고 그 판매처 재고만 줄어든다', () => {
+    const s = createStore({ now: () => TUE });
+    s.addToCart('c1', 'user', 'M');
+    s.addToCart('sh1', 'user', 'M');
+    const before = s.getOffer('c1', 'off-noirlab')!.sizes.M;
+    const orders = s.checkout()!;
+    expect(orders.map((o) => o.sellerId).sort()).toEqual(['daero', 'off-noirlab']);
+    expect(s.getOffer('c1', 'off-noirlab')!.sizes.M).toBe(before - 1);
+    expect(orders.find((o) => o.sellerId === 'daero')!.arriveAt).toBeLessThan(orders.find((o) => o.sellerId === 'off-noirlab')!.arriveAt);
+  });
+});
+
+describe('도착 마감 해석', () => {
+  it('요일·내일·이번 주를 뽑고 unknown으로 남기지 않는다', () => {
+    expect(parseRequest('검정 울 코트 금요일까지')).toMatchObject({ deliverBy: { weekday: 5 }, unknown: [] });
+    expect(parseRequest('화이트 스니커즈 내일까지 받아야 해')).toMatchObject({ deliverBy: { days: 1 }, unknown: [] });
+    expect(parseMulti('코트랑 로퍼 이번 주 안에').items.every((c) => c.deliverBy?.weekday === 6)).toBe(true);
   });
 });

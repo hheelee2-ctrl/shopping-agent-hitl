@@ -26,6 +26,8 @@ export type AgentEvent =
       note?: L;
       itemIds?: string[];
       undoable?: boolean;
+      /** 담기 단계에서 고른 판매처 조건 */
+      offer?: { sellerId: string; size: string; price: number; shipping: number; arriveAt: number };
     }
   | { type: 'confidence'; itemId: string; level: Level; reason?: L }
   | {

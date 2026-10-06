@@ -4,7 +4,8 @@ import type { ConsoleState } from '../state/console';
 import type { Store } from '../store/store';
 import { COLOR_L, MATERIAL_L } from '../store/labels';
 import { photoUrl } from '../store/photos';
-import { C, LEVEL, SZ, money, t } from './copy';
+import { C, LEVEL, SV, SZ, money, t } from './copy';
+import { arrivalLabel } from '../store/sellers';
 import { ConfRing } from './ConfRing';
 import { Mark } from './Mark';
 
@@ -35,8 +36,10 @@ export function Compare({ lang, store, state, onPick, onClose }: Props) {
 
   const rows: { key: string; label: L; cells: string[] }[] = [
     { key: 'price', label: X.price, cells: items.map((p) => money(p.price, lang)) },
-    { key: 'color', label: X.color, cells: items.map((p) => p.colors.map((c) => t(COLOR_L[c], lang)).join(' · ')) },
-    { key: 'mat', label: X.material, cells: items.map((p) => p.materials.map((m) => t(MATERIAL_L[m], lang)).join(' · ')) },
+    { key: 'color', label: X.color, cells: items.map((p) => p.colors.map((c) => t(COLOR_L[c], lang)).join(', ')) },
+    { key: 'mat', label: X.material, cells: items.map((p) => p.materials.map((m) => t(MATERIAL_L[m], lang)).join(', ')) },
+    { key: 'seller', label: SV.best, cells: items.map((p) => { const r = store.rankOffers(p.id)[0]; return r ? `${t(r.seller.name, lang)}, ${money(r.landed, lang)}` : '–'; }) },
+    { key: 'arrive', label: SV.arrive, cells: items.map((p) => { const r = store.rankOffers(p.id)[0]; return r ? t(arrivalLabel(r.arriveAt, store.now()), lang) : '–'; }) },
     { key: 'size', label: SZ.pick, cells: items.map((p) => Object.entries(p.sizes).filter(([, n]) => n > 0).map(([z]) => z).join(' ')) },
     { key: 'stock', label: C.left, cells: items.map((p) => String(p.stock)) },
   ];
@@ -76,7 +79,7 @@ export function Compare({ lang, store, state, onPick, onClose }: Props) {
                 </dl>
                 {c?.reason && <p className="cmp-reason">{t(c.reason, lang)}</p>}
                 <button className="btn primary ok" onClick={() => pick(p.id)} disabled={!!chosen}>{t(X.pick, lang)}</button>
-                {chosen === p.id && <span className="cmp-nod"><Mark size={28} nod={1} phase="done" /></span>}
+                {chosen === p.id && <span className="cmp-nod"><Mark variant="dot" size={30} nod={1} phase="done" /></span>}
               </article>
             );
           })}

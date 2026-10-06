@@ -7,27 +7,26 @@ export const LAND = {
     { id: 'approval', l: { ko: '승인 구조', en: 'Approval' } },
     { id: 'trust', l: { ko: '한도와 기록', en: 'Limits & log' } },
   ] satisfies { id: string; l: L }[],
-  kicker: { ko: 'Nod · 쇼핑 에이전트', en: 'Nod · shopping agent' },
   heroA: { ko: '말하면 찾고,', en: 'Say it.' },
   heroB: { ko: '끄덕이면 담아요', en: 'Nod to add it.' },
   heroSub: {
-    ko: '에이전트는 같은 카트와 재고 위에서 일합니다. 사람은 승인만 합니다. 결제는 하지 않습니다.',
-    en: 'The agent works on the same cart and stock you do. You only approve. It never pays.',
+    ko: '여러 판매처를 배송비까지 합쳐 비교하고, 담기 전에 묻습니다. 결제는 언제나 직접 합니다.',
+    en: 'It compares sellers including shipping, and asks before it adds. You always pay yourself.',
   },
   start: { ko: '쇼핑 에이전트 시작하기', en: 'Start the shopping agent' },
   startShort: { ko: '시작하기', en: 'Start' },
   how: { ko: '작동 방식', en: 'How it works' },
-  demoTag: { ko: '예시', en: 'Example' },
-  demoLine: { ko: '화이트 스니커즈를 담을게요', en: 'Add white sneakers to cart' },
-  demoBtn: { ko: '승인', en: 'Approve' },
+  demoTag: { ko: '판매처 3곳 비교 끝', en: 'Compared 3 sellers' },
+  demoLine: { ko: '이대로 담을까요?', en: 'Add this?' },
+  demoBtn: { ko: '끄덕, 담기', en: 'Nod, add it' },
   demoBusy: { ko: '담는 중', en: 'Adding' },
   demoDone: { ko: '담았습니다', en: 'Added' },
-  demoDoneLine: { ko: '카트에 담았습니다', en: 'Added to your cart' },
-  demoHint: { ko: '직접 눌러보세요. 승인하면 점이 끄덕입니다.', en: 'Try it. The dot nods when you approve.' },
+  demoDoneLine: { ko: '담았습니다. 결제는 직접 합니다.', en: 'Added. You still pay yourself.' },
+  demoHint: { ko: '직접 눌러보세요. 끄덕이면 점도 끄덕입니다.', en: 'Try it. When you nod, the dot nods too.' },
 
   whyTitle: { ko: '비교는 맡기고, 결정은 직접', en: 'Hand off the comparing. Keep the deciding' },
   scenes: [
-    { t: { ko: '쌓이는 탭', en: 'Tabs piling up' }, d: { ko: '여러 곳에서 같은 코트를 비교합니다. 에이전트가 같은 카트 위에서 대신 찾고, 애매하면 나란히 보여줍니다.', en: 'Comparing the same coat across shops. The agent searches on the same cart, and lays candidates side by side when it is unsure.' } },
+    { t: { ko: '쌓이는 탭', en: 'Tabs piling up' }, d: { ko: '같은 코트를 판매처마다 열어 비교합니다. 에이전트가 배송비와 도착일까지 합쳐 고르고, 애매하면 나란히 보여줍니다.', en: 'The same coat, open in every shop. The agent compares totals with shipping and arrival dates, and lays them side by side when it is unsure.' } },
     { t: { ko: '담는 순간의 재고', en: 'Stock at the moment of adding' }, d: { ko: '담기 직전에 재고를 다시 확인합니다. 없으면 담지 않고 대안을 묻습니다.', en: 'Stock is checked again right before adding. If it is gone, nothing is added and it asks about an alternative.' } },
     { t: { ko: '승인한 가격', en: 'The price you approved' }, d: { ko: '승인한 뒤 가격이 바뀌면 담지 않고 다시 묻습니다. 승인한 가격만 담깁니다.', en: 'If the price changes after you approve, it does not add. It asks again. Only the approved price goes in.' } },
   ] satisfies { t: L; d: L }[],
@@ -69,8 +68,8 @@ export const LAND = {
 
   endTitle: { ko: '한 번 맡겨보세요', en: 'Hand one off' },
   foot: {
-    ko: '포트폴리오 프로젝트입니다. 상품과 재고는 가상 데이터이고, 결제는 구현하지 않았습니다.',
-    en: 'A portfolio project. Products and stock are mock data. Payment is not implemented.',
+    ko: '이현희의 포트폴리오 프로젝트입니다. 상품, 판매처, 재고는 모두 가상입니다.',
+    en: "Hyeonhui Lee's portfolio project. Products, sellers and stock are fictional.",
   },
 } as const;
 
@@ -89,11 +88,11 @@ export const TOUR = {
   reqLabel: { ko: '요청', en: 'Request' },
   request: { ko: '검정 울 코트, 20만원 이하', en: 'black wool coat under 200000' },
   chips: [
-    { ko: '색상 · 검정', en: 'Color · black' },
-    { ko: '소재 · 울', en: 'Material · wool' },
-    { ko: '종류 · 코트', en: 'Type · coat' },
-    { ko: '예산 · 20만원 이하', en: 'Budget · under 200,000' },
-  ] satisfies L[],
+    { l: { ko: '색상', en: 'Color' }, v: { ko: '검정', en: 'black' } },
+    { l: { ko: '소재', en: 'Material' }, v: { ko: '울', en: 'wool' } },
+    { l: { ko: '종류', en: 'Type' }, v: { ko: '코트', en: 'coat' } },
+    { l: { ko: '예산', en: 'Budget' }, v: { ko: '20만원 이하', en: 'under 200,000' } },
+  ] satisfies { l: L; v: L }[],
   planLabel: { ko: '에이전트의 계획', en: "Agent's plan" },
   plan: [
     { ko: '조건에 맞는 상품 검색', en: 'Search products that match' },

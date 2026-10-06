@@ -20,6 +20,7 @@ export interface LogEntry {
   note?: L;
   itemIds?: string[];
   undoable?: boolean;
+  offer?: { sellerId: string; size: string; price: number; shipping: number; arriveAt: number };
   undone?: boolean;
   undoBlocked?: L;
 }
@@ -76,7 +77,7 @@ function applyEvent(s: ConsoleState, e: AgentEvent): ConsoleState {
     case 'tool_call': {
       const entry: LogEntry = {
         id: e.id, tool: e.tool, label: e.label, status: e.status, note: e.note,
-        itemIds: e.itemIds, undoable: e.undoable,
+        itemIds: e.itemIds, undoable: e.undoable, offer: e.offer,
       };
       const i = s.log.findIndex((l) => l.id === e.id);
       const log = i === -1 ? [...s.log, entry] : s.log.map((l, j) => (j === i ? { ...l, ...entry } : l));

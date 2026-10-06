@@ -17,6 +17,8 @@ interface Props {
   follow?: boolean;
   /** brand: 초록 재질 몸체 / light: 초록 면 위에 올리는 밝은 몸체 */
   tone?: 'brand' | 'light';
+  /** dot: 몸체 없이 점만. 워드마크 n●d의 o 자리에 쓴다 */
+  variant?: 'body' | 'dot';
   className?: string;
 }
 
@@ -27,7 +29,7 @@ const BY = 22; // 몸체 바닥(눌림의 기준선)
 
 interface Engine { phase(p: MarkPhase): void; nod(): void }
 
-export function Mark({ size = 20, nod = 0, phase = 'idle', follow = false, tone = 'brand', className = '' }: Props) {
+export function Mark({ size = 20, nod = 0, phase = 'idle', follow = false, tone = 'brand', variant = 'body', className = '' }: Props) {
   const uid = useId().replace(/:/g, '');
   const svg = useRef<SVGSVGElement>(null);
   const dot = useRef<SVGCircleElement>(null);
@@ -155,7 +157,11 @@ export function Mark({ size = 20, nod = 0, phase = 'idle', follow = false, tone 
 
   const gid = `mk-g-${uid}`, hid = `mk-h-${uid}`, rid = `mk-r-${uid}`;
   return (
-    <svg ref={svg} className={`mark tone-${tone} ${className}`} width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+    <svg
+      ref={svg} className={`mark tone-${tone} v-${variant} ${className}`}
+      width={variant === 'dot' ? size * (12 / 15) : size} height={size}
+      viewBox={variant === 'dot' ? '6 4.5 12 15' : '0 0 24 24'} aria-hidden
+    >
       <defs>
         <linearGradient id={gid} x1="0.1" y1="0" x2="0.9" y2="1">
           <stop offset="0" className="mk-s1" />

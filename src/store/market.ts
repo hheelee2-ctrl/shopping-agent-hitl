@@ -2,9 +2,9 @@ import type { L } from '../engine/types';
 import type { Store } from './store';
 
 export type MarketEvent =
-  | { id: number; at: number; kind: 'purchase'; productId: string; size: string; sizeLeft: number; left: number }
-  | { id: number; at: number; kind: 'reprice'; productId: string; from: number; to: number }
-  | { id: number; at: number; kind: 'restock'; productId: string; size: string; left: number };
+  | { id: number; at: number; kind: 'purchase'; productId: string; sellerId: string; size: string; sizeLeft: number; left: number }
+  | { id: number; at: number; kind: 'reprice'; productId: string; sellerId: string; from: number; to: number }
+  | { id: number; at: number; kind: 'restock'; productId: string; sellerId: string; size: string; left: number };
 
 /** 시드 고정 난수. 같은 시드면 같은 시장이 나온다 (테스트용). */
 export function mulberry32(seed: number) {
@@ -54,7 +54,7 @@ export function createMarket(store: Store, opts: { rng?: () => number; now?: () 
   let base: Record<string, number> = {};
   const repriced = new Map<string, number>();
   const rebase = () => {
-    base = Object.fromEntries(Object.values(store.getState().products).map((p) => [p.id, p.price]));
+    base = Object.fromEntries(Object.values(store.getState().offers).map((o) => [o.id, o.price]));
     repriced.clear();
     log = [];
     listeners.forEach((l) => l());
@@ -83,30 +83,33 @@ export function createMarket(store: Store, opts: { rng?: () => number; now?: () 
     const watched = interest.filter((id) => s.products[id]);
     // 보고 있는 상품이 있으면 절반쯤은 거기서 일이 난다
     const pool = watched.length > 0 && rng() < 0.5 ? watched : all.map((p) => p.id);
+    const pick = <T,>(xs: T[]) => xs[Math.floor(rng() * xs.length)];
 
     const roll = rng();
-    // 재입고: 품절 상품이 있으면 가끔 들어온다
-    const out = all.filter((p) => p.stock === 0).map((p) => p.id);
+    // 재입고: 품절된 판매처가 있으면 가끔 들어온다
+    const out = Object.values(s.offers).filter((o) => o.stock === 0);
     if (out.length > 0 && roll < 0.1) {
-      const id = out[Math.floor(rng() * out.length)];
-      const keys = Object.keys(s.products[id].sizes);
-      const size = keys[Math.floor(rng() * keys.length)];
+      const o = pick(out);
+      const size = pick(Object.keys(o.sizes));
       const add = 1 + Math.floor(rng() * 3);
-      store.setSizeStock(id, size, add);
-      return push({ kind: 'restock', productId: id, size, left: store.getProduct(id)!.stock });
+      store.setSizeStock(o.productId, size, add, o.sellerId);
+      return push({ kind: 'restock', productId: o.productId, sellerId: o.sellerId, size, left: store.getProduct(o.productId)!.stock });
     }
-    // 가격 변경: 많이 보는 상품·재고 적은 상품에서, 기준가의 ±15% 안에서만
+    // 가격 변경: 판매처 하나가, 처음 가격의 ±15% 안에서만
     if (roll < 0.32) {
-      const id = pickWeighted(pool, (i) => ((repriced.get(i) ?? 0) < 2 ? 1 : 0));
-      if (!id) return null;
-      const p = s.products[id];
+      const pid = pickWeighted(pool, () => 1);
+      if (!pid) return null;
+      const candidates = store.offersOf(pid).filter((o) => (repriced.get(o.id) ?? 0) < 2);
+      if (candidates.length === 0) return null;
+      const o = pick(candidates);
       const dir = rng() < 0.6 ? 1 : -1; // 오르는 일이 조금 더 잦다
       const step = 0.05 + rng() * 0.07;
-      const to = roundK(Math.min(base[id] * 1.15, Math.max(base[id] * 0.85, p.price * (1 + dir * step))));
-      if (to === p.price) return null;
-      store.setPrice(id, to);
-      repriced.set(id, (repriced.get(id) ?? 0) + 1);
-      return push({ kind: 'reprice', productId: id, from: p.price, to });
+      const b0 = base[o.id] ?? o.price;
+      const to = roundK(Math.min(b0 * 1.15, Math.max(b0 * 0.85, o.price * (1 + dir * step))));
+      if (to === o.price) return null;
+      store.setPrice(pid, to, o.sellerId);
+      repriced.set(o.id, (repriced.get(o.id) ?? 0) + 1);
+      return push({ kind: 'reprice', productId: pid, sellerId: o.sellerId, from: o.price, to });
     }
     // 다른 구매자의 구매: 재고가 적을수록 잘 팔린다. 내 장바구니에 담은 수량 밑으로는 줄이지 않는다.
     const id = pickWeighted(pool, (i) => {
@@ -114,11 +117,13 @@ export function createMarket(store: Store, opts: { rng?: () => number; now?: () 
       return store.availableSizes(i).length > 0 ? 1 / Math.max(1, p.stock) : 0;
     });
     if (!id) return null;
-    const open = store.availableSizes(id);
-    const size = open[Math.floor(rng() * open.length)];
-    const sizeLeft = s.products[id].sizes[size] - 1;
-    store.setSizeStock(id, size, sizeLeft);
-    return push({ kind: 'purchase', productId: id, size, sizeLeft, left: store.getProduct(id)!.stock });
+    const sellers = store.offersOf(id).filter((o) => store.availableSizes(id, o.sellerId).length > 0);
+    if (sellers.length === 0) return null;
+    const o = pick(sellers);
+    const size = pick(store.availableSizes(id, o.sellerId));
+    const sizeLeft = o.sizes[size] - 1;
+    store.setSizeStock(id, size, sizeLeft, o.sellerId);
+    return push({ kind: 'purchase', productId: id, sellerId: o.sellerId, size, sizeLeft, left: store.getProduct(id)!.stock });
   };
 
   const delay = () => (busy ? 3500 + rng() * 3500 : 9000 + rng() * 9000);
@@ -137,17 +142,18 @@ export function createMarket(store: Store, opts: { rng?: () => number; now?: () 
 }
 
 /** 피드 한 줄을 사람이 읽는 문장으로 */
-export function describeMarket(e: MarketEvent, name: L, fmt: (n: number) => L): L {
+export function describeMarket(e: MarketEvent, name: L, fmt: (n: number) => L, seller?: L): L {
+  const at: L = seller ? { ko: `${seller.ko}에서 `, en: ` at ${seller.en}` } : { ko: '', en: '' };
   const sz = (size: string): L => (size === 'FREE' ? { ko: '', en: '' } : { ko: ` ${size} 사이즈`, en: ` size ${size}` });
   if (e.kind === 'purchase') {
-    if (e.left === 0) return { ko: `${name.ko} 마지막 재고가 방금 팔렸어요`, en: `${name.en}: the last unit just sold` };
-    if (e.sizeLeft === 0) return { ko: `${name.ko}${sz(e.size).ko} 품절`, en: `${name.en}${sz(e.size).en} sold out` };
-    return { ko: `${name.ko} 재고 ${e.left}개 남음`, en: `${name.en}: ${e.left} left` };
+    if (e.left === 0) return { ko: `${at.ko}${name.ko} 마지막 재고가 팔렸어요`, en: `${name.en}: the last unit sold${at.en}` };
+    if (e.sizeLeft === 0) return { ko: `${at.ko}${name.ko}${sz(e.size).ko} 품절`, en: `${name.en}${sz(e.size).en} sold out${at.en}` };
+    return { ko: `${at.ko}${name.ko}${sz(e.size).ko} 1개 판매`, en: `${name.en}${sz(e.size).en} sold${at.en}` };
   }
-  if (e.kind === 'restock') return { ko: `${name.ko}${sz(e.size).ko} 재입고`, en: `${name.en}${sz(e.size).en} back in stock` };
+  if (e.kind === 'restock') return { ko: `${at.ko}${name.ko}${sz(e.size).ko} 재입고`, en: `${name.en}${sz(e.size).en} restocked${at.en}` };
   const up = e.to > e.from;
   return {
-    ko: `${name.ko} ${fmt(e.from).ko} → ${fmt(e.to).ko} ${up ? '인상' : '인하'}`,
-    en: `${name.en} ${fmt(e.from).en} → ${fmt(e.to).en} ${up ? 'up' : 'down'}`,
+    ko: `${at.ko}${name.ko} ${fmt(e.from).ko}에서 ${fmt(e.to).ko}로 ${up ? '인상' : '인하'}`,
+    en: `${name.en} ${up ? 'up' : 'down'} ${fmt(e.from).en} to ${fmt(e.to).en}${at.en}`,
   };
 }

@@ -3,6 +3,76 @@ import type { Phase } from '../state/console';
 
 export const t = (l: L, lang: Lang) => l[lang];
 
+/** 판매처·배송·주문 화면 문구 */
+export const SV = {
+  sellers: { ko: '판매처', en: 'Sellers' },
+  compareSellers: { ko: (n: number) => `판매처 ${n}곳 비교`, en: (n: number) => `Compare ${n} sellers` },
+  freeShip: { ko: '무료배송', en: 'Free shipping' },
+  shipFee: { ko: (s: string) => `배송비 ${s}`, en: (s: string) => `${s} shipping` },
+  kind: {
+    official: { ko: '브랜드 공식몰', en: 'Brand store' },
+    select: { ko: '셀렉트숍', en: 'Select shop' },
+    mall: { ko: '종합몰', en: 'Marketplace' },
+    overseas: { ko: '해외직구', en: 'Overseas' },
+  },
+  price: { ko: '판매가', en: 'Price' },
+  shipping: { ko: '배송비', en: 'Shipping' },
+  landed: { ko: '배송비 포함', en: 'With shipping' },
+  arrive: { ko: '도착', en: 'Arrival' },
+  returns: { ko: '반품', en: 'Returns' },
+  best: { ko: '총액 최저', en: 'Lowest total' },
+  lowestTag: { ko: '표시가 최저', en: 'Lowest price' },
+  noStock: { ko: '이 사이즈 없음', en: 'Not in this size' },
+  addHere: { ko: '여기서 담기', en: 'Add from here' },
+  pickSizeFirst: { ko: '사이즈를 먼저 고르세요', en: 'Pick a size first' },
+  sheetNote: {
+    ko: 'Nod는 판매자가 아니에요. 주문·배송·반품은 각 판매처가 처리해요.',
+    en: 'Nod is not the seller. Each seller handles its own orders, shipping and returns.',
+  },
+  inCartAt: { ko: (s: string) => `${s}에 담김`, en: (s: string) => `In cart from ${s}` },
+  // 장바구니·주문
+  cartTab: { ko: '장바구니', en: 'Cart' },
+  ordersTab: { ko: '주문 내역', en: 'Orders' },
+  subtotal: { ko: '상품', en: 'Items' },
+  shipTotal: { ko: '배송비', en: 'Shipping' },
+  freeLeft: { ko: (s: string) => `${s} 더 담으면 이 판매처 무료배송`, en: (s: string) => `${s} more for free shipping here` },
+  splitNote: { ko: (n: number) => `판매처 ${n}곳이라 주문도 ${n}건으로 나뉘어요.`, en: (n: number) => `${n} sellers, so this becomes ${n} orders.` },
+  address: { ko: '배송지', en: 'Ship to' },
+  addressV: { ko: '집 · 서울 성동구 연무장길 12, 302호', en: 'Home, 12 Yeonmujang-gil 302, Seongdong-gu, Seoul' },
+  noOrders: { ko: '아직 주문이 없어요. 결제를 승인하면 판매처별 주문이 여기에 생겨요.', en: 'No orders yet. Approved payments show up here, one order per seller.' },
+  orderNo: { ko: '주문번호', en: 'Order' },
+  placedBy: { ko: { agent: '에이전트가 담고 내가 결제', user: '직접 결제' }, en: { agent: 'Added by the agent, paid by you', user: 'Paid by you' } },
+  st: {
+    paid: { ko: '결제 완료', en: 'Paid' },
+    ready: { ko: '상품 준비 중', en: 'Preparing' },
+    shipped: { ko: '출고', en: 'Shipped' },
+    transit: { ko: '배송 중', en: 'In transit' },
+    arrived: { ko: '도착', en: 'Delivered' },
+  },
+  expected: { ko: '예정', en: 'expected' },
+  contact: { ko: (s: string) => `배송·반품 문의는 ${s}에 해요.`, en: (s: string) => `Ask ${s} about delivery and returns.` },
+  orderCount: { ko: (n: number) => `주문 ${n}건`, en: (n: number) => `${n} order${n > 1 ? 's' : ''}` },
+  payBreak: { ko: '판매처별 주문', en: 'Orders by seller' },
+  duty: { ko: '관부가세가 따로 붙을 수 있어요', en: 'Import duties may apply' },
+} as const;
+
+/** 에이전트 스레드 문구 */
+export const TH = {
+  title: { ko: '에이전트', en: 'Agent' },
+  settings: { ko: '맡기는 방식', en: 'How I work' },
+  done: { ko: '접기', en: 'Done' },
+  suggest: { ko: '이렇게 맡겨보세요', en: 'Try asking' },
+  you: { ko: '나', en: 'You' },
+  sellerWhy: { ko: '판매처를 고른 이유', en: 'Why this seller' },
+  cartAsk: { ko: '이대로 담을까요?', en: 'Add this?' },
+  limitOf: { ko: (s: string) => `한도 ${s}`, en: (s: string) => `Limit ${s}` },
+  seeOrders: { ko: '주문 내역 보기', en: 'View orders' },
+  log: { ko: '한 일', en: 'What I did' },
+  sizeSum: { ko: '내 사이즈', en: 'My sizes' },
+  payAsk: { ko: '결제를 승인할까요?', en: 'Approve payment?' },
+  payNote: { ko: '승인하면 판매처마다 주문이 접수돼요. Nod는 판매자가 아니에요.', en: 'Approving places one order per seller. Nod is not the seller.' },
+} as const;
+
 export const SZ = {
   title: { ko: '내 사이즈', en: 'My sizes' },
   note: { ko: '에이전트가 담을 때 기본으로 씁니다. 미설정이면 담기 전에 물어봅니다.', en: 'Used by the agent when adding. If unset, it asks first.' },
@@ -20,7 +90,7 @@ export const C = {
   scrubTitle: { ko: '행동 타임라인', en: 'Action timeline' },
   replay: { ko: '되감기 중', en: 'Replay' },
   live: { ko: '실시간', en: 'Live' },
-  market: { ko: '쇼핑몰 실시간', en: 'Shop activity' },
+  market: { ko: '지금 판매처에서', en: 'Live at sellers' },
   play: { ko: '▶ 처음부터 재생', en: '▶ Replay from start' },
   pause: { ko: '❚❚ 멈춤', en: '❚❚ Pause' },
   backToLive: { ko: '실시간으로', en: 'Back to live' },
@@ -53,9 +123,9 @@ export const C = {
   resetNote: { ko: '쇼핑몰(재고·장바구니)도 처음 상태로 돌아가요.', en: 'Also restores the shop (stock and cart).' },
 
   planTitle: { ko: '에이전트의 계획', en: "Agent's plan" },
-  approveStart: { ko: '승인하고 시작', en: 'Approve & start' },
+  approveStart: { ko: '끄덕, 시작', en: 'Nod, start' },
   cancel: { ko: '취소', en: 'Cancel' },
-  approveCart: { ko: '담기 승인', en: 'Approve add to cart' },
+  approveCart: { ko: '끄덕, 담기', en: 'Nod, add it' },
   skipCart: { ko: '담지 않기', en: "Don't add" },
   compare: { ko: '나란히 비교', en: 'Compare' },
   candidates: { ko: '후보', en: 'Candidates' },
@@ -66,7 +136,7 @@ export const C = {
     ko: '한도를 넘었어요. 자율도와 관계없이 직접 확인이 필요해요.',
     en: 'Over your limit. Needs your review regardless of autonomy level.',
   },
-  approvePay: { ko: '결제 승인', en: 'Approve payment' },
+  approvePay: { ko: '끄덕, 결제', en: 'Nod, pay' },
   declinePay: { ko: '결제 안 함', en: "Don't pay" },
   audit: { ko: '행동 기록', en: 'Action audit' },
   auditEmpty: { ko: '아직 행동이 없어요.', en: 'No actions yet.' },
@@ -105,12 +175,12 @@ export const LEVEL: Record<Level, L> = {
 };
 
 export const PHASE: Record<Phase, L> = {
-  idle: { ko: '대기', en: 'Idle' },
-  planning: { ko: '계획 중', en: 'Planning' },
-  'awaiting-approval': { ko: '승인 대기', en: 'Awaiting approval' },
-  executing: { ko: '실행 중', en: 'Executing' },
-  'needs-input': { ko: '입력 필요', en: 'Needs input' },
-  'payment-gate': { ko: '결제 직전', en: 'Payment gate' },
+  idle: { ko: '맡길 일을 기다려요', en: 'Ready when you are' },
+  planning: { ko: '요청을 읽는 중', en: 'Reading your request' },
+  'awaiting-approval': { ko: '끄덕임을 기다려요', en: 'Waiting for your nod' },
+  executing: { ko: '찾고 비교하는 중', en: 'Searching and comparing' },
+  'needs-input': { ko: '답을 기다려요', en: 'Waiting for your answer' },
+  'payment-gate': { ko: '결제 승인을 기다려요', en: 'Waiting for payment approval' },
   done: { ko: '완료', en: 'Done' },
   failed: { ko: '실패', en: 'Failed' },
   cancelled: { ko: '중단됨', en: 'Stopped' },

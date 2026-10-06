@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import type { Lang } from '../engine/types';
 import { ConfRing } from './ConfRing';
 import { LAND, TOUR } from './landCopy';
-import { Mark } from './Mark';
+import { Wordmark } from './Wordmark';
 import { reducedMotion } from './motion';
-import { money, t } from './copy';
+import { money, t, SV } from './copy';
+import { officialId, SELLERS } from '../store/sellers';
 import { Seg } from './Seg';
 
 const STEPS = 4;
@@ -34,7 +35,7 @@ function Stage({ step, lang, onNext }: { step: number; lang: Lang; onNext: () =>
   return (
     <div className="tour-stage" aria-live="polite">
       <div className="tour-bar">
-        <Mark size={22} nod={nod} />
+        <Wordmark size={18} nod={nod} />
         <span className="tour-bar-t">{t(TOUR.stageTitle, lang)}</span>
         <span className={`tour-cart ${added ? 'on' : ''}`}>{t(TOUR.cart, lang)} {added ? 1 : 0}</span>
       </div>
@@ -45,7 +46,7 @@ function Stage({ step, lang, onNext }: { step: number; lang: Lang; onNext: () =>
             <p className="label">{t(TOUR.reqLabel, lang)}</p>
             <div className="tour-input">{typed}<i className="caret" /></div>
             <div className="tour-chips">
-              {TOUR.chips.map((c, i) => <span key={i} className="chip" style={{ '--i': i } as React.CSSProperties}>{t(c, lang)}</span>)}
+              {TOUR.chips.map((c, i) => <span key={i} className="chip" style={{ '--i': i } as React.CSSProperties}><i>{t(c.l, lang)}</i>{t(c.v, lang)}</span>)}
             </div>
           </div>
         )}
@@ -65,7 +66,7 @@ function Stage({ step, lang, onNext }: { step: number; lang: Lang; onNext: () =>
               <div className="tour-swatch" aria-hidden />
               <div>
                 <b>{t(TOUR.product, lang)}</b>
-                <p className="note">{money(TOUR.price, lang)} · {t(TOUR.brand, lang)}</p>
+                <p className="note">{money(TOUR.price, lang)}, {t(SELLERS[officialId('NOIR LAB')].name, lang)}, {t(SV.freeShip, lang)}</p>
               </div>
               <span className="conf"><ConfRing level="high" /><span className="pill high">{t(TOUR.conf, lang)}</span></span>
             </div>
@@ -127,7 +128,7 @@ export function Tour({ lang }: { lang: Lang }) {
           {LAND.steps.map((s, i) => (
             <li key={i}>
               <button className={`tour-step ${i === step ? 'on' : ''} ${i < step ? 'past' : ''}`} onClick={() => go(i)} aria-current={i === step ? 'step' : undefined}>
-                <span className="mono num">{String(i + 1).padStart(2, '0')}</span>
+                <span className="num">{i + 1}</span>
                 <span className="tour-step-t"><b>{t(s.t, lang)}</b><span>{t(s.d, lang)}</span></span>
               </button>
             </li>

@@ -1,8 +1,9 @@
 import type { AgentAdapter, AgentEvent, L, Level, PlanStep, RunOptions } from '../engine/types';
 import { CATEGORY_L, COLOR_L } from '../store/labels';
-import { describeCriteria, parseMulti } from '../store/parser';
+import { deadlineL, describeCriteria, parseMulti } from '../store/parser';
 import { isEligible, reasonOf, searchProducts, type Scored } from '../store/search';
-import type { Store } from '../store/store';
+import { arrivalLabel, deadlineOf, DUTY_OVER, SELLERS, sellerOf } from '../store/sellers';
+import type { Ranked, Store } from '../store/store';
 import { sizeKindOf, type Category, type Color, type Criteria, type SizeKind } from '../store/types';
 
 type Delay = (ms: number) => Promise<void>;
@@ -18,7 +19,7 @@ const CAT_KEYS = Object.keys(CATEGORY_L) as Category[];
 const name = (s: Scored) => s.product.name;
 const won = (n: number): L => ({ ko: `${n.toLocaleString('ko-KR')}원`, en: `KRW ${n.toLocaleString('en-US')}` });
 
-const priced = (s: Scored): L => ({ ko: `${s.product.name.ko} · ${won(s.product.price).ko}`, en: `${s.product.name.en} · ${won(s.product.price).en}` });
+const priced = (s: Scored): L => ({ ko: `${s.product.name.ko}, ${won(s.product.price).ko}부터`, en: `${s.product.name.en}, from ${won(s.product.price).en}` });
 
 type ShopResult = 'added' | 'skipped' | 'end';
 interface Ctx { multi: boolean; budget?: number }
@@ -233,6 +234,38 @@ export class RuleAgent implements AgentAdapter {
     }
     if (added === 0) return this.finish('failed', { ko: '담은 항목이 없어서 여기서 마쳤어요.', en: 'Nothing was added, so the run ended here.' });
 
+    // 6-e) 판매처가 3곳 이상이면 배송비와 반품 창구가 갈라진다. 결제 전에 확인받는다.
+    const groups = this.store.quote();
+    if (groups.length >= 3) {
+      const merge = this.mergeOption();
+      const ship = groups.reduce((a, q) => a + q.shipping, 0);
+      this.emit({
+        type: 'needs_input', id: 'q-split',
+        question: {
+          ko: `담은 상품이 판매처 ${groups.length}곳으로 나뉘어요. 주문이 ${groups.length}건, 택배도 ${groups.length}번 오고${ship > 0 ? ` 배송비가 ${won(ship).ko} 들어요` : ''}. 반품도 판매처마다 따로 해야 해요.`,
+          en: `Your items come from ${groups.length} sellers: ${groups.length} orders and ${groups.length} deliveries${ship > 0 ? `, ${won(ship).en} in shipping` : ''}, and returns go to each seller.`,
+        },
+        options: [
+          { id: 'keep', label: { ko: `${groups.length}곳 그대로 진행`, en: `Keep ${groups.length} sellers` } },
+          ...(merge ? [{
+            id: `merge:${merge.sellerId}`,
+            label: merge.diff > 0
+              ? { ko: `${sellerOf(merge.sellerId).name.ko} 한 곳으로 모으기 (${won(merge.diff).ko} 추가)`, en: `Combine at ${sellerOf(merge.sellerId).name.en} (+${won(merge.diff).en})` }
+              : { ko: `${sellerOf(merge.sellerId).name.ko} 한 곳으로 모으기 (${won(-merge.diff).ko} 절약)`, en: `Combine at ${sellerOf(merge.sellerId).name.en} (save ${won(-merge.diff).en})` },
+          }] : []),
+          { id: 'stop', label: { ko: '여기서 중단', en: 'Stop here' } },
+        ],
+      });
+      const a = await this.wait();
+      if (!ok()) return;
+      if (a === 'stop') return this.finish('cancelled', { ko: '결제 전에 중단했어요. 담긴 항목은 되돌릴 수 있어요.', en: 'Stopped before payment. Items in the cart can still be undone.' });
+      if (a.startsWith('merge:')) {
+        const sid = a.slice(6);
+        for (const l of this.store.getState().cart) this.store.switchSeller(l.productId, sid);
+        this.emit({ type: 'tool_call', id: 't-merge', tool: 'cart_add', label: { ko: `판매처 모으기: ${sellerOf(sid).name.ko}`, en: `Combine sellers at ${sellerOf(sid).name.en}` }, status: 'done', note: { ko: '주문 1건, 배송 1번으로 바뀌었어요', en: 'Now one order and one shipment' } });
+      }
+    }
+
     // 7) 결제 직전 승인 — Dial과 무관하게 사람이 승인한다
     await d(500);
     if (!ok()) return;
@@ -247,10 +280,15 @@ export class RuleAgent implements AgentAdapter {
         : { ko: '결제 전에 중단했어요. 담긴 항목은 되돌릴 수 있어요.', en: 'Stopped before payment. Items in the cart can still be undone.' });
     }
     this.paid = true;
-    this.store.checkout();
+    const orders = this.store.checkout('agent') ?? [];
     await d(600);
     if (!ok()) return;
-    this.finish('done', { ko: '결제 승인이 완료됐어요.', en: 'Payment approved.' });
+    const now = this.store.now();
+    const lines = orders.map((o) => ({ s: sellerOf(o.sellerId).name, w: arrivalLabel(o.arriveAt, now) }));
+    this.finish('done', {
+      ko: `결제를 승인해 주문 ${orders.length}건이 접수됐어요. ${lines.map((x) => `${x.s.ko} ${x.w.ko}`).join(', ')} 예정이에요.`,
+      en: `Payment approved. ${orders.length} order${orders.length > 1 ? 's' : ''} placed: ${lines.map((x) => `${x.s.en}, ${x.w.en.toLowerCase()}`).join('; ')}.`,
+    });
   }
 
   /** 항목 하나를 검색 → 비교 → (예산 확인) → 담기까지 진행한다. 여러 항목이면 항목 번호를 id와 라벨에 붙인다. */
@@ -260,7 +298,7 @@ export class RuleAgent implements AgentAdapter {
     const { dial } = this.opts;
     const base = idx === 0 ? '' : `-i${idx + 1}`;
     const tag = (l: L): L => (ctx.multi && start.category
-      ? { ko: `${l.ko} · ${CATEGORY_L[start.category].ko}`, en: `${l.en} · ${CATEGORY_L[start.category].en}` }
+      ? { ko: `${l.ko} (${CATEGORY_L[start.category].ko})`, en: `${l.en} (${CATEGORY_L[start.category].en})` }
       : l);
     // 여러 항목일 때 "못 찾음/품절"은 그 항목만 건너뛰고 계속한다. 한 항목이면 기존처럼 거기서 끝낸다.
     const give = (status: 'failed' | 'cancelled', summary: L): ShopResult => {
@@ -388,12 +426,12 @@ export class RuleAgent implements AgentAdapter {
       // 6-a) 합계 예산: 이걸 담으면 넘는지 담기 전에 확인한다
       if (ctx.budget !== undefined) {
         const have = this.store.cartTotal();
-        const price = this.store.getProduct(pick.product.id)?.price ?? pick.product.price;
+        const price = this.landed(pick.product.id);
         if (have + price > ctx.budget) {
           const fits = eligible
             .filter((s) => s.product.id !== pick.product.id && (this.store.getProduct(s.product.id)?.stock ?? 0) > 0)
-            .filter((s) => have + (this.store.getProduct(s.product.id)?.price ?? s.product.price) <= ctx.budget!)
-            .sort((a, b) => a.product.price - b.product.price)[0];
+            .filter((s) => have + this.landed(s.product.id) <= ctx.budget!)
+            .sort((a, b) => this.landed(a.product.id) - this.landed(b.product.id))[0];
           const over = have + price - ctx.budget;
           this.emit({
             type: 'needs_input', id: `q-budget${attempt}${sfx}`,
@@ -402,7 +440,7 @@ export class RuleAgent implements AgentAdapter {
               en: `Adding ${name(pick).en} brings the total to ${won(have + price).en}, ${won(over).en} over your ${won(ctx.budget).en} budget.`,
             },
             options: [
-              ...(fits ? [{ id: fits.product.id, label: { ko: `더 저렴한 ${name(fits).ko} (${won(fits.product.price).ko})`, en: `Cheaper: ${name(fits).en} (${won(fits.product.price).en})` } }] : []),
+              ...(fits ? [{ id: fits.product.id, label: { ko: `더 저렴한 ${name(fits).ko} (${won(this.landed(fits.product.id)).ko})`, en: `Cheaper: ${name(fits).en} (${won(this.landed(fits.product.id)).en})` } }] : []),
               { id: 'over', label: { ko: '예산을 넘겨 담기', en: 'Add anyway' } },
               { id: 'skip', label: { ko: '이 항목 빼기', en: 'Skip this item' } },
               { id: 'stop', label: { ko: '여기서 중단', en: 'Stop here' } },
@@ -426,7 +464,7 @@ export class RuleAgent implements AgentAdapter {
       if (inCart) {
         this.emit({
           type: 'needs_input', id: `q-dup${attempt}${sfx}`,
-          question: { ko: `${name(pick).ko}은(는) 이미 장바구니에 있어요 (${inCart.size}, ${inCart.qty}개). 어떻게 할까요?`, en: `${name(pick).en} is already in your cart (${inCart.size}, ×${inCart.qty}). What now?` },
+          question: { ko: `${name(pick).ko}은(는) 이미 장바구니에 있어요 (${sellerOf(inCart.sellerId).name.ko}, ${inCart.size}, ${inCart.qty}개). 어떻게 할까요?`, en: `${name(pick).en} is already in your cart (${sellerOf(inCart.sellerId).name.en}, ${inCart.size}, ×${inCart.qty}). What now?` },
           options: [
             { id: 'keep', label: { ko: '그대로 두기', en: 'Keep as is' } },
             { id: 'more', label: { ko: '한 개 더 담기', en: 'Add one more' } },
@@ -471,21 +509,88 @@ export class RuleAgent implements AgentAdapter {
         }
       }
       const szTag = size && size !== 'FREE' ? size : '';
-
       const tid = `t-cart${attempt}${sfx}`;
-      const seen = this.store.getProduct(pick.product.id)?.price ?? pick.product.price;
-      // 승인받는 화면에 가격을 함께 보여준다. 나중에 가격이 달라졌는지는 이 가격과 비교한다.
-      const clabel = tag({
-        ko: `장바구니에 담기 · ${name(pick).ko}${szTag ? ` (${szTag})` : ''} · ${won(seen).ko}`,
-        en: `Add to cart · ${name(pick).en}${szTag ? ` (${szTag})` : ''} · ${won(seen).en}`,
-      });
       if (!size) {
-        this.emit({ type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: 'failed', itemIds: [pick.product.id], note: { ko: '남은 사이즈가 없어요', en: 'No size left' } });
+        const blabel = tag({ ko: `담기: ${name(pick).ko}`, en: `Add: ${name(pick).en}` });
+        this.emit({ type: 'tool_call', id: tid, tool: 'cart_add', label: blabel, status: 'failed', itemIds: [pick.product.id], note: { ko: '남은 사이즈가 없어요', en: 'No size left' } });
         const r = await this.altFlow(id, pick, eligible, `a${attempt}${sfx}`, ctx, { ko: '모든 사이즈가 품절이에요', en: 'sold out in every size' });
         if (r === 'end' || r === 'skipped') return r;
         pick = r; continue;
       }
-      this.emit({ type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: gated ? 'awaiting-approval' : 'running', itemIds: [pick.product.id] });
+
+      // 6-d) 판매처 고르기: 배송비를 더한 총액이 가장 낮은 국내 판매처. 도착 마감이 있으면 그 안에 오는 곳 중에서.
+      // 이미 담긴 상품에 하나 더 담을 때는 같은 판매처에서만
+      const ranked = this.store.rankOffers(pick.product.id, size).filter((r) => !inCart || r.offer.sellerId === inCart.sellerId);
+      const domestic = ranked.filter((r) => !r.seller.overseas);
+      const abroad = ranked.find((r) => r.seller.overseas);
+      const deadline = criteria.deliverBy ? deadlineOf(criteria.deliverBy, this.store.now()) : undefined;
+      const inTime = deadline === undefined ? domestic : domestic.filter((r) => r.arriveAt <= deadline);
+      const vid = `t-seller${attempt}${sfx}`;
+      const vlab = tag({ ko: `판매처 ${ranked.length}곳 비교`, en: `Compare ${ranked.length} sellers` });
+      this.emit({ type: 'tool_call', id: vid, tool: 'compare', label: vlab, status: 'running', itemIds: [pick.product.id] });
+      await d(600);
+      if (!ok()) return 'end';
+      let offer: Ranked | undefined = inTime[0];
+      if (offer) {
+        this.emit({ type: 'tool_call', id: vid, tool: 'compare', label: vlab, status: 'done', itemIds: [pick.product.id], note: this.whyOffer(offer, ranked, criteria) });
+      } else if (domestic.length > 0 && deadline !== undefined) {
+        // 마감 안에 오는 국내 판매처가 없다 — 늦게 오는 걸 담을지 묻는다
+        const soonest = [...domestic].sort((a, b) => a.arriveAt - b.arriveAt)[0];
+        const when = arrivalLabel(soonest.arriveAt, this.store.now());
+        const dl = deadlineL(criteria.deliverBy!);
+        this.emit({ type: 'tool_call', id: vid, tool: 'compare', label: vlab, status: 'done', itemIds: [pick.product.id], note: { ko: `${dl} 오는 판매처가 없어요`, en: `No seller delivers ${dl.en}` } });
+        this.emit({
+          type: 'needs_input', id: `q-late${attempt}${sfx}`,
+          question: { ko: `${name(pick).ko}은(는) ${dl.ko} 받을 수 있는 판매처가 없어요. 가장 빠른 곳은 ${soonest.seller.name.ko}, ${when.ko}이에요.`, en: `No seller can deliver ${name(pick).en} ${dl.en}. The fastest is ${soonest.seller.name.en}: ${when.en.toLowerCase()}.` },
+          options: [
+            { id: 'late', label: { ko: `${when.ko}로 담기`, en: `Add, ${when.en.toLowerCase()}` } },
+            ...(round0 < 3 ? [{ id: 'other', label: { ko: '제때 오는 다른 상품 찾기', en: 'Find one that arrives in time' } }] : []),
+            { id: 'stop', label: { ko: '여기서 중단', en: 'Stop here' } },
+          ],
+        });
+        const a = await this.wait();
+        if (!ok()) return 'end';
+        if (a === 'other' && round0 < 3) { excluded.ids.add(pick.product.id); continue redo; }
+        if (a !== 'late') { this.finish('cancelled', { ko: '요청에 따라 중단했어요.', en: 'Stopped as requested.' }); return 'end'; }
+        offer = soonest;
+      } else if (abroad) {
+        // 국내에는 이 사이즈가 없고 해외직구에만 있다 — 배송·반품 조건이 달라 사람이 정한다
+        const when = arrivalLabel(abroad.arriveAt, this.store.now());
+        const duty = abroad.offer.price >= DUTY_OVER;
+        this.emit({ type: 'tool_call', id: vid, tool: 'compare', label: vlab, status: 'done', itemIds: [pick.product.id], note: { ko: '국내 판매처는 이 사이즈가 품절이에요', en: 'Sold out in this size at domestic sellers' } });
+        this.emit({
+          type: 'needs_input', id: `q-abroad${attempt}${sfx}`,
+          question: {
+            ko: `${name(pick).ko} ${szTag}은(는) ${abroad.seller.name.ko}에만 있어요. ${won(abroad.landed).ko}(배송비 포함), ${when.ko}, 단순 변심 반품이 안 돼요.${duty ? ' 관부가세가 따로 붙을 수 있어요.' : ''}`,
+            en: `${name(pick).en} ${szTag} is only at ${abroad.seller.name.en}: ${won(abroad.landed).en} with shipping, ${when.en.toLowerCase()}, no change-of-mind returns.${duty ? ' Import duties may apply.' : ''}`,
+          },
+          options: [
+            { id: 'abroad', label: { ko: '해외직구로 담기', en: 'Add from overseas' } },
+            ...(round0 < 3 ? [{ id: 'other', label: { ko: '국내 판매 상품 찾기', en: 'Find a domestic one' } }] : []),
+            { id: 'stop', label: { ko: '여기서 중단', en: 'Stop here' } },
+          ],
+        });
+        const a = await this.wait();
+        if (!ok()) return 'end';
+        if (a === 'other' && round0 < 3) { excluded.ids.add(pick.product.id); continue redo; }
+        if (a !== 'abroad') { this.finish('cancelled', { ko: '요청에 따라 중단했어요.', en: 'Stopped as requested.' }); return 'end'; }
+        offer = abroad;
+      }
+      if (!offer) {
+        this.emit({ type: 'tool_call', id: vid, tool: 'compare', label: vlab, status: 'failed', itemIds: [pick.product.id], note: { ko: '이 사이즈를 파는 판매처가 없어요', en: 'No seller has this size' } });
+        delete this.sizeMemo[kind];
+        continue;
+      }
+      const seller = offer.seller;
+
+      const seen = offer.offer.price;
+      // 승인받는 화면에 판매처와 가격을 함께 보여준다. 나중에 가격이 달라졌는지는 이 가격과 비교한다.
+      const clabel = tag({
+        ko: `담기: ${name(pick).ko}${szTag ? ` ${szTag}` : ''}, ${seller.name.ko}, ${won(seen).ko}`,
+        en: `Add: ${name(pick).en}${szTag ? ` ${szTag}` : ''}, ${seller.name.en}, ${won(seen).en}`,
+      });
+      const offerInfo = { sellerId: seller.id, size, price: seen, shipping: offer.shipping, arriveAt: offer.arriveAt };
+      this.emit({ type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: gated ? 'awaiting-approval' : 'running', itemIds: [pick.product.id], offer: offerInfo });
       if (gated) {
         const a = await this.wait();
         if (!ok()) return 'end';
@@ -526,7 +631,7 @@ export class RuleAgent implements AgentAdapter {
       await d(600);
       if (!ok()) return 'end';
       // 승인받은 가격과 지금 가격이 다르면 담지 않고 다시 묻는다 (사람이 승인한 내용이 낡았다)
-      const now = this.store.getProduct(pick.product.id)?.price ?? seen;
+      const now = this.store.getOffer(pick.product.id, seller.id)?.price ?? seen;
       if (gated && now !== seen) {
         this.emit({
           type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: 'failed', itemIds: [pick.product.id],
@@ -552,26 +657,82 @@ export class RuleAgent implements AgentAdapter {
         }
       }
 
-      const res = this.store.addToCart(pick.product.id, 'agent', size);
+      const res = this.store.addToCart(pick.product.id, 'agent', size, seller.id);
       if (res.ok) {
         this.lines.set(tid, pick.product.id);
-        this.emit({ type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: 'done', itemIds: [pick.product.id], undoable: true });
+        this.emit({ type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: 'done', itemIds: [pick.product.id], undoable: true, offer: { ...offerInfo, price: now } });
         return 'added';
       }
-      // 이 사이즈만 막 품절이고 다른 사이즈가 남았으면 사이즈부터 다시 묻는다
+      // 이 판매처에서만 막 팔렸으면 판매처부터 다시 고르고, 이 사이즈가 다 팔렸으면 사이즈부터 다시 묻는다
       const left = this.store.availableSizes(pick.product.id);
+      const elsewhere = left.includes(size);
       this.emit({
         type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: 'failed', itemIds: [pick.product.id],
-        note: left.length > 0
-          ? { ko: `담는 시점에 ${szTag || '이 사이즈'}가 품절로 확인됐어요`, en: `Size ${szTag || ''} sold out at the moment of adding` }
-          : { ko: '담는 시점에 품절로 확인됐어요', en: 'Found sold out at the moment of adding' },
+        note: elsewhere
+          ? { ko: `담는 시점에 ${seller.name.ko}에서 품절됐어요. 다른 판매처를 볼게요`, en: `Sold out at ${seller.name.en} at the moment of adding. Checking other sellers` }
+          : left.length > 0
+            ? { ko: `담는 시점에 ${szTag || '이 사이즈'}가 품절로 확인됐어요`, en: `Size ${szTag || ''} sold out at the moment of adding` }
+            : { ko: '담는 시점에 품절로 확인됐어요', en: 'Found sold out at the moment of adding' },
       });
+      if (elsewhere && !forced) continue;
       if (left.length > 0 && !forced) { delete this.sizeMemo[kind]; continue; }
       const r = await this.altFlow(id, pick, eligible, `${attempt}${sfx}`, ctx, { ko: '품절이에요', en: 'just sold out' });
       if (r === 'end' || r === 'skipped') return r;
       pick = r;
     }
     }
+  }
+
+  /** 국내 판매처 중 지금 담으면 드는 최저 총액(배송비 포함). 재고가 없으면 표시가. */
+  private landed(pid: string): number {
+    const r = this.store.rankOffers(pid).find((x) => !x.seller.overseas);
+    return r?.landed ?? this.store.getProduct(pid)?.price ?? 0;
+  }
+
+  /** 판매처가 3곳 이상으로 나뉘면, 한 곳으로 모을 수 있는지 본다. 모을 수 있는 판매처와 늘어나는 금액을 돌려준다. */
+  private mergeOption(): { sellerId: string; diff: number } | null {
+    const cart = this.store.getState().cart;
+    const before = this.store.cartTotal();
+    let best: { sellerId: string; diff: number } | null = null;
+    for (const s of Object.values(SELLERS)) {
+      if (s.overseas) continue;
+      const offers = cart.map((l) => this.store.getOffer(l.productId, s.id));
+      if (offers.some((o, i) => !o || (o.sizes[cart[i].size] ?? 0) < cart[i].qty)) continue;
+      const sub = offers.reduce((a, o, i) => a + o!.price * cart[i].qty, 0);
+      const total = sub + (s.freeOver !== undefined && sub >= s.freeOver ? 0 : s.fee);
+      const diff = total - before;
+      if (!best || diff < best.diff) best = { sellerId: s.id, diff };
+    }
+    return best;
+  }
+
+  /** 왜 이 판매처인지 한 줄로. 표시가 최저와 총액 최저가 다르거나, 해외직구를 뺐으면 그 이유를 말한다. */
+  private whyOffer(chosen: Ranked, ranked: Ranked[], c: Criteria): L {
+    const now = this.store.now();
+    const when = arrivalLabel(chosen.arriveAt, now);
+    const ship: L = chosen.shipping <= 0 ? { ko: '무료배송', en: 'free shipping' } : { ko: `배송비 ${won(chosen.shipping).ko}`, en: `${won(chosen.shipping).en} shipping` };
+    const domestic = ranked.filter((r) => !r.seller.overseas);
+    const parts: L[] = [];
+    const sticker = [...domestic].sort((a, b) => a.offer.price - b.offer.price)[0];
+    if (sticker && sticker.offer.sellerId !== chosen.offer.sellerId && sticker.offer.price < chosen.offer.price && sticker.landed > chosen.landed) {
+      parts.push({
+        ko: `표시가는 ${sticker.seller.name.ko}가 ${won(sticker.offer.price).ko}로 가장 낮지만, 배송비를 더하면 ${chosen.seller.name.ko}가 ${won(sticker.landed - chosen.landed).ko} 덜 들어요`,
+        en: `${sticker.seller.name.en} lists the lowest price (${won(sticker.offer.price).en}), but with shipping ${chosen.seller.name.en} costs ${won(sticker.landed - chosen.landed).en} less`,
+      });
+    } else if (c.deliverBy && domestic[0] && domestic[0].offer.sellerId !== chosen.offer.sellerId) {
+      const dl = deadlineL(c.deliverBy);
+      parts.push({ ko: `${dl.ko} 오는 곳 중 총액이 가장 낮아요`, en: `Lowest total among sellers delivering ${dl.en}` });
+    } else if (domestic.length === 1) {
+      parts.push({ ko: `이 사이즈는 국내에서 ${chosen.seller.name.ko}에만 있어요`, en: `Only ${chosen.seller.name.en} has this size domestically` });
+    } else {
+      parts.push({ ko: `${domestic.length}곳 중 배송비 포함 총액이 가장 낮아요`, en: `Lowest total with shipping of ${domestic.length}` });
+    }
+    parts.push({ ko: `${chosen.seller.name.ko}, ${won(chosen.landed).ko}, ${ship.ko}, ${when.ko}`, en: `${chosen.seller.name.en}, ${won(chosen.landed).en}, ${ship.en}, ${when.en.toLowerCase()}` });
+    const ab = ranked.find((r) => r.seller.overseas);
+    if (ab && ab.landed < chosen.landed) {
+      parts.push({ ko: `해외직구는 ${won(chosen.landed - ab.landed).ko} 싸지만 도착이 늦고 반품이 안 돼 뺐어요`, en: `Overseas is ${won(chosen.landed - ab.landed).en} cheaper but slow and non-returnable, so it was left out` });
+    }
+    return { ko: parts.map((x) => x.ko).join('. '), en: parts.map((x) => x.en).join('. ') };
   }
 
   /** 담을 수 없을 때: 남은 대안 중에서 고르게 한다. 고른 상품을 돌려주고, 대안이 없거나 중단이면 end/skipped. */

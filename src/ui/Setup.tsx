@@ -5,7 +5,7 @@ import { DIAL, SZ, t } from './copy';
 import { SETUP } from './landCopy';
 import { LimitSlider } from './LimitSlider';
 import { Magnetic } from './Magnetic';
-import { Mark } from './Mark';
+import { Wordmark } from './Wordmark';
 import type { MarkPhase } from './Mark';
 import { Rise } from './Rise';
 import { Seg } from './Seg';
@@ -50,7 +50,7 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
   return (
     <div className={`setup ${leaving ? 'leaving' : ''}`}>
       <header className="land-top">
-        <a className="logo" href="#/" aria-label="Nod"><Mark size={22} follow /><span>Nod</span></a>
+        <a className="logo" href="#/" aria-label="Nod"><Wordmark size={24} /></a>
         <span />
         <div className="top-r">
           <ThemeButton theme={theme} onToggle={onTheme} lang={lang} />
@@ -62,7 +62,7 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
       </header>
 
       <main className="setup-in">
-        <div className="setup-mark"><Mark size={84} nod={nod} phase={phase} follow /></div>
+        <div className="setup-mark"><Wordmark size={64} nod={nod} phase={phase} follow /></div>
         <h1 className="setup-title"><Rise text={t(SETUP.title, lang)} /></h1>
         <p className="sec-sub">{t(SETUP.sub, lang)}</p>
 
@@ -91,7 +91,6 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
           <Magnetic>
             <button className={`btn primary cta ${phase === 'done' ? 'ok' : ''}`} onClick={go} disabled={leaving}>
               <span key={`${leaving}-${phase}-${lang}`} className="swap">{label}</span>
-              <span className="cta-i" aria-hidden>→</span>
             </button>
           </Magnetic>
           <a className="link" href="#/">{t(SETUP.back, lang)}</a>

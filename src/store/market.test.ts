@@ -17,14 +17,15 @@ describe('market', () => {
     expect(a.m.feed()).toEqual(b.m.feed());
     expect(a.store.getState().products).toEqual(b.store.getState().products);
   });
-  it('재고는 음수가 되지 않고, 가격은 기준가의 ±15% 안에 머문다', () => {
-    const base = createStore().getState().products;
+  it('재고는 음수가 되지 않고, 판매처별 가격은 처음 가격의 ±15% 안에 머문다', () => {
+    const base = createStore().getState().offers;
     for (const seed of [1, 2, 3, 4, 5]) {
       const { store } = run(seed, 400);
-      for (const p of Object.values(store.getState().products)) {
-        expect(p.stock).toBeGreaterThanOrEqual(0);
-        expect(p.price).toBeGreaterThanOrEqual(Math.floor(base[p.id].price * 0.85 / 1000) * 1000);
-        expect(p.price).toBeLessThanOrEqual(Math.ceil(base[p.id].price * 1.15 / 1000) * 1000);
+      for (const p of Object.values(store.getState().products)) expect(p.stock).toBeGreaterThanOrEqual(0);
+      for (const o of Object.values(store.getState().offers)) {
+        expect(Object.values(o.sizes).every((n) => n >= 0)).toBe(true);
+        expect(o.price).toBeGreaterThanOrEqual(Math.floor(base[o.id].price * 0.85 / 1000) * 1000);
+        expect(o.price).toBeLessThanOrEqual(Math.ceil(base[o.id].price * 1.15 / 1000) * 1000);
       }
     }
   });
@@ -45,9 +46,15 @@ describe('market', () => {
     expect(store.getState().cart[0].priceAtAdd).toBe(178000);
   });
   it('보고 있는 상품 쪽에서 일이 더 자주 난다', () => {
-    const { m } = run(5, 300, ['c1']);
-    const hit = m.feed().filter((e) => e.productId === 'c1').length;
-    expect(hit).toBeGreaterThan(0);
+    const count = (interest: string[]) => {
+      const store = createStore();
+      const m = createMarket(store, { rng: mulberry32(5), now: () => 0 });
+      m.setInterest(interest);
+      let hit = 0;
+      for (let i = 0; i < 300; i++) if (m.tick()?.productId === 'c1') hit++;
+      return hit;
+    };
+    expect(count(['c1'])).toBeGreaterThan(count([]) * 1.5);
   });
   it('rebase는 기록과 기준 가격을 처음으로 돌린다', () => {
     const { store, m } = run(9, 50);

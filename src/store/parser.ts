@@ -1,5 +1,6 @@
 import type { L } from '../engine/types';
 import { CATEGORY_L, COLOR_L, DIM_L, MATERIAL_L, SEASON_L, STYLE_L } from './labels';
+import { weekdayL } from './sellers';
 import type { Category, Color, Criteria, Material, Season, Style } from './types';
 
 type Dict<T extends string> = [T, string[]][];
@@ -89,8 +90,39 @@ function takeSize(text: string): { size?: string; rest: string } {
   return { rest: text };
 }
 
+const WEEKDAYS: [RegExp, number][] = [
+  [/일요일|sunday/, 0], [/월요일|monday/, 1], [/화요일|tuesday/, 2], [/수요일|wednesday/, 3],
+  [/목요일|thursday/, 4], [/금요일|friday/, 5], [/토요일|saturday/, 6],
+];
+
+/** "금요일까지", "내일까지 받아야 해", "이번 주 안에", "by friday" → 도착 마감. 뽑은 부분은 지운다. */
+export function takeDeadline(input: string): { deliverBy?: { weekday?: number; days?: number }; rest: string } {
+  const text = input;
+  const tail = '\\s*(?:까지|전에|안에|내로|이내)?\\s*(?:도착|받(?:아야|을\\s*수\\s*있게|고\\s*싶|게)?\\s*(?:해|돼|하는|함|어)?)?';
+  const tries: [RegExp, { weekday?: number; days?: number }][] = [
+    [new RegExp(`(?:오늘)${tail}(?=$|[\\s,.])`), { days: 0 }],
+    [new RegExp(`(?:내일)${tail}(?=$|[\\s,.])`), { days: 1 }],
+    [new RegExp(`(?:모레)${tail}(?=$|[\\s,.])`), { days: 2 }],
+    [new RegExp(`(?:이번\\s*주)${tail}(?=$|[\\s,.])`), { weekday: 6 }],
+    [/\bby\s+tomorrow\b/i, { days: 1 }],
+  ];
+  for (const [re, spec] of tries) {
+    const m = text.match(re);
+    if (m && /까지|전에|안에|내로|이내|도착|받|by/.test(m[0])) return { deliverBy: spec, rest: text.replace(m[0], ' ') };
+  }
+  for (const [w, n] of WEEKDAYS) {
+    const re = new RegExp(`(?:이번\\s*주\\s*)?(?:${w.source})${tail}`, 'i');
+    const m = text.match(re);
+    if (m && /까지|전에|안에|내로|이내|도착|받/.test(m[0])) return { deliverBy: { weekday: n }, rest: text.replace(m[0], ' ') };
+    const en = text.match(new RegExp(`\\bby\\s+(?:${w.source})\\b`, 'i'));
+    if (en) return { deliverBy: { weekday: n }, rest: text.replace(en[0], ' ') };
+  }
+  return { rest: text };
+}
+
 export function parseRequest(input: string): Criteria {
-  const sz = takeSize(input);
+  const dl = takeDeadline(input);
+  const sz = takeSize(dl.rest);
   let text = sz.rest.toLowerCase();
   let maxPrice: number | undefined;
   let minPrice: number | undefined;
@@ -129,6 +161,7 @@ export function parseRequest(input: string): Criteria {
     maxPrice,
     minPrice,
     size: sz.size,
+    deliverBy: dl.deliverBy,
     unknown,
   };
 }
@@ -138,7 +171,7 @@ export interface Chip {
   value: L;
 }
 
-const join = (ls: L[]): L => ({ ko: ls.map((l) => l.ko).join(' · '), en: ls.map((l) => l.en).join(' · ') });
+const join = (ls: L[]): L => ({ ko: ls.map((l) => l.ko).join(', '), en: ls.map((l) => l.en).join(', ') });
 const won = (n: number): L => ({ ko: `${n.toLocaleString('ko-KR')}원`, en: `KRW ${n.toLocaleString('en-US')}` });
 
 /** 해석 결과를 사람이 확인할 수 있는 칩 목록으로 바꾼다. */
@@ -158,7 +191,17 @@ export function describeCriteria(c: Criteria): Chip[] {
     chips.push({ label: DIM_L.budget, value: { ko: `${v.ko} 이상`, en: `from ${v.en}` } });
   }
   if (c.size) chips.push({ label: DIM_L.size, value: { ko: c.size, en: c.size } });
+  if (c.deliverBy) chips.push({ label: { ko: '도착', en: 'Arrive' }, value: deadlineL(c.deliverBy) });
   return chips;
+}
+
+export function deadlineL(d: { weekday?: number; days?: number }): L {
+  if (d.days === 0) return { ko: '오늘 안에', en: 'today' };
+  if (d.days === 1) return { ko: '내일까지', en: 'by tomorrow' };
+  if (d.days === 2) return { ko: '모레까지', en: 'in two days' };
+  if (d.weekday === 6 && d.days === undefined) return { ko: '토요일까지', en: 'by Saturday' };
+  const w = weekdayL(d.weekday ?? 0);
+  return { ko: `${w.ko}요일까지`, en: `by ${w.en}` };
 }
 
 export interface Parsed {
@@ -177,7 +220,9 @@ export const MAX_ITEMS = 3;
  * 나눈 조각마다 종류가 하나씩 잡힐 때만 나눈다 — 그렇지 않으면 단일 요청으로 둔다(오탐 방지).
  */
 export function parseMulti(input: string): Parsed {
-  let text = input;
+  const dl = takeDeadline(input);
+  let text = dl.rest;
+  const withDl = (c: Criteria): Criteria => (dl.deliverBy ? { ...c, deliverBy: dl.deliverBy } : c);
   let budget: number | undefined;
   const m = text.toLowerCase().match(BUDGET_RE);
   const en = text.match(EN_BUDGET_RE);
@@ -191,9 +236,9 @@ export function parseMulti(input: string): Parsed {
   const parts = text.split(SPLIT_RE).map((x) => x.trim()).filter(Boolean);
   if (parts.length >= 2 && parts.length <= MAX_ITEMS) {
     const items = parts.map(parseRequest);
-    if (items.every((c) => c.category)) return { items, budget };
+    if (items.every((c) => c.category)) return { items: items.map(withDl), budget };
   }
   const single = parseRequest(text);
   // 상품이 하나뿐이면 합계 예산은 그 상품의 가격 상한과 같다
-  return { items: [budget !== undefined && single.maxPrice === undefined ? { ...single, maxPrice: budget } : single], budget: undefined };
+  return { items: [withDl(budget !== undefined && single.maxPrice === undefined ? { ...single, maxPrice: budget } : single)], budget: undefined };
 }

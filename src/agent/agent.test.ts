@@ -6,8 +6,8 @@ import { RuleAgent } from './agent';
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
-function setup(request: string, dial: Dial = 'auto', opts: { limit?: number; before?: (s: ReturnType<typeof createStore>) => void } = {}) {
-  const store = createStore();
+function setup(request: string, dial: Dial = 'auto', opts: { limit?: number; now?: number; before?: (s: ReturnType<typeof createStore>) => void } = {}) {
+  const store = createStore(opts.now !== undefined ? { now: () => opts.now! } : {});
   opts.before?.(store);
   const events: AgentEvent[] = [];
   const agent = new RuleAgent(store, () => Promise.resolve());
@@ -131,7 +131,8 @@ describe('Action Audit / 되돌리기', () => {
     await until((e) => e.type === 'payment_gate');
     store.addToCart('sh1', 'user', store.availableSizes('sh1')[0]);
     await tick();
-    expect(last(events, 'payment_gate')?.total).toBe(178000 + 69000);
+    // 셔츠는 표시가 최저(선반 68,000원 + 배송비)보다 배송비 포함 총액이 낮은 대로몰(69,900원 무료배송)에 담긴다
+    expect(last(events, 'payment_gate')?.total).toBe(178000 + 69900);
     agent.reject();
     await until((e) => e.type === 'result');
   });
@@ -378,5 +379,105 @@ describe('사이즈', () => {
     expect(last(h.events, 'needs_input')!.id.startsWith('q-sizefree')).toBe(true);
     h.agent.answer('nosize');
     await h.until((e) => e.type === 'needs_input' && e.id.startsWith('q-size') && !e.id.startsWith('q-sizefree'));
+  });
+});
+
+describe('판매처·배송', () => {
+  // 2026-10-06(화) 10:00 — 공식몰은 목요일, 선반·대로몰은 내일(수) 도착
+  const TUE = new Date(2026, 9, 6, 10, 0).getTime();
+
+  it('담기 전에 판매처를 비교하고, 고른 판매처와 이유를 남긴다', async () => {
+    const h = setup('검정 울 코트, 20만원 이하', 'auto', { now: TUE });
+    await h.until((e) => e.type === 'payment_gate');
+    const cmp = h.events.find((e) => e.type === 'tool_call' && e.id.startsWith('t-seller') && e.status === 'done');
+    expect(cmp && cmp.type === 'tool_call' && cmp.note?.ko).toMatch(/총액이 가장 낮아요/);
+    expect(h.store.getState().cart[0]).toMatchObject({ productId: 'c1', sellerId: 'off-noirlab' });
+  });
+
+  it('표시가 최저가 배송비 때문에 총액 최저가 아니면, 총액 기준으로 고르고 그 이유를 말한다', async () => {
+    const h = setup('화이트 옥스포드 셔츠', 'auto', { now: TUE });
+    for (let i = 0; i < 300 && !h.events.some((e) => e.type === 'payment_gate'); i++) {
+      const e = h.events[h.events.length - 1];
+      if (e?.type === 'needs_input') h.agent.answer(e.options.find((o) => o.id === 'sh1')?.id ?? e.options[0].id);
+      await tick();
+    }
+    expect(h.store.getState().cart[0]).toMatchObject({ productId: 'sh1', sellerId: 'daero', priceAtAdd: 69900 });
+    const cmp = [...h.events].reverse().find((e) => e.type === 'tool_call' && e.id.startsWith('t-seller'));
+    expect(cmp && cmp.type === 'tool_call' && cmp.note?.ko).toMatch(/표시가는 선반 셀렉트/);
+  });
+
+  it('도착 마감이 있으면 그 안에 오는 판매처를 고른다', async () => {
+    const h = setup('검정 울 코트 내일까지', 'auto', { now: TUE });
+    for (let i = 0; i < 300 && !h.events.some((e) => e.type === 'payment_gate'); i++) {
+      const e = h.events[h.events.length - 1];
+      if (e?.type === 'needs_input') h.agent.answer(e.options.find((o) => o.id === 'c1')?.id ?? e.options[0].id);
+      await tick();
+    }
+    const line = h.store.getState().cart[0];
+    expect(line.productId).toBe('c1');
+    expect(['shelf', 'daero']).toContain(line.sellerId);
+  });
+
+  it('마감 안에 오는 판매처가 없으면 늦게 오는 걸 담을지 묻는다', async () => {
+    const h = setup('검정 울 코트 오늘까지 받아야 해', 'auto', { now: TUE });
+    await h.until((e) => e.type === 'needs_input' && (e.id.startsWith('q-late') || e.id.startsWith('q-pick')));
+    let q = last(h.events, 'needs_input')!;
+    if (q.id.startsWith('q-pick')) { h.agent.answer('c1'); await h.until((e) => e.type === 'needs_input' && e.id.startsWith('q-late')); q = last(h.events, 'needs_input')!; }
+    expect(q.id.startsWith('q-late')).toBe(true);
+    expect(h.store.getState().cart).toHaveLength(0);
+    h.agent.answer('late');
+    await h.until((e) => e.type === 'payment_gate');
+    expect(h.store.getState().cart).toHaveLength(1);
+  });
+
+  it('국내 판매처에 없고 해외직구에만 있으면 조건을 보여주고 묻는다', async () => {
+    const h = setup('블랙 레더 토트', 'auto', {
+      now: TUE,
+      before: (s) => { s.setStock('b1', 0, 'off-atelier9'); s.setStock('b1', 0, 'daero'); },
+    });
+    await h.until((e) => e.type === 'needs_input');
+    const q = last(h.events, 'needs_input')!;
+    expect(q.id.startsWith('q-abroad')).toBe(true);
+    expect(q.question.ko).toMatch(/반품이 안 돼요/);
+    expect(q.question.ko).toMatch(/관부가세/);
+    h.agent.answer('abroad');
+    await h.until((e) => e.type === 'payment_gate');
+    expect(h.store.getState().cart[0].sellerId).toBe('abroad');
+  });
+
+  it('판매처가 3곳 이상으로 나뉘면 결제 전에 묻고, 한 곳으로 모을 수 있다', async () => {
+    const h = setup('검정 울 코트랑 셔츠랑 블랙 레더 토트', 'auto', { now: TUE });
+    let lastQ = '';
+    for (let i = 0; i < 400 && !h.events.some((e) => e.type === 'payment_gate'); i++) {
+      const e = h.events[h.events.length - 1];
+      if (e?.type === 'needs_input' && e.id !== lastQ) {
+        lastQ = e.id;
+        if (e.id === 'q-split') {
+          const merge = e.options.find((o) => o.id.startsWith('merge:'));
+          expect(merge).toBeTruthy();
+          h.agent.answer(merge!.id);
+        } else h.agent.answer(e.options[0].id);
+      }
+      await tick();
+    }
+    expect(h.events.some((e) => e.type === 'needs_input' && e.id === 'q-split')).toBe(true);
+    expect(new Set(h.store.getState().cart.map((l) => l.sellerId)).size).toBe(1);
+  });
+
+  it('결제를 승인하면 판매처마다 주문이 하나씩 생긴다', async () => {
+    const h = setup('검정 울 코트랑 셔츠', 'auto', { now: TUE });
+    let lastQ = '';
+    for (let i = 0; i < 400 && !h.events.some((e) => e.type === 'payment_gate'); i++) {
+      const e = h.events[h.events.length - 1];
+      if (e?.type === 'needs_input' && e.id !== lastQ) { lastQ = e.id; h.agent.answer(e.options[0].id); }
+      await tick();
+    }
+    const sellers = new Set(h.store.getState().cart.map((l) => l.sellerId));
+    h.agent.approve();
+    await h.until((e) => e.type === 'result');
+    const orders = h.store.getState().orders;
+    expect(orders).toHaveLength(sellers.size);
+    expect(orders.every((o) => o.by === 'agent' && o.arriveAt > TUE)).toBe(true);
+    expect(last(h.events, 'result')!.summary.ko).toMatch(/주문 \d건/);
   });
 });

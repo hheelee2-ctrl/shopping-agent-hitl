@@ -1,37 +1,39 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Dial, Lang, SizeProfile } from '../engine/types';
-import type { ConsoleState, Phase } from '../state/console';
+import type { ConsoleState, LogEntry, Phase } from '../state/console';
+import { photoUrl } from '../store/photos';
+import { arrivalLabel, returnLabel, sellerOf } from '../store/sellers';
 import type { Store } from '../store/store';
 import { AuditLog } from './AuditLog';
 import { CostMeter } from './CostMeter';
 import { ConfRing } from './ConfRing';
 import { Scrubber } from './Scrubber';
 import { Seg } from './Seg';
-import type { Frame } from '../state/timeline';
 import { SizeProfileEditor } from './SizeProfile';
-import { C, DIAL, SZ, LEVEL, PHASE, PRESETS, money, t } from './copy';
+import type { Frame } from '../state/timeline';
+import { C, DIAL, LEVEL, PHASE, PRESETS, SV, SZ, TH, money, t } from './copy';
 
 interface Props {
   lang: Lang;
   store: Store;
   state: ConsoleState;
   cartIds: Set<string>;
-  request: string;
+  /** 마지막으로 맡긴 요청(스레드 맨 위에 보인다) */
+  asked: string | null;
   dial: Dial;
   limit: number;
   sizes: SizeProfile;
   onSizes: (s: SizeProfile) => void;
   running: boolean;
-  onRequest: (s: string) => void;
   onPreset: (text: string) => void;
   onDial: (d: Dial) => void;
   onLimit: (n: number) => void;
-  onRun: () => void;
   onReset: () => void;
   onApprove: () => void;
   onReject: () => void;
   onAnswer: (id: string) => void;
   onUndo: (id: string) => void;
+  onOrders: () => void;
   readOnly: boolean;
   frames: Frame[];
   cursor: number | null;
@@ -47,10 +49,11 @@ const dotClass = (p: Phase) =>
   : p === 'failed' || p === 'cancelled' ? 'bad' : '';
 
 export function AgentPanel(p: Props) {
-  const { lang, state } = p;
+  const { lang, state, store } = p;
   const { phase, understood, plan, question, payment, result, log, candidates, confidence } = state;
   const pendingCart = log.find((l) => l.tool === 'cart_add' && l.status === 'awaiting-approval');
   const panel = useRef<HTMLElement>(null);
+  const [openSet, setOpenSet] = useState(false);
 
   // 사람이 결정해야 하는 카드가 나타나면 패널 안에서 보이게 스크롤한다
   useEffect(() => {
@@ -58,80 +61,75 @@ export function AgentPanel(p: Props) {
     panel.current?.querySelector('[data-action]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [phase, question?.id, payment?.total, pendingCart?.id]);
 
+  const sizeSum = [p.sizes.top, p.sizes.shoe, p.sizes.bottom].map((x) => x ?? '–').join(' / ');
+  const whyOf = (e: LogEntry) => {
+    const id = e.id.replace('t-cart', 't-seller');
+    return log.find((l) => l.id === id)?.note;
+  };
+
   return (
     <aside className={`agent ${p.readOnly ? 'replay' : ''}`} ref={panel} aria-label={t(C.agent, lang)}>
       <header className="agent-head">
-        <div className="eyebrow">Nod</div>
-        <h1>{t(C.agent, lang)}</h1>
-        <p className="sub">{t(C.agentSub, lang)}</p>
+        <div className="agent-title">
+          <h1>{t(TH.title, lang)}</h1>
+          <span className="phase"><span className={`dot ${dotClass(phase)}`} />{t(PHASE[phase], lang)}</span>
+        </div>
+        <button className="settings-sum" aria-expanded={openSet} onClick={() => setOpenSet((o) => !o)} disabled={p.running}>
+          <span>{t(DIAL[p.dial], lang)}</span>
+          <span>{TH.limitOf[lang](money(p.limit, lang))}</span>
+          <span>{sizeSum}</span>
+        </button>
+        {openSet && !p.running && (
+          <div className="settings">
+            <div>
+              <p className="label">{t(C.dial, lang)}</p>
+              <Seg options={(Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }))} value={p.dial} onChange={p.onDial} label={t(C.dial, lang)} />
+            </div>
+            <div>
+              <p className="label">{t(C.limit, lang)}</p>
+              <Seg options={LIMITS.map((n) => ({ value: n, label: money(n, lang).replace('KRW ', '') }))} value={p.limit} onChange={p.onLimit} label={t(C.limit, lang)} />
+              <p className="note">{t(C.dialNote, lang)}</p>
+            </div>
+            <div>
+              <p className="label">{t(SZ.title, lang)}</p>
+              <SizeProfileEditor lang={lang} value={p.sizes} onChange={p.onSizes} />
+            </div>
+            <div className="row">
+              <button className="btn sm" onClick={() => setOpenSet(false)}>{t(TH.done, lang)}</button>
+              <button className="btn sm ghost" onClick={p.onReset} title={t(C.resetNote, lang)}>{t(C.reset, lang)}</button>
+            </div>
+          </div>
+        )}
       </header>
 
-      <fieldset className="plain" disabled={p.readOnly}>
+      <fieldset className="plain thread" disabled={p.readOnly} aria-live="polite">
+        {phase === 'idle' && (
+          <div className="suggest">
+            <p className="label">{t(TH.suggest, lang)}</p>
+            <ul>
+              {PRESETS.map((x, i) => (
+                <li key={i}><button onClick={() => p.onPreset(t(x.text, lang))}>{t(x.label ?? x.text, lang)}</button></li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-      <div className="section">
-        <label className="label" htmlFor="req">{t(C.request, lang)}</label>
-        <textarea
-          id="req" className="req" rows={2} value={p.request} disabled={p.running}
-          placeholder={t(C.requestPh, lang)} onChange={(e) => p.onRequest(e.target.value)}
-        />
-        <div className="presets" aria-label={t(C.presets, lang)}>
-          {PRESETS.map((x, i) => (
-            <button key={i} className="chip btnchip" disabled={p.running} onClick={() => p.onPreset(t(x.text, lang))}>
-              {t(x.label ?? x.text, lang)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="section two">
-        <div>
-          <p className="label">{t(C.dial, lang)}</p>
-          <Seg options={(Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }))} value={p.dial} onChange={p.onDial} label={t(C.dial, lang)} disabled={p.running} />
-        </div>
-        <div>
-          <p className="label">{t(C.limit, lang)}</p>
-          <Seg options={LIMITS.map((n) => ({ value: n, label: money(n, lang).replace('KRW ', '') }))} value={p.limit} onChange={p.onLimit} label={t(C.limit, lang)} disabled={p.running} />
-        </div>
-      </div>
-      <p className="note">{t(C.dialNote, lang)}</p>
-
-      <div className="section">
-        <p className="label">{t(SZ.title, lang)}</p>
-        <SizeProfileEditor lang={lang} value={p.sizes} onChange={p.onSizes} disabled={p.running} />
-      </div>
-
-      <div className="row section">
-        <button className="btn primary" onClick={p.onRun} disabled={p.running || p.request.trim() === ''}>
-          {phase === 'idle' ? t(C.run, lang) : t(C.rerun, lang)}
-        </button>
-        <button className="btn" onClick={p.onReset} title={t(C.resetNote, lang)}>{t(C.reset, lang)}</button>
-      </div>
-
-      <div className="feed" aria-live="polite">
-        <div className="phase">
-          <span className={`dot ${dotClass(phase)}`} />
-          {t(PHASE[phase], lang)}
-        </div>
-
-        {phase === 'idle' && <p className="note">{t(C.idle, lang)}</p>}
+        {p.asked && phase !== 'idle' && <p className="bubble">{p.asked}</p>}
 
         {understood && (
-          <div className="card">
-            <p className="label">{t(C.understoodAs, lang)}</p>
-            <div className="interp">
-              {understood.chips.map((c, i) => <span key={i} className="chip">{t(c.label, lang)} · {t(c.value, lang)}</span>)}
-              {understood.unknown.map((u) => <span key={u} className="chip bad">? {u}</span>)}
-            </div>
+          <div className="interp">
+            {understood.chips.map((c, i) => <span key={i} className="chip"><i>{t(c.label, lang)}</i>{t(c.value, lang)}</span>)}
+            {understood.unknown.map((u) => <span key={u} className="chip bad"><i>?</i>{u}</span>)}
           </div>
         )}
 
         {plan && (
-          <div className="card" data-action={phase === 'awaiting-approval' && plan.requiresApproval && !pendingCart ? '' : undefined}>
+          <div className={`card plan ${phase === 'awaiting-approval' && plan.requiresApproval && !pendingCart ? 'ask-me' : ''}`} data-action={phase === 'awaiting-approval' && plan.requiresApproval && !pendingCart ? '' : undefined}>
             <h2>{t(C.planTitle, lang)}</h2>
             <ol className="steps">{plan.steps.map((s) => <li key={s.id}>{t(s.label, lang)}</li>)}</ol>
             {phase === 'awaiting-approval' && plan.requiresApproval && !pendingCart && (
               <div className="row">
-                <button className="btn primary" onClick={p.onApprove}>{t(C.approveStart, lang)}</button>
+                <button className="btn primary nod" onClick={p.onApprove}>{t(C.approveStart, lang)}</button>
                 <button className="btn" onClick={p.onReject}>{t(C.cancel, lang)}</button>
               </div>
             )}
@@ -143,13 +141,15 @@ export function AgentPanel(p: Props) {
             <h2>{t(C.candidates, lang)}</h2>
             <ul className="cand">
               {candidates.map((id) => {
-                const prod = p.store.getProduct(id);
+                const prod = store.getProduct(id);
                 const c = confidence[id];
                 if (!prod) return null;
+                const src = photoUrl(id);
                 return (
                   <li key={id}>
-                    <span className="n">{t(prod.name, lang)}</span>
-                    {c && <span className="conf"><ConfRing level={c.level} /><span className={`pill ${c.level}`}>{t(LEVEL[c.level], lang)}</span></span>}
+                    <span className={`thumb sw sw-${prod.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
+                    <span className="n">{t(prod.name, lang)}<em>{money(prod.price, lang)}</em></span>
+                    {c && <span className={`conf ${c.level}`}><ConfRing level={c.level} />{t(LEVEL[c.level], lang)}</span>}
                   </li>
                 );
               })}
@@ -157,57 +157,122 @@ export function AgentPanel(p: Props) {
           </div>
         )}
 
-        {pendingCart && (
-          <div className="card gate" data-action="">
-            <p className="label">{t(pendingCart.label, lang)}</p>
-            <div className="row">
-              <button className="btn primary" onClick={p.onApprove}>{t(C.approveCart, lang)}</button>
-              <button className="btn" onClick={p.onReject}>{t(C.skipCart, lang)}</button>
-            </div>
-          </div>
-        )}
+        {pendingCart && <CartAsk lang={lang} store={store} entry={pendingCart} why={whyOf(pendingCart)} onApprove={p.onApprove} onReject={p.onReject} />}
 
         {question && phase === 'needs-input' && (
-          <div className="card ask" data-action="">
-            <p className="label">{t(C.askTitle, lang)}</p>
-            <h2>{t(question.question, lang)}</h2>
-            <div className="row">
-              {question.options.map((o) => (
-                <button key={o.id} className="btn" onClick={() => p.onAnswer(o.id)}>{t(o.label, lang)}</button>
+          <div className="card ask-me" data-action="">
+            <h2 className="q">{t(question.question, lang)}</h2>
+            <div className="opts">
+              {question.options.map((o, i) => (
+                <button key={o.id} className={`btn ${i === 0 ? 'primary' : ''}`} onClick={() => p.onAnswer(o.id)}>{t(o.label, lang)}</button>
               ))}
             </div>
           </div>
         )}
 
-        {payment && phase === 'payment-gate' && (
-          <div className="card gate" data-action="">
-            <p className="label">{t(C.payTitle, lang)}</p>
-            <div className="total">
-              <span className="big">{money(payment.total, lang)}</span>
-              <span className="note">{t(C.limitShort, lang)} {money(payment.limit, lang)}</span>
-            </div>
-            {payment.exceeded && <p className="warnline">{t(C.exceeded, lang)}</p>}
-            <div className="row">
-              <button className="btn primary" onClick={p.onApprove}>{t(C.approvePay, lang)}</button>
-              <button className="btn danger" onClick={p.onReject}>{t(C.declinePay, lang)}</button>
-            </div>
+        {payment && phase === 'payment-gate' && <PayAsk lang={lang} store={store} payment={payment} onApprove={p.onApprove} onReject={p.onReject} />}
+
+        {result && (
+          <div className={`card result ${result.status}`}>
+            <p>{t(result.summary, lang)}</p>
+            {result.status === 'done' && <button className="btn sm" onClick={p.onOrders}>{t(TH.seeOrders, lang)}</button>}
           </div>
         )}
 
-        {result && <div className="card"><p className="result">{t(result.summary, lang)}</p></div>}
-
         {result && (
           <CostMeter
-            lang={lang} request={p.request} limit={p.limit} sizes={p.sizes}
+            lang={lang} request={p.asked ?? ''} limit={p.limit} sizes={p.sizes}
             dial={p.dial} disabled={p.running} onPick={p.onDial}
           />
         )}
 
         <AuditLog lang={lang} log={log} phase={phase} cartIds={p.cartIds} onUndo={p.onUndo} />
-      </div>
       </fieldset>
 
       <Scrubber lang={lang} frames={p.frames} cursor={p.cursor} onCursor={p.onCursor} />
     </aside>
+  );
+}
+
+/** 담기 승인 카드. 무엇을, 어느 판매처에서, 얼마에, 언제 받는지 한 번에 본다. */
+function CartAsk({ lang, store, entry, why, onApprove, onReject }: {
+  lang: Lang; store: Store; entry: LogEntry; why?: { ko: string; en: string };
+  onApprove: () => void; onReject: () => void;
+}) {
+  const pid = entry.itemIds?.[0];
+  const prod = pid ? store.getProduct(pid) : undefined;
+  const o = entry.offer;
+  if (!prod || !o) return null;
+  const s = sellerOf(o.sellerId);
+  const src = photoUrl(prod.id);
+  const size = o.size;
+  return (
+    <div className="card ask-me cart-ask" data-action="">
+      <p className="kick">{t(TH.cartAsk, lang)}</p>
+      <div className="pick">
+        <span className={`thumb lg sw sw-${prod.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
+        <div>
+          <div className="brand">{prod.brand}</div>
+          <h2>{t(prod.name, lang)}</h2>
+          {size && size !== 'FREE' && <span className="size">{size}</span>}
+        </div>
+      </div>
+      <dl className="facts">
+        <div><dt>{t(SV.sellers, lang)}</dt><dd>{t(s.name, lang)}</dd></div>
+        <div><dt>{t(SV.price, lang)}</dt><dd className="num">{money(o.price, lang)}</dd></div>
+        <div><dt>{t(SV.shipping, lang)}</dt><dd>{o.shipping <= 0 ? t(SV.freeShip, lang) : money(o.shipping, lang)}</dd></div>
+        <div><dt>{t(SV.arrive, lang)}</dt><dd>{t(arrivalLabel(o.arriveAt, store.now()), lang)}</dd></div>
+        <div><dt>{t(SV.returns, lang)}</dt><dd>{t(returnLabel(s), lang)}</dd></div>
+      </dl>
+      {why && <p className="why"><b>{t(TH.sellerWhy, lang)}</b>{t(why, lang)}</p>}
+      <div className="row">
+        <button className="btn primary nod" onClick={onApprove}>{t(C.approveCart, lang)}</button>
+        <button className="btn" onClick={onReject}>{t(C.skipCart, lang)}</button>
+      </div>
+    </div>
+  );
+}
+
+/** 결제 직전 승인. 판매처별로 주문이 어떻게 나뉘는지, 배송비와 도착일, 배송지를 함께 본다. */
+function PayAsk({ lang, store, payment, onApprove, onReject }: {
+  lang: Lang; store: Store; payment: NonNullable<ConsoleState['payment']>;
+  onApprove: () => void; onReject: () => void;
+}) {
+  const groups = store.quote();
+  const now = store.now();
+  return (
+    <div className={`card ask-me pay ${payment.exceeded ? 'over' : ''}`} data-action="">
+      <p className="kick">{t(TH.payAsk, lang)}</p>
+      <div className="total">
+        <span className="big">{money(payment.total, lang)}</span>
+        <span className="lim">{TH.limitOf[lang](money(payment.limit, lang))}</span>
+      </div>
+      {payment.exceeded && <p className="warnline">{t(C.exceeded, lang)}</p>}
+      <p className="label">{t(SV.payBreak, lang)}{groups.length > 1 ? `, ${SV.orderCount[lang](groups.length)}` : ''}</p>
+      <ul className="split">
+        {groups.map((g) => {
+          const s = sellerOf(g.sellerId);
+          return (
+            <li key={g.sellerId}>
+              <div className="split-h"><b>{t(s.name, lang)}</b><span className="num">{money(g.total, lang)}</span></div>
+              <div className="split-items">
+                {g.lines.map((l) => <span key={l.productId}>{t(store.getProduct(l.productId)!.name, lang)}{l.size !== 'FREE' ? `, ${l.size}` : ''}</span>)}
+              </div>
+              <div className="split-m">
+                <span>{g.shipping <= 0 ? t(SV.freeShip, lang) : SV.shipFee[lang](money(g.shipping, lang))}</span>
+                <span>{t(arrivalLabel(g.arriveAt, now), lang)}</span>
+                <span>{t(returnLabel(s), lang)}</span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="addr"><span>{t(SV.address, lang)}</span><b>{t(SV.addressV, lang)}</b></div>
+      <p className="note">{t(TH.payNote, lang)}</p>
+      <div className="row">
+        <button className="btn primary nod" onClick={onApprove}>{t(C.approvePay, lang)}</button>
+        <button className="btn danger" onClick={onReject}>{t(C.declinePay, lang)}</button>
+      </div>
+    </div>
   );
 }

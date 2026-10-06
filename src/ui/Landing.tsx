@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { Dial, Lang } from '../engine/types';
 import { DIAL, t } from './copy';
-import { ParticleFrame } from './ParticleFrame';
 import { HeroDemo } from './HeroDemo';
 import { LAND, APPROVES } from './landCopy';
 import { Magnetic } from './Magnetic';
 import { Mark } from './Mark';
+import { Wordmark } from './Wordmark';
 import { reducedMotion } from './motion';
 import { Rise } from './Rise';
 import { Seg } from './Seg';
@@ -30,7 +30,6 @@ function Cta({ lang }: { lang: Lang }) {
     <Magnetic>
       <a className="btn primary cta" href="#/app">
         <span>{t(LAND.start, lang)}</span>
-        <span className="cta-i" aria-hidden>→</span>
       </a>
     </Magnetic>
   );
@@ -61,7 +60,7 @@ function Approval({ lang }: { lang: Lang }) {
         })}
       </ul>
       <div className="approval-foot">
-        <Mark size={28} nod={nod} />
+        <Mark variant="dot" size={30} nod={nod} />
         <p className="note">{t(LAND.payNote, lang)}</p>
       </div>
     </>
@@ -75,7 +74,6 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
   const r3 = useReveal<HTMLDivElement>();
   const r4 = useReveal<HTMLDivElement>();
   const [nod, setNod] = useState(0);
-  const [pulse, setPulse] = useState(0);
   const [endNod, setEndNod] = useState(0);
   useEffect(() => { const id = window.setInterval(() => setEndNod((n) => n + 1), 3600); return () => window.clearInterval(id); }, []);
   // 첫 진입 때 로고가 한 번 끄덕인다
@@ -85,8 +83,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
     <div className="land">
       <header className="land-top">
         <a className="logo" href="#/" onMouseEnter={() => setNod((n) => n + 1)} aria-label="Nod">
-          <Mark size={22} nod={nod} follow />
-          <span>Nod</span>
+          <Wordmark size={24} nod={nod} follow />
         </a>
         <nav className="land-nav" aria-label="sections">
           {LAND.nav.map((n) => <a key={n.id} href={`#${n.id}`} onClick={goTo(n.id)}>{t(n.l, lang)}</a>)}
@@ -104,7 +101,6 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
       <section className="hero">
        <div className="hero-field">
         <div className="hero-copy">
-          <p className="mono kicker">{t(LAND.kicker, lang)}</p>
           <h1 className="hero-title">
             <span className="line"><Rise text={t(LAND.heroA, lang)} delay={120} /></span>
             <em className="line"><Rise text={t(LAND.heroB, lang)} delay={420} /></em>
@@ -116,8 +112,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
           </div>
         </div>
         <div className="hero-stage">
-          <ParticleFrame pulse={pulse} />
-          <HeroDemo lang={lang} onDone={() => setPulse((n) => n + 1)} />
+          <HeroDemo lang={lang} />
         </div>
        </div>
       </section>
@@ -129,7 +124,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
             {LAND.scenes.map((s, i) => (
               <article key={i} className={`scene s${i + 1}`}>
                 <div className="scene-v" aria-hidden>
-                  {i === 0 && (<>{[0, 1, 2, 3, 4].map((n) => <i key={n} className="tab" style={{ '--n': n } as React.CSSProperties} />)}<b className="pickcard"><Mark size={22} tone="brand" /></b></>)}
+                  {i === 0 && (<>{[0, 1, 2, 3, 4].map((n) => <i key={n} className="tab" style={{ '--n': n } as React.CSSProperties} />)}<b className="pickcard"><Mark variant="dot" size={40} /></b></>)}
                   {i === 1 && (<><span className="chip-stock a">{t(LAND.vis.stock1, lang)}</span><span className="chip-stock b">{t(LAND.vis.stock0, lang)}</span><span className="chip-alt">{t(LAND.vis.alt, lang)}</span></>)}
                   {i === 2 && (<><span className="price-old">{t(LAND.vis.priceA, lang)}</span><span className="price-new">{t(LAND.vis.priceB, lang)}</span><span className="chip-ask">{t(LAND.vis.ask, lang)}</span></>)}
                 </div>
@@ -174,14 +169,14 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
 
       <section className="sec end">
         <div className="end-field" ref={r4}>
-          <Mark size={84} tone="light" nod={endNod} className="end-mark" />
+          <Wordmark size={112} nod={endNod} className="end-mark" />
           <h2 className="end-title"><Rise text={t(LAND.endTitle, lang)} /></h2>
           <Cta lang={lang} />
         </div>
       </section>
 
       <footer className="land-foot">
-        <span className="logo"><Mark size={16} /><span>Nod</span></span>
+        <span className="logo"><Wordmark size={18} /></span>
         <p>{t(LAND.foot, lang)}</p>
       </footer>
     </div>

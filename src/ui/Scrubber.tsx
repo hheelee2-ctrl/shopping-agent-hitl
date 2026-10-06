@@ -48,7 +48,7 @@ export function Scrubber({ lang, frames, cursor, onCursor }: Props) {
         <span className={`scrub-state ${replaying ? 'replay' : 'live'}`}>
           <i className="dot" aria-hidden /> {replaying ? t(C.replay, lang) : t(C.live, lang)}
         </span>
-        <span className="mono scrub-time">+{sec}s · {at + 1}/{frames.length}</span>
+        <span className="scrub-time">{at + 1}/{frames.length}, +{sec}s</span>
       </div>
       <p className="scrub-label" aria-live="polite">{t(f.label, lang)}</p>
       <div className="scrub-track">

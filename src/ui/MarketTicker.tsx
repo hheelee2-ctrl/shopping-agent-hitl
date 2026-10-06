@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { Lang } from '../engine/types';
 import { describeMarket, type Market } from '../store/market';
+import { sellerOf } from '../store/sellers';
 import type { Store } from '../store/store';
 import { C, money, t } from './copy';
 
@@ -19,7 +20,7 @@ export function MarketTicker({ market, store, lang }: { market: Market; store: S
 
   const line = (e: (typeof feed)[number]) => {
     const p = store.getProduct(e.productId);
-    return p ? t(describeMarket(e, p.name, (n) => ({ ko: money(n, 'ko'), en: money(n, 'en') })), lang) : '';
+    return p ? t(describeMarket(e, p.name, (n) => ({ ko: money(n, 'ko'), en: money(n, 'en') }), sellerOf(e.sellerId)?.name), lang) : '';
   };
 
   return (

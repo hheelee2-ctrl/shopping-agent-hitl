@@ -8,15 +8,16 @@ import type { Frame } from './state/timeline';
 import { parseRequest } from './store/parser';
 import { searchProducts } from './store/search';
 import { createMarket } from './store/market';
+import { sellerOf } from './store/sellers';
 import { createStore } from './store/store';
 import type { Category } from './store/types';
 import { AgentPanel } from './ui/AgentPanel';
 import { Compare } from './ui/Compare';
 import { Dock } from './ui/Dock';
-import { CartDrawer } from './ui/CartDrawer';
-import { C, PRESETS, t } from './ui/copy';
-import { Mark } from './ui/Mark';
-import { Shop } from './ui/Shop';
+import { CartDrawer, type DrawerTab } from './ui/CartDrawer';
+import { C, SV, t } from './ui/copy';
+import { Wordmark } from './ui/Wordmark';
+import { OfferSheet, Shop } from './ui/Shop';
 import type { Config } from './ui/Setup';
 import { ThemeButton } from './ui/ThemeButton';
 import { useStore } from './ui/useStore';
@@ -57,8 +58,11 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<Category | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<DrawerTab>('cart');
+  const [sheet, setSheet] = useState<string | null>(null);
+  const [asked, setAsked] = useState<string | null>(null);
 
-  const [request, setRequest] = useState(t(PRESETS[0].text, 'ko'));
+  const [request, setRequest] = useState('');
   const [dial, setDial] = useState(initial.dial);
   const [limit, setLimit] = useState(initial.limit);
   const [sizes, setSizes] = useState(initial.sizes);
@@ -78,6 +82,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const cartIds = useMemo(() => new Set(vCart.map((l) => l.productId)), [vCart]);
 
   // 같은 쇼핑몰에서 다른 구매자·판매처가 움직인다. 보고 있는 상품(후보·장바구니)에 더 몰린다.
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   useEffect(() => { market.start(); return () => market.stop(); }, [market]);
   useEffect(() => { market.setBusy(running); }, [market, running]);
   useEffect(() => {
@@ -97,6 +102,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const run = useCallback(() => {
     setCmpClosed(false);
     emit({ type: 'start' }, 'user');
+    setAsked(request);
     agent.start({ request, dial, limit, sizes }, (event) => emit({ type: 'event', event }));
   }, [agent, request, dial, limit, sizes, emit]);
 
@@ -105,33 +111,45 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     store.reset();
     market.rebase();
     emit({ type: 'reset' }, 'user');
+    setAsked(null);
   }, [agent, store, market, emit]);
 
+  const closeDrawer = useCallback(() => setCartOpen(false), []);
+  const closeSheet = useCallback(() => setSheet(null), []);
   const ack = (fn: () => void) => () => { emit({ type: 'user_ack' }, 'user'); setNod((n) => n + 1); fn(); };
-  const userAdd = (id: string, size: string) => {
+  const userAdd = (id: string, size: string, sellerId?: string) => {
     const p = store.getProduct(id);
-    const tag = size === 'FREE' ? '' : ` (${size})`;
-    if (store.addToCart(id, 'user', size).ok && p) note({ ko: `직접 담기 · ${p.name.ko}${tag}`, en: `Added by you · ${p.name.en}${tag}` });
+    const tag = size === 'FREE' ? '' : ` ${size}`;
+    const r = store.addToCart(id, 'user', size, sellerId);
+    if (r.ok && p) {
+      const s = sellerOf(r.line.sellerId).name;
+      note({ ko: `직접 담기: ${p.name.ko}${tag}, ${s.ko}`, en: `Added by you: ${p.name.en}${tag}, ${s.en}` });
+    }
   };
   const userRemove = (id: string) => {
     const p = store.getProduct(id);
     store.removeFromCart(id);
-    if (p) note({ ko: `직접 빼기 · ${p.name.ko}`, en: `Removed by you · ${p.name.en}` });
+    if (p) note({ ko: `직접 빼기: ${p.name.ko}`, en: `Removed by you: ${p.name.en}` });
   };
   const userCheckout = () => {
-    if (store.checkout()) note({ ko: '직접 결제 완료', en: 'You checked out' });
+    const made = store.checkout('user');
+    if (made) {
+      note({ ko: `직접 결제: 주문 ${made.length}건`, en: `You paid: ${made.length} order${made.length > 1 ? 's' : ''}` });
+      setDrawerTab('orders');
+    }
   };
 
   return (
     <>
       <header className={`top ${replaying ? 'replay' : ''}`}>
-        <a className="logo" href="#/" aria-label={t(C.brand, lang)}><Mark size={22} nod={nod} /><span>{t(C.brand, lang)}</span></a>
+        <a className="logo" href="#/" aria-label={t(C.brand, lang)}><Wordmark size={26} nod={nod} phase={phase === 'planning' || phase === 'executing' ? 'busy' : 'idle'} /></a>
         <input
           className="search" type="search" value={query} placeholder={t(C.searchPh, lang)}
           aria-label={t(C.searchPh, lang)} onChange={(e) => setQuery(e.target.value)}
         />
         <div className="top-r">
-          <button className="btn sm" data-cart-btn onClick={() => setCartOpen(true)}>{t(C.cart, lang)} {cartCount > 0 ? `(${cartCount})` : ''}</button>
+          <button className="top-btn" onClick={() => { setDrawerTab('orders'); setCartOpen(true); }}>{t(SV.ordersTab, lang)}{shop.orders.length > 0 && <span className="cnt">{shop.orders.length}</span>}</button>
+          <button className="top-btn" data-cart-btn onClick={() => { setDrawerTab('cart'); setCartOpen(true); }}>{t(C.cart, lang)}{cartCount > 0 && <span className="cnt">{cartCount}</span>}</button>
           <ThemeButton theme={theme} onToggle={onTheme} lang={lang} />
           <div className="lang" role="group" aria-label="language">
             <button aria-pressed={lang === 'ko'} onClick={() => onLang('ko')}>KO</button>
@@ -143,16 +161,15 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
       <main className="layout">
         <Shop
           lang={lang} results={results} criteria={criteria} category={category} onCategory={setCategory}
-          cart={vCart} agent={vState} onAdd={userAdd} readOnly={replaying} market={market} store={store}
+          cart={vCart} agent={vState} onAdd={userAdd} onOpen={setSheet} readOnly={replaying} market={market} store={store}
         />
         <AgentPanel
           lang={lang} store={store} state={vState} cartIds={cartIds}
           readOnly={replaying} frames={frames} cursor={cursor} onCursor={setCursor}
-          request={request} dial={dial} limit={limit} sizes={sizes} onSizes={setSizes} running={running}
-          onRequest={setRequest}
-          onPreset={setRequest}
+          asked={asked} dial={dial} limit={limit} sizes={sizes} onSizes={setSizes} running={running}
+          onPreset={(x) => { setRequest(x); document.querySelector<HTMLInputElement>('.dock-field')?.focus(); }}
           onDial={setDial} onLimit={setLimit}
-          onRun={run} onReset={reset}
+          onReset={reset} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }}
           onApprove={ack(() => agent.approve())} onReject={ack(() => agent.reject())} onAnswer={(id) => ack(() => agent.answer(id))()}
           onUndo={(id) => agent.undo(id)}
         />
@@ -174,9 +191,17 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
       )}
 
       <CartDrawer
-        lang={lang} open={cartOpen} state={replaying ? { ...shop, products: vProducts, cart: vCart } : shop} readOnly={replaying} onClose={() => setCartOpen(false)}
+        lang={lang} open={cartOpen} tab={drawerTab} onTab={setDrawerTab} now={store.now()}
+        state={replaying ? { ...shop, products: vProducts, cart: vCart } : shop} readOnly={replaying} onClose={closeDrawer}
         onRemove={userRemove} onCheckout={userCheckout}
       />
+
+      {sheet && (
+        <OfferSheet
+          id={sheet} lang={lang} store={store} cart={shop.cart}
+          onAdd={(id, size, sid) => userAdd(id, size, sid)} onClose={closeSheet}
+        />
+      )}
     </>
   );
 }

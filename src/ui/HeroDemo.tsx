@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Lang } from '../engine/types';
-import { t } from './copy';
-import { LAND } from './landCopy';
-import { Mark } from './Mark';
+import { photoUrl } from '../store/photos';
+import { arrivalLabel, officialId, scheduleOf, SELLERS } from '../store/sellers';
+import { SV, money, t } from './copy';
+import { LAND, TOUR } from './landCopy';
 import type { MarkPhase } from './Mark';
+import { Wordmark } from './Wordmark';
 import { Spring, clamp, makeLoop, reducedMotion, track } from './motion';
 
 type Stage = 'idle' | 'busy' | 'done';
@@ -131,18 +133,35 @@ export function HeroDemo({ lang, onDone }: { lang: Lang; onDone?: () => void }) 
   const phase: MarkPhase = stage === 'busy' ? 'busy' : stage === 'done' ? 'done' : 'idle';
   const label = stage === 'idle' ? t(LAND.demoBtn, lang) : stage === 'busy' ? t(LAND.demoBusy, lang) : t(LAND.demoDone, lang);
   const line = stage === 'done' ? t(LAND.demoDoneLine, lang) : t(LAND.demoLine, lang);
+  const seller = SELLERS[officialId('NOIR LAB')];
+  const arrive = scheduleOf(seller, Date.now()).arriveAt;
 
   return (
     <div className="demo" ref={host}>
       <div className="plate" ref={plate}>
         <div className="plate-shell">
           <div className="plate-body" ref={body}>
-            <div className="plate-mark"><Mark size={132} nod={nod} phase={phase} follow /></div>
+            <div className="hd-top">
+              <Wordmark size={22} nod={nod} phase={phase} />
+              <span>{t(LAND.demoTag, lang)}</span>
+            </div>
+            <div className="hd-prod">
+              <span className="hd-ph sw sw-black">{photoUrl('c1') && <img className="ph" src={photoUrl('c1')!} alt="" />}</span>
+              <div>
+                <div className="brand">NOIR LAB</div>
+                <p className="hd-name">{t(TOUR.product, lang)}</p>
+                <span className="hd-size">M</span>
+              </div>
+            </div>
+            <dl className="hd-facts">
+              <div><dt>{t(SV.sellers, lang)}</dt><dd>{t(seller.name, lang)}</dd></div>
+              <div><dt>{t(SV.price, lang)}</dt><dd>{money(TOUR.price, lang)}, {t(SV.freeShip, lang)}</dd></div>
+              <div><dt>{t(SV.arrive, lang)}</dt><dd>{t(arrivalLabel(arrive, Date.now()), lang)}</dd></div>
+            </dl>
             <div className="plate-card">
-              <p className="mono plate-tag">{t(LAND.demoTag, lang)}</p>
               <p className="plate-line"><span key={`${stage === 'done'}-${lang}`} className="swap">{line}</span></p>
               <button
-                ref={btn} className={`btn primary plate-btn ${stage === 'done' ? 'ok' : ''} ${press ? 'press' : ''}`}
+                ref={btn} className={`btn nod plate-btn ${stage === 'done' ? 'ok' : ''} ${press ? 'press' : ''}`}
                 onClick={runManual} aria-live="polite"
               >
                 <span key={`${stage}-${lang}`} className="swap">{label}</span>
