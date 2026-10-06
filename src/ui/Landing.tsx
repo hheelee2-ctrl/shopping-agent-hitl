@@ -60,7 +60,7 @@ function Approval({ lang }: { lang: Lang }) {
         })}
       </ul>
       <div className="approval-foot">
-        <Mark variant="dot" size={30} nod={nod} />
+        <Mark size={22} nod={nod} />
         <p className="note">{t(LAND.payNote, lang)}</p>
       </div>
     </>
@@ -83,7 +83,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
     <div className="land">
       <header className="land-top">
         <a className="logo" href="#/" onMouseEnter={() => setNod((n) => n + 1)} aria-label="Nod">
-          <Wordmark size={24} nod={nod} follow />
+          <Wordmark size={24} nod={nod} />
         </a>
         <nav className="land-nav" aria-label="sections">
           {LAND.nav.map((n) => <a key={n.id} href={`#${n.id}`} onClick={goTo(n.id)}>{t(n.l, lang)}</a>)}
@@ -124,7 +124,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
             {LAND.scenes.map((s, i) => (
               <article key={i} className={`scene s${i + 1}`}>
                 <div className="scene-v" aria-hidden>
-                  {i === 0 && (<>{[0, 1, 2, 3, 4].map((n) => <i key={n} className="tab" style={{ '--n': n } as React.CSSProperties} />)}<b className="pickcard"><Mark variant="dot" size={40} /></b></>)}
+                  {i === 0 && (<>{[0, 1, 2, 3, 4].map((n) => <i key={n} className="tab" style={{ '--n': n } as React.CSSProperties} />)}<b className="pickcard"><Mark size={40} /></b></>)}
                   {i === 1 && (<><span className="chip-stock a">{t(LAND.vis.stock1, lang)}</span><span className="chip-stock b">{t(LAND.vis.stock0, lang)}</span><span className="chip-alt">{t(LAND.vis.alt, lang)}</span></>)}
                   {i === 2 && (<><span className="price-old">{t(LAND.vis.priceA, lang)}</span><span className="price-new">{t(LAND.vis.priceB, lang)}</span><span className="chip-ask">{t(LAND.vis.ask, lang)}</span></>)}
                 </div>
@@ -169,7 +169,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
 
       <section className="sec end">
         <div className="end-field" ref={r4}>
-          <Wordmark size={112} nod={endNod} className="end-mark" />
+          <Wordmark size={112} nod={endNod} tone="on-brand" className="end-mark" />
           <h2 className="end-title"><Rise text={t(LAND.endTitle, lang)} /></h2>
           <Cta lang={lang} />
         </div>

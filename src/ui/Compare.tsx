@@ -79,7 +79,7 @@ export function Compare({ lang, store, state, onPick, onClose }: Props) {
                 </dl>
                 {c?.reason && <p className="cmp-reason">{t(c.reason, lang)}</p>}
                 <button className="btn primary ok" onClick={() => pick(p.id)} disabled={!!chosen}>{t(X.pick, lang)}</button>
-                {chosen === p.id && <span className="cmp-nod"><Mark variant="dot" size={30} nod={1} phase="done" /></span>}
+                {chosen === p.id && <span className="cmp-nod"><Mark size={22} nod={1} phase="done" /></span>}
               </article>
             );
           })}

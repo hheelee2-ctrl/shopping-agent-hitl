@@ -4,7 +4,7 @@ import type { ConsoleState } from '../state/console';
 import { CATEGORY_L } from '../store/labels';
 import { describeCriteria } from '../store/parser';
 import type { Scored } from '../store/search';
-import { arrivalLabel, DUTY_OVER, returnLabel, scheduleOf, sellerOf } from '../store/sellers';
+import { DUTY_OVER, sellerOf } from '../store/sellers';
 import type { Category, CartLine, Criteria, Product } from '../store/types';
 import { photoCredit, photoUrl } from '../store/photos';
 import { useFlip } from './useFlip';
@@ -12,6 +12,7 @@ import { useFlight } from './useFlight';
 import type { Market } from '../store/market';
 import type { Store } from '../store/store';
 import { MarketTicker } from './MarketTicker';
+import { PriceBars, SellerBadge, SellerStack, Terms } from './Sellers';
 import { C, LEVEL, SV, SZ, money, t } from './copy';
 
 interface Props {
@@ -93,7 +94,6 @@ export function Stepper({ qty, max, lang, onQty, disabled }: { qty: number; max:
   );
 }
 
-const shipText = (fee: number, lang: Lang) => (fee <= 0 ? t(SV.freeShip, lang) : SV.shipFee[lang](money(fee, lang)));
 
 function Card({ p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: CardProps) {
   const [nudge, setNudge] = useState(0);
@@ -134,20 +134,29 @@ function Card({ p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: C
       <div className="meta">
         <div className="brand">{p.brand}</div>
         <h3 className="name">{t(p.name, lang)}</h3>
-        <div className={`price ${repriced ? 'repriced' : ''}`}>{p.stock === 0 ? t(C.soldOut, lang) : money(shown, lang)}</div>
-        {line && (
+        <div className="price-row">
+          <span className={`price ${repriced ? 'repriced' : ''}`}>{p.stock === 0 ? t(C.soldOut, lang) : money(shown, lang)}</span>
+          {sellers > 1 && (
+            <button className="cmp-chip" onClick={() => onOpen(p.id)} aria-label={SV.compareSellers[lang](sellers)}>
+              <SellerStack ids={store.offersOf(p.id).map((o) => o.sellerId)} lang={lang} />
+              <span>{SV.nCompare[lang](sellers)}</span>
+            </button>
+          )}
+        </div>
+        {line ? (
           <div className="ship">
+            <SellerBadge s={sellerOf(line.sellerId)} lang={lang} size={18} />
             <span className="ship-s">{t(sellerOf(line.sellerId).name, lang)}</span>
-            {linePrice !== undefined && linePrice !== line.priceAtAdd
-              ? <span className="moved">{SV.changedPrice[lang](lang === 'ko' ? '담은 뒤 가격' : 'Price since added', money(line.priceAtAdd, lang), money(linePrice, lang))}</span>
-              : <span>{line.size !== 'FREE' ? `${line.size}, ` : ''}{money(line.priceAtAdd * line.qty, lang)}</span>}
+            {linePrice !== undefined && linePrice !== line.priceAtAdd && <span className="moved">{money(line.priceAtAdd, lang)} → {money(linePrice, lang)}</span>}
           </div>
-        )}
-        {!line && lead && (
-          <div className="ship">
-            <span className="ship-s">{t(lead.seller.name, lang)}</span>
-            <span>{shipText(lead.shipping, lang)}, {t(arrivalLabel(lead.arriveAt, now), lang)}</span>
-          </div>
+        ) : lead && (
+          <>
+            <div className="ship">
+              <SellerBadge s={lead.seller} lang={lang} size={18} />
+              <span className="ship-s">{t(lead.seller.name, lang)}</span>
+            </div>
+            <Terms shipping={lead.shipping} arriveAt={lead.arriveAt} now={now} s={lead.seller} lang={lang} compact />
+          </>
         )}
         {level && conf?.reason && <p className="reason">{t(conf.reason, lang)}</p>}
         {keys.length > 1 && (
@@ -177,7 +186,6 @@ function Card({ p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: C
               {p.stock === 0 ? t(C.soldOut, lang) : t(C.add, lang)}
             </button>
           )}
-          {sellers > 1 && <button className="more" onClick={() => onOpen(p.id)}>{SV.compareSellers[lang](sellers)}</button>}
         </div>
       </div>
     </article>
@@ -193,6 +201,7 @@ export function OfferSheet({ id, lang, store, cart, onAdd, onClose }: {
   const line = cart.find((l) => l.productId === id);
   const keys = p ? Object.keys(p.sizes) : [];
   const [picked, setPicked] = useState<string | null>(line?.size ?? (keys.length === 1 ? keys[0] : null));
+  const [pickSeller, setFocus] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -206,15 +215,10 @@ export function OfferSheet({ id, lang, store, cart, onAdd, onClose }: {
   const avail = store.availableSizes(id);
   const offers = store.offersOf(id);
   const ranked = store.rankOffers(id, size ?? undefined);
-  const byId = new Map(ranked.map((r) => [r.offer.sellerId, r]));
-  const domestic = offers.filter((o) => !sellerOf(o.sellerId).overseas);
-  const sticker = Math.min(...domestic.map((o) => o.price));
   const bestId = ranked.find((r) => !r.seller.overseas)?.offer.sellerId;
-  const rank = (sid: string) => {
-    const i = ranked.findIndex((r) => r.offer.sellerId === sid);
-    return i === -1 ? 99 + (sellerOf(sid).overseas ? 1 : 0) : i;
-  };
-  const rows = [...offers].sort((a, b) => rank(a.sellerId) - rank(b.sellerId));
+  const gone = offers.filter((o) => !ranked.some((r) => r.offer.sellerId === o.sellerId));
+  const focus = pickSeller && ranked.some((r) => r.offer.sellerId === pickSeller) ? pickSeller : line?.sellerId ?? bestId;
+  const sel = ranked.find((r) => r.offer.sellerId === focus);
   const src = photoUrl(id);
 
   return (
@@ -238,42 +242,27 @@ export function OfferSheet({ id, lang, store, cart, onAdd, onClose }: {
               ))}
             </div>
           )}
-          <ul className="offers">
-            {rows.map((o) => {
-              const s = sellerOf(o.sellerId);
-              const r = byId.get(o.sellerId);
-              const here = line?.sellerId === o.sellerId;
-              const fee = r ? r.shipping : (s.freeOver !== undefined && o.price >= s.freeOver ? 0 : s.fee);
-              const arrive = r?.arriveAt ?? scheduleOf(s, now).arriveAt;
-              return (
-                <li key={o.id} className={`offer ${r ? '' : 'none'} ${o.sellerId === bestId ? 'best' : ''} ${s.overseas ? 'abroad' : ''}`}>
-                  <div className="offer-who">
-                    <b>{t(s.name, lang)}</b>
-                    <span>{t(SV.kind[s.kind], lang)}</span>
-                    {o.sellerId === bestId && <span className="tag ok">{t(SV.best, lang)}</span>}
-                    {o.price === sticker && o.sellerId !== bestId && !s.overseas && <span className="tag">{t(SV.lowestTag, lang)}</span>}
+          {size ? (
+            <>
+              <div className="pb-legend"><span><i className="lg-price" />{t(SV.price, lang)}</span><span><i className="lg-ship" />{t(SV.shipping, lang)}</span></div>
+              <PriceBars rows={ranked} lang={lang} chosen={focus} onPick={setFocus} />
+              {gone.length > 0 && <p className="note">{t(SV.noStock, lang)}: {gone.map((o) => t(sellerOf(o.sellerId).name, lang)).join(', ')}</p>}
+              {sel && (
+                <div className="pick-detail" key={sel.offer.sellerId}>
+                  <div className="pd-head">
+                    <SellerBadge s={sel.seller} lang={lang} size={28} />
+                    <div><b>{t(sel.seller.name, lang)}</b><span>{t(SV.kind[sel.seller.kind], lang)}</span></div>
+                    <strong>{money(sel.landed, lang)}</strong>
                   </div>
-                  <div className="offer-price">
-                    <b>{money(o.price, lang)}</b>
-                    <span>{shipText(fee, lang)}</span>
-                  </div>
-                  <div className="offer-when">
-                    <b>{t(arrivalLabel(arrive, now), lang)}</b>
-                    <span>{t(returnLabel(s), lang)}{s.overseas && o.price >= DUTY_OVER ? `. ${t(SV.duty, lang)}` : ''}</span>
-                  </div>
-                  <div className="offer-go">
-                    {!size ? <span className="muted">{t(SV.pickSizeFirst, lang)}</span>
-                      : !r ? <span className="muted">{t(SV.noStock, lang)}</span>
-                      : (
-                        <button className={`btn sm ${o.sellerId === bestId ? 'primary' : ''}`} disabled={!!line && !here} onClick={() => onAdd(id, size, o.sellerId)}>
-                          {here ? SV.inCartAt[lang](t(s.name, lang)) : t(SV.addHere, lang)}
-                        </button>
-                      )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                  <Terms shipping={sel.shipping} arriveAt={sel.arriveAt} now={now} s={sel.seller} lang={lang} />
+                  {sel.seller.overseas && sel.offer.price >= DUTY_OVER && <p className="warnline">{t(SV.duty, lang)}</p>}
+                  {line && line.sellerId === sel.offer.sellerId
+                    ? <p className="added">{SV.inCartAt[lang](t(sel.seller.name, lang))}</p>
+                    : <button className="btn primary block" disabled={!!line} onClick={() => onAdd(id, size, sel.offer.sellerId)}>{SV.addFrom[lang](t(sel.seller.name, lang), money(sel.landed, lang))}</button>}
+                </div>
+              )}
+            </>
+          ) : <p className="hint">{t(SV.pickSizeFirst, lang)}</p>}
           <p className="note">{t(SV.sheetNote, lang)}</p>
         </div>
       </div>

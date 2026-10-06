@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Lang } from '../engine/types';
 import { photoUrl } from '../store/photos';
-import { arrivalLabel, officialId, scheduleOf, SELLERS } from '../store/sellers';
-import { SV, money, t } from './copy';
+import { officialId, scheduleOf, SELLERS } from '../store/sellers';
+import { SellerBadge, Terms } from './Sellers';
+import { money, t } from './copy';
 import { LAND, TOUR } from './landCopy';
 import type { MarkPhase } from './Mark';
 import { Wordmark } from './Wordmark';
@@ -153,11 +154,12 @@ export function HeroDemo({ lang, onDone }: { lang: Lang; onDone?: () => void }) 
                 <span className="hd-size">M</span>
               </div>
             </div>
-            <dl className="hd-facts">
-              <div><dt>{t(SV.sellers, lang)}</dt><dd>{t(seller.name, lang)}</dd></div>
-              <div><dt>{t(SV.price, lang)}</dt><dd>{money(TOUR.price, lang)}, {t(SV.freeShip, lang)}</dd></div>
-              <div><dt>{t(SV.arrive, lang)}</dt><dd>{t(arrivalLabel(arrive, Date.now()), lang)}</dd></div>
-            </dl>
+            <div className="hd-seller">
+              <SellerBadge s={seller} lang={lang} size={22} />
+              <b>{t(seller.name, lang)}</b>
+              <strong>{money(TOUR.price, lang)}</strong>
+            </div>
+            <Terms shipping={0} arriveAt={arrive} now={Date.now()} s={seller} lang={lang} />
             <div className="plate-card">
               <p className="plate-line"><span key={`${stage === 'done'}-${lang}`} className="swap">{line}</span></p>
               <button

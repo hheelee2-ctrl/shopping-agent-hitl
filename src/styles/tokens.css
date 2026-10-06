@@ -28,6 +28,24 @@
   --brand-field: linear-gradient(235deg, var(--brand) -25%, var(--brand-deep) 52%, #046547 118%);
   --r-card: 28px;
 
+  /* type scale (앱 UI). 12·13은 보조, 14는 본문, 15는 강조 본문, 18 이상은 제목·금액 */
+  --t-xs: 12px;
+  --t-sm: 13px;
+  --t-base: 14px;
+  --t-md: 15px;
+  --t-lg: 18px;
+  --t-xl: 22px;
+  --t-2xl: 28px;
+  --t-3xl: 36px;
+  /* spacing: 4의 배수 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
   /* motion: critically damped feel (expo-out), no overshoot */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
@@ -56,6 +74,10 @@
   --warn: #f5a524;
   --wait: #f0ad45;
   --wait-soft: rgba(240, 173, 69, 0.16);
+  --sk-official: #e7ece9; --sk-official-on: #0f1a15;
+  --sk-select: #6d9cf0; --sk-select-on: #0b1630;
+  --sk-mall: #f08b55; --sk-mall-on: #2a1206;
+  --sk-overseas: #9aa7b4; --sk-overseas-on: #10161c;
   --danger: #ff5c5c;
   --info: #3b9bff;
   --ok-soft: rgba(62, 207, 142, 0.14);
@@ -95,6 +117,10 @@
   --warn: #b26a00;
   --wait: #e39a2d;
   --wait-soft: rgba(227, 154, 45, 0.16);
+  --sk-official: #0f1a15; --sk-official-on: #ffffff;
+  --sk-select: #3a6ccc; --sk-select-on: #ffffff;
+  --sk-mall: #d4602a; --sk-mall-on: #ffffff;
+  --sk-overseas: #6f7c8a; --sk-overseas-on: #ffffff;
   --danger: #d1242f;
   --info: #0068d6;
   --ok-soft: rgba(15, 123, 77, 0.1);

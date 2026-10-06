@@ -62,7 +62,7 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
       </header>
 
       <main className="setup-in">
-        <div className="setup-mark"><Wordmark size={64} nod={nod} phase={phase} follow /></div>
+        <div className="setup-mark"><Wordmark size={64} nod={nod} phase={phase} /></div>
         <h1 className="setup-title"><Rise text={t(SETUP.title, lang)} /></h1>
         <p className="sec-sub">{t(SETUP.sub, lang)}</p>
 

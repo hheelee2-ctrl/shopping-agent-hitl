@@ -6,6 +6,8 @@ export const t = (l: L, lang: Lang) => l[lang];
 /** 판매처·배송·주문 화면 문구 */
 export const SV = {
   sellers: { ko: '판매처', en: 'Sellers' },
+  nCompare: { ko: (n: number) => `${n}곳 가격 비교`, en: (n: number) => `Compare ${n}` },
+  addFrom: { ko: (s: string, p: string) => `${s}에서 담기, ${p}`, en: (s: string, p: string) => `Add from ${s}, ${p}` },
   compareSellers: { ko: (n: number) => `판매처 ${n}곳 비교`, en: (n: number) => `Compare ${n} sellers` },
   freeShip: { ko: '무료배송', en: 'Free shipping' },
   shipFee: { ko: (s: string) => `배송비 ${s}`, en: (s: string) => `${s} shipping` },

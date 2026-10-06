@@ -5,7 +5,7 @@ import { arrivalLabel, dateLabel, returnLabel, sellerOf } from '../store/sellers
 import { quoteOf, type CartIssue, type Quote } from '../store/store';
 import type { Order, StoreState } from '../store/types';
 import { C, SV, money, t } from './copy';
-import { Mark } from './Mark';
+import { Icon } from './Icon';
 import { Stepper } from './Shop';
 
 export type DrawerTab = 'cart' | 'orders';
@@ -213,7 +213,7 @@ function Done({ lang, orders, now, state, onOrders, onClose }: {
   const total = orders.reduce((a, o) => a + o.total, 0);
   return (
     <div className="done">
-      <Mark variant="dot" size={56} phase="done" nod={1} />
+      <span className="done-ok"><Icon name="check" size={28} /></span>
       <h2>{t(SV.doneTitle, lang)}</h2>
       <p>{SV.doneSub[lang](orders.length)}</p>
       <ul className="done-list">

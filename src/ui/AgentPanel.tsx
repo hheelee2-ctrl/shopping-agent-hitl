@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import type { Dial, Lang, SizeProfile } from '../engine/types';
 import type { ConsoleState, LogEntry, Phase } from '../state/console';
 import { photoUrl } from '../store/photos';
-import { arrivalLabel, returnLabel, sellerOf } from '../store/sellers';
+import { sellerOf } from '../store/sellers';
 import type { Store } from '../store/store';
 import { AuditLog } from './AuditLog';
 import { CostMeter } from './CostMeter';
 import { ConfRing } from './ConfRing';
 import { Scrubber } from './Scrubber';
 import { Seg } from './Seg';
+import { Icon } from './Icon';
+import { Mark } from './Mark';
+import { PriceBars, SellerBadge, Terms } from './Sellers';
 import { SizeProfileEditor } from './SizeProfile';
 import type { Frame } from '../state/timeline';
 import { C, DIAL, LEVEL, PHASE, SUGGEST, SV, SZ, TH, money, t } from './copy';
@@ -44,6 +47,19 @@ interface Props {
 }
 
 const LIMITS = [200000, 300000, 500000];
+
+/** 계획 단계가 지금 어디까지 왔는지: 끝남 / 진행 중 / 아직 */
+function stepState(tool: string, log: LogEntry[], phase: Phase): 'done' | 'now' | '' {
+  if (tool === 'pay') return phase === 'done' ? 'done' : phase === 'payment-gate' ? 'now' : '';
+  const mine = log.filter((l) => l.tool === tool && !l.id.startsWith('t-seller'));
+  if (tool === 'cart_add') {
+    if (phase === 'payment-gate' || phase === 'done') return mine.some((l) => l.status === 'done') ? 'done' : '';
+    if (mine.some((l) => l.status === 'running' || l.status === 'awaiting-approval')) return 'now';
+    return mine.some((l) => l.status === 'done') ? 'done' : '';
+  }
+  if (mine.some((l) => l.status === 'running')) return 'now';
+  return mine.some((l) => l.status === 'done') ? 'done' : '';
+}
 
 const dotClass = (p: Phase) =>
   p === 'planning' || p === 'executing' ? 'live'
@@ -84,13 +100,13 @@ export function AgentPanel(p: Props) {
 
   return (
     <aside className={`agent ${p.readOnly ? 'replay' : ''} ${open ? 'open' : ''} ${deciding ? 'deciding' : ''}`} ref={panel} aria-label={t(C.agent, lang)}>
-      <button className="sheet-handle" aria-expanded={open} aria-label={open ? t(C.fold, lang) : t(C.open, lang)} onClick={() => setOpen((o) => !o)}>
-        <span aria-hidden />
-      </button>
       <header className="agent-head">
+        <button className="sheet-handle" aria-expanded={open} aria-label={open ? t(C.fold, lang) : t(C.open, lang)} onClick={() => setOpen((o) => !o)}>
+          <span aria-hidden />
+        </button>
         <div className="agent-title" onClick={() => setOpen(true)}>
           <h1>{t(TH.title, lang)}</h1>
-          <span className="phase"><span className={`dot ${dotClass(phase)}`} />{t(PHASE[phase], lang)}</span>
+          <span className={`phase ${dotClass(phase)}`}><Mark size={9} tone="on-brand" phase={dotClass(phase) === 'live' ? 'busy' : 'idle'} />{t(PHASE[phase], lang)}</span>
         </div>
         <button className="settings-sum" aria-expanded={openSet} onClick={() => setOpenSet((o) => !o)} disabled={p.running}>
           <span>{t(DIAL[p.dial], lang)}</span>
@@ -150,7 +166,17 @@ export function AgentPanel(p: Props) {
         {plan && (
           <div className={`card plan ${phase === 'awaiting-approval' && plan.requiresApproval && !pendingCart ? 'ask-me' : ''}`} data-action={phase === 'awaiting-approval' && plan.requiresApproval && !pendingCart ? '' : undefined}>
             <h2>{t(C.planTitle, lang)}</h2>
-            <ol className="steps">{plan.steps.map((s) => <li key={s.id}>{t(s.label, lang)}</li>)}</ol>
+            <ol className="steps">
+              {plan.steps.map((s) => {
+                const st = stepState(s.tool, log, phase);
+                return (
+                  <li key={s.id} className={st}>
+                    <span className="st-ic" aria-hidden>{st === 'done' ? <Icon name="check" size={12} /> : st === 'now' ? <Mark size={8} phase="busy" /> : null}</span>
+                    <span>{t(s.label, lang)}</span>
+                  </li>
+                );
+              })}
+            </ol>
             {phase === 'awaiting-approval' && plan.requiresApproval && !pendingCart && (
               <div className="row">
                 <button className="btn primary nod" onClick={p.onApprove}>{t(C.approveStart, lang)}</button>
@@ -170,9 +196,10 @@ export function AgentPanel(p: Props) {
                 if (!prod) return null;
                 const src = photoUrl(id);
                 return (
-                  <li key={id}>
-                    <span className={`thumb sw sw-${prod.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
-                    <span className="n">{t(prod.name, lang)}<em>{money(prod.price, lang)}</em></span>
+                  <li key={id} className={c ? `lv-${c.level}` : ''}>
+                    <span className={`cand-ph sw sw-${prod.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
+                    <span className="n">{t(prod.name, lang)}</span>
+                    <b>{money(prod.price, lang)}</b>
                     {c && <span className={`conf ${c.level}`}><ConfRing level={c.level} />{t(LEVEL[c.level], lang)}</span>}
                   </li>
                 );
@@ -251,6 +278,7 @@ function CartAsk({ lang, store, entry, why, onApprove, onReject }: {
   const src = photoUrl(prod.id);
   const now = store.getOffer(prod.id, o.sellerId)?.price ?? o.price;
   const after = store.cartTotal() + o.price + Math.max(0, o.shipping);
+  const others = store.rankOffers(prod.id, o.size).filter((r) => !r.seller.overseas || r.offer.sellerId === o.sellerId);
   return (
     <div className="card ask-me cart-ask" data-action="">
       <h2 className="q">{t(TH.cartAsk, lang)}</h2>
@@ -263,15 +291,17 @@ function CartAsk({ lang, store, entry, why, onApprove, onReject }: {
         </div>
         <b className="pick-p">{money(o.price, lang)}</b>
       </div>
-      <dl className="facts">
-        <div><dt>{t(SV.sellers, lang)}</dt><dd>{t(s.name, lang)}</dd></div>
-        <div><dt>{t(SV.shipping, lang)}</dt><dd>{o.shipping <= 0 ? t(SV.freeShip, lang) : money(o.shipping, lang)}</dd></div>
-        <div><dt>{t(SV.arrive, lang)}</dt><dd>{t(arrivalLabel(o.arriveAt, store.now()), lang)}</dd></div>
-        <div><dt>{t(SV.returns, lang)}</dt><dd>{t(returnLabel(s), lang)}</dd></div>
-        <div className="after"><dt>{t(TH.after, lang)}</dt><dd>{money(after, lang)}</dd></div>
-      </dl>
+      <div className="seller-line"><SellerBadge s={s} lang={lang} size={24} /><b>{t(s.name, lang)}</b><span>{t(SV.kind[s.kind], lang)}</span></div>
+      <Terms shipping={o.shipping} arriveAt={o.arriveAt} now={store.now()} s={s} lang={lang} />
+      {others.length > 1 && (
+        <div className="why-box">
+          <b>{t(TH.sellerWhy, lang)}</b>
+          <PriceBars rows={others} lang={lang} chosen={o.sellerId} />
+          {why && <p>{t(why, lang).split('. ')[0]}</p>}
+        </div>
+      )}
       {now !== o.price && <p className="warnline" role="alert">{TH.staleAdd[lang](money(o.price, lang), money(now, lang))}</p>}
-      {why && <p className="why"><b>{t(TH.sellerWhy, lang)}</b>{t(why, lang)}</p>}
+      <p className="after-line"><span>{t(TH.after, lang)}</span><b>{money(after, lang)}</b></p>
       <div className="row">
         <button className="btn nod" onClick={onApprove}>{t(C.approveCart, lang)}</button>
         <button className="btn" onClick={onReject}>{t(C.skipCart, lang)}</button>
@@ -299,15 +329,20 @@ function PayAsk({ lang, store, payment, onApprove, onReject }: {
           const s = sellerOf(g.sellerId);
           return (
             <li key={g.sellerId}>
-              <div className="split-h"><b>{t(s.name, lang)}</b><span>{money(g.total, lang)}</span></div>
+              <div className="split-h"><SellerBadge s={s} lang={lang} size={22} /><b>{t(s.name, lang)}</b><span>{money(g.total, lang)}</span></div>
               <div className="split-items">
-                {g.lines.map((l) => <span key={l.productId}>{t(store.getProduct(l.productId)!.name, lang)}{l.size !== 'FREE' ? `, ${l.size}` : ''}{l.qty > 1 ? ` ×${l.qty}` : ''}</span>)}
+                {g.lines.map((l) => {
+                  const src = photoUrl(l.productId);
+                  const pr = store.getProduct(l.productId)!;
+                  return (
+                    <span key={l.productId} className="si">
+                      <span className={`si-ph sw sw-${pr.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
+                      <span>{t(pr.name, lang)}{l.size !== 'FREE' ? ` ${l.size}` : ''}{l.qty > 1 ? ` ×${l.qty}` : ''}</span>
+                    </span>
+                  );
+                })}
               </div>
-              <div className="split-m">
-                <span>{g.shipping <= 0 ? t(SV.freeShip, lang) : SV.shipFee[lang](money(g.shipping, lang))}</span>
-                <span>{t(arrivalLabel(g.arriveAt, now), lang)}</span>
-                <span>{t(returnLabel(s), lang)}</span>
-              </div>
+              <Terms shipping={g.shipping} arriveAt={g.arriveAt} now={now} s={s} lang={lang} compact />
             </li>
           );
         })}
