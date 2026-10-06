@@ -7,13 +7,13 @@ type Dict<T extends string> = [T, string[]][];
 
 const CATEGORIES: Dict<Category> = [
   ['coat', ['코트', 'coat']],
-  ['jacket', ['자켓', '재킷', '점퍼', '바람막이', '블루종', '블레이저', 'jacket']],
+  ['jacket', ['자켓', '재킷', '점퍼', '바람막이', '블루종', '블레이저', 'jacket', 'blazer', 'windbreaker']],
   ['sneakers', ['스니커즈', '스니커', '운동화', 'sneaker']],
   ['loafers', ['로퍼', 'loafer']],
-  ['knit', ['니트', '스웨터', 'knit']],
+  ['knit', ['니트', '스웨터', '터틀넥', '가디건', 'knit', 'sweater', 'turtleneck']],
   ['shirt', ['셔츠', 'shirt']],
-  ['pants', ['바지', '팬츠', '슬랙스', '청바지', 'pants']],
-  ['bag', ['가방', '백팩', '토트', 'bag']],
+  ['pants', ['바지', '팬츠', '슬랙스', '청바지', '치노', 'pants', 'trousers', 'slacks', 'jeans', 'chinos']],
+  ['bag', ['가방', '백팩', '토트', 'bag', 'backpack', 'tote']],
 ];
 const COLORS: Dict<Color> = [
   ['black', ['블랙', '검정', '검은', '까만', 'black']],
@@ -41,17 +41,17 @@ const SEASONS: Dict<Season> = [
   ['winter', ['겨울', 'winter']],
 ];
 const STYLES: Dict<Style> = [
-  ['formal', ['단정', '포멀', '격식', '깔끔', 'formal']],
-  ['casual', ['캐주얼', '편한', 'casual']],
+  ['formal', ['단정', '포멀', '격식', '깔끔', '출근용', '출근', '하객', 'formal', 'office', 'work']],
+  ['casual', ['캐주얼', '편한', '데일리', '주말', 'casual']],
   ['light', ['가벼운', '가볍', 'light']],
-  ['warm', ['따뜻', '보온', 'warm']],
+  ['warm', ['따뜻', '보온', '두툼', 'warm']],
   ['minimal', ['미니멀', '심플', 'minimal']],
 ];
 
 const STOP = new Set([
   '추천', '해줘', '해주세요', '찾아줘', '찾아', '사줘', '좀', '한', '켤레', '개', '입기', '좋은', '있는', '같은',
   '정도', '이하', '이상', '원', '만', '에서', '으로', '하고', '그리고', '주세요', '싶어', '싶은', '어울리는',
-  '요즘', '오늘', '같이', '둘다', '모두', '각각', '합쳐서', '합쳐', '합계', '해서', '총', 'and', 'a', 'an', 'the', 'for', 'me', 'find', 'under', 'good',
+  '요즘', '오늘', '와이드', '룩', '코디', '입을', '신을', '들', '같이', '둘다', '모두', '각각', '합쳐서', '합쳐', '합계', '해서', '총', 'and', 'a', 'an', 'the', 'for', 'me', 'find', 'under', 'good',
 ]);
 
 function take<T extends string>(text: string, dict: Dict<T>): { found: T[]; rest: string } {

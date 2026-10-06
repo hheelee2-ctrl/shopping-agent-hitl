@@ -156,6 +156,11 @@ export const C = {
   agentSub: { ko: '결제 직전까지 대신합니다', en: 'Everything up to checkout' },
   request: { ko: '요청', en: 'Request' },
   requestPh: { ko: '무엇을 찾아서 담아드릴까요?', en: 'What should I find and add?' },
+  composerHint: { ko: '종류, 색, 예산, 사이즈, 언제까지 받을지 말해주세요', en: 'Say the item, color, budget, size, or when you need it' },
+  send: { ko: '맡기기', en: 'Hand off' },
+  busyHint: { ko: '찾는 중이에요. 결정이 필요하면 여기서 물어볼게요.', en: 'Working on it. I will ask here when I need you.' },
+  open: { ko: '펼치기', en: 'Expand' },
+  fold: { ko: '접기', en: 'Collapse' },
   presets: { ko: '예시', en: 'Examples' },
   dial: { ko: '자율도', en: 'Autonomy' },
   dialNote: { ko: '어떤 단계에서도 결제는 직접 승인해요.', en: 'You approve payment at every level.' },
@@ -194,16 +199,34 @@ export const C = {
   statusFailed: { ko: '실패', en: 'Failed' },
 } satisfies Record<string, L>;
 
-export const PRESETS: { text: L; label?: L }[] = [
-  { text: { ko: '검정 울 코트, 20만원 이하', en: 'black wool coat under 200000' } },
-  { text: { ko: '가을에 입기 좋은 자켓', en: 'jacket for autumn' } },
-  { text: { ko: '화이트 스니커즈 한 켤레', en: 'white sneakers' } },
-  { text: { ko: '검정 가죽 로퍼 20만원 이하', en: 'black leather loafers under 200000' } },
-  { text: { ko: '검정 울 코트 XL', en: 'black wool coat, size XL' } },
-  { text: { ko: '화이트 스니커즈 280', en: 'white sneakers, size 280' } },
-  { text: { ko: '코트 힙한 느낌', en: 'coat hype vibe' } },
-  { text: { ko: '검정 울 코트 20만원 이하랑 검정 가죽 로퍼, 합쳐서 35만원', en: 'black wool coat under 200000 and black leather loafers, total 350000' }, label: { ko: '코트 + 로퍼, 합쳐서 35만원', en: 'coat + loafers, 350000 total' } },
+/** 맡길 수 있는 일의 예. 상황별로 묶어 보여준다. */
+export const SUGGEST: { g: L; items: { text: L; label?: L }[] }[] = [
+  { g: { ko: '빨리 받아야 할 때', en: 'Need it soon' }, items: [
+    { text: { ko: '화이트 스니커즈 내일까지', en: 'white sneakers by tomorrow' } },
+    { text: { ko: '검정 울 코트 금요일까지', en: 'black wool coat by friday' } },
+  ] },
+  { g: { ko: '예산 안에서', en: 'Within budget' }, items: [
+    { text: { ko: '캐시미어 니트 20만원 이하', en: 'cashmere knit under 200000' } },
+    { text: { ko: '바람막이 자켓 15만원 이하', en: 'windbreaker jacket under 150000' } },
+    { text: { ko: '블랙 로퍼랑 블랙 슬랙스 합쳐서 30만원', en: 'black loafers and black slacks, total 300000' } },
+  ] },
+  { g: { ko: '한 번에 맞추기', en: 'A full look' }, items: [
+    { text: { ko: '베이지 블레이저랑 화이트 셔츠랑 블랙 슬랙스', en: 'beige blazer, white shirt and black slacks' } },
+    { text: { ko: '검정 울 코트 20만원 이하랑 검정 가죽 로퍼, 합쳐서 35만원', en: 'black wool coat under 200000 and black leather loafers, total 350000' }, label: { ko: '코트랑 로퍼, 합쳐서 35만원', en: 'Coat and loafers, 350000 total' } },
+  ] },
+  { g: { ko: '사이즈를 정해서', en: 'In my size' }, items: [
+    { text: { ko: '검정 울 코트 XL', en: 'black wool coat, size XL' } },
+    { text: { ko: '데님 와이드 팬츠 30사이즈', en: 'denim pants, size 30' } },
+    { text: { ko: '화이트 스니커즈 280', en: 'white sneakers, size 280' } },
+  ] },
+  { g: { ko: '대충 말해도', en: 'Loosely put' }, items: [
+    { text: { ko: '가을에 입기 좋은 자켓', en: 'jacket for autumn' } },
+    { text: { ko: '출근용 블랙 가죽 가방', en: 'black leather bag for work' } },
+    { text: { ko: '코트 힙한 느낌', en: 'coat hype vibe' } },
+  ] },
 ];
+
+export const PRESETS = SUGGEST.flatMap((g) => g.items);
 
 export const DIAL: Record<Dial, L> = {
   always: { ko: '매번 확인', en: 'Every step' },

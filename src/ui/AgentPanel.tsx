@@ -11,7 +11,7 @@ import { Scrubber } from './Scrubber';
 import { Seg } from './Seg';
 import { SizeProfileEditor } from './SizeProfile';
 import type { Frame } from '../state/timeline';
-import { C, DIAL, LEVEL, PHASE, PRESETS, SV, SZ, TH, money, t } from './copy';
+import { C, DIAL, LEVEL, PHASE, SUGGEST, SV, SZ, TH, money, t } from './copy';
 
 interface Props {
   lang: Lang;
@@ -25,7 +25,10 @@ interface Props {
   sizes: SizeProfile;
   onSizes: (s: SizeProfile) => void;
   running: boolean;
-  onPreset: (text: string) => void;
+  request: string;
+  onRequest: (s: string) => void;
+  onRun: () => void;
+  onCompare: () => void;
   onDial: (d: Dial) => void;
   onLimit: (n: number) => void;
   onReset: () => void;
@@ -53,13 +56,25 @@ export function AgentPanel(p: Props) {
   const { phase, understood, plan, question, payment, result, log, candidates, confidence } = state;
   const pendingCart = log.find((l) => l.tool === 'cart_add' && l.status === 'awaiting-approval');
   const panel = useRef<HTMLElement>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
   const [openSet, setOpenSet] = useState(false);
+  // 모바일에서는 바텀 시트. 접힌 상태에서도 입력창과 현재 상태는 항상 보인다.
+  const [open, setOpen] = useState(false);
+  const deciding = phase === 'awaiting-approval' || phase === 'needs-input' || phase === 'payment-gate';
 
-  // 사람이 결정해야 하는 카드가 나타나면 패널 안에서 보이게 스크롤한다
+  // 사람이 결정해야 하는 카드가 나타나면 시트를 펼치고, 패널 안에서 보이게 스크롤한다
   useEffect(() => {
-    if (phase !== 'awaiting-approval' && phase !== 'needs-input' && phase !== 'payment-gate') return;
-    panel.current?.querySelector('[data-action]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [phase, question?.id, payment?.total, pendingCart?.id]);
+    if (!deciding) return;
+    setOpen(true);
+    const id = window.setTimeout(() => panel.current?.querySelector('[data-action]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 60);
+    return () => window.clearTimeout(id);
+  }, [deciding, phase, question?.id, payment?.total, pendingCart?.id]);
+  useEffect(() => { if (phase === 'planning') setOpen(true); }, [phase]);
+
+  const pick = (text: string) => {
+    p.onRequest(text);
+    window.requestAnimationFrame(() => { field.current?.focus(); field.current?.setSelectionRange(text.length, text.length); });
+  };
 
   const sizeSum = [p.sizes.top, p.sizes.shoe, p.sizes.bottom].map((x) => x ?? '–').join(' / ');
   const whyOf = (e: LogEntry) => {
@@ -68,9 +83,12 @@ export function AgentPanel(p: Props) {
   };
 
   return (
-    <aside className={`agent ${p.readOnly ? 'replay' : ''}`} ref={panel} aria-label={t(C.agent, lang)}>
+    <aside className={`agent ${p.readOnly ? 'replay' : ''} ${open ? 'open' : ''} ${deciding ? 'deciding' : ''}`} ref={panel} aria-label={t(C.agent, lang)}>
+      <button className="sheet-handle" aria-expanded={open} aria-label={open ? t(C.fold, lang) : t(C.open, lang)} onClick={() => setOpen((o) => !o)}>
+        <span aria-hidden />
+      </button>
       <header className="agent-head">
-        <div className="agent-title">
+        <div className="agent-title" onClick={() => setOpen(true)}>
           <h1>{t(TH.title, lang)}</h1>
           <span className="phase"><span className={`dot ${dotClass(phase)}`} />{t(PHASE[phase], lang)}</span>
         </div>
@@ -102,15 +120,21 @@ export function AgentPanel(p: Props) {
         )}
       </header>
 
+      <div className="agent-scroll">
       <fieldset className="plain thread" disabled={p.readOnly} aria-live="polite">
         {phase === 'idle' && (
           <div className="suggest">
-            <p className="label">{t(TH.suggest, lang)}</p>
-            <ul>
-              {PRESETS.map((x, i) => (
-                <li key={i}><button onClick={() => p.onPreset(t(x.text, lang))}>{t(x.label ?? x.text, lang)}</button></li>
-              ))}
-            </ul>
+            <p className="suggest-t">{t(TH.suggest, lang)}</p>
+            {SUGGEST.map((g, gi) => (
+              <section key={gi}>
+                <h3>{t(g.g, lang)}</h3>
+                <div className="suggest-row">
+                  {g.items.map((x, i) => (
+                    <button key={i} className="sg" onClick={() => pick(t(x.text, lang))}>{t(x.label ?? x.text, lang)}</button>
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
         )}
 
@@ -163,6 +187,7 @@ export function AgentPanel(p: Props) {
           <div className="card ask-me" data-action="">
             <h2 className="q">{t(question.question, lang)}</h2>
             <div className="opts">
+              {question.id.startsWith('q-pick') && <button className="btn ghost cmp-open" onClick={p.onCompare}>{t(C.compare, lang)}</button>}
               {question.options.map((o, i) => (
                 <button key={o.id} className={`btn ${i === 0 ? 'primary' : ''}`} onClick={() => p.onAnswer(o.id)}>{t(o.label, lang)}</button>
               ))}
@@ -188,8 +213,27 @@ export function AgentPanel(p: Props) {
 
         <AuditLog lang={lang} log={log} phase={phase} cartIds={p.cartIds} onUndo={p.onUndo} />
       </fieldset>
-
       <Scrubber lang={lang} frames={p.frames} cursor={p.cursor} onCursor={p.onCursor} />
+      </div>
+
+      <form className="composer" onSubmit={(e) => { e.preventDefault(); if (p.request.trim() && !p.running) p.onRun(); }}>
+        <div className="composer-box">
+          <textarea
+            ref={field} rows={1} value={p.request} disabled={p.running || p.readOnly}
+            placeholder={t(C.requestPh, lang)} aria-label={t(C.request, lang)}
+            onFocus={() => setOpen(true)}
+            onChange={(e) => p.onRequest(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                if (p.request.trim() && !p.running) p.onRun();
+              }
+            }}
+          />
+          <button type="submit" className="btn nod send" disabled={!p.request.trim() || p.running || p.readOnly}>{t(C.send, lang)}</button>
+        </div>
+        <p className="composer-hint">{p.running ? t(C.busyHint, lang) : t(C.composerHint, lang)}</p>
+      </form>
     </aside>
   );
 }

@@ -13,7 +13,6 @@ import { createStore } from './store/store';
 import type { Category } from './store/types';
 import { AgentPanel } from './ui/AgentPanel';
 import { Compare } from './ui/Compare';
-import { Dock } from './ui/Dock';
 import { CartDrawer, type DrawerTab } from './ui/CartDrawer';
 import { C, SV, money, t } from './ui/copy';
 import { Toasts, useToasts } from './ui/Toasts';
@@ -216,21 +215,13 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           lang={lang} store={store} state={vState} cartIds={cartIds}
           readOnly={replaying} frames={frames} cursor={cursor} onCursor={setCursor}
           asked={asked} dial={dial} limit={limit} sizes={sizes} onSizes={setSizes} running={running}
-          onPreset={(x) => { setRequest(x); document.querySelector<HTMLInputElement>('.dock-field')?.focus(); }}
+          request={request} onRequest={setRequest} onRun={run} onCompare={() => setCmpClosed(false)}
           onDial={setDial} onLimit={setLimit}
           onReset={reset} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }}
           onApprove={ack(() => agent.approve())} onReject={ack(() => agent.reject())} onAnswer={(id) => ack(() => agent.answer(id))()}
           onUndo={(id) => agent.undo(id)}
         />
       </main>
-
-      {!replaying && (
-        <Dock
-          lang={lang} state={vState} request={request} running={running} nod={nod}
-          onRequest={setRequest} onRun={run} onCompare={() => setCmpClosed(false)}
-          onApprove={ack(() => agent.approve())} onReject={ack(() => agent.reject())} onAnswer={(id) => ack(() => agent.answer(id))()}
-        />
-      )}
 
       {!replaying && !cmpClosed && state.phase === 'needs-input' && state.question?.id.startsWith('q-pick') && (
         <Compare
