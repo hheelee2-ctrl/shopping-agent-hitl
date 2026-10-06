@@ -23,6 +23,7 @@ interface Props {
   cart: CartLine[];
   agent: ConsoleState;
   onAdd: (id: string, size: string, sellerId?: string) => void;
+  onQty: (id: string, qty: number) => void;
   onOpen: (id: string) => void;
   readOnly?: boolean;
   market: Market;
@@ -31,7 +32,7 @@ interface Props {
 
 const CATS = Object.keys(CATEGORY_L) as Category[];
 
-export function Shop({ lang, results, criteria, category, onCategory, cart, agent, onAdd, onOpen, readOnly, market, store }: Props) {
+export function Shop({ lang, results, criteria, category, onCategory, cart, agent, onAdd, onQty, onOpen, readOnly, market, store }: Props) {
   const chips = criteria ? describeCriteria(criteria) : [];
   const gridRef = useFlip<HTMLDivElement>(results.map((r) => r.product.id).join());
   useFlight(cart, !readOnly);
@@ -63,7 +64,7 @@ export function Shop({ lang, results, criteria, category, onCategory, cart, agen
           {scanKey && <div className="scan" key={scanKey} aria-hidden="true" />}
           <div className="grid" ref={gridRef}>
             {results.map(({ product }) => (
-              <Card key={product.id} p={product} lang={lang} cart={cart} agent={agent} store={store} onAdd={onAdd} onOpen={onOpen} readOnly={!!readOnly} />
+              <Card key={product.id} p={product} lang={lang} cart={cart} agent={agent} store={store} onAdd={onAdd} onQty={onQty} onOpen={onOpen} readOnly={!!readOnly} />
             ))}
           </div>
         </div>
@@ -74,12 +75,28 @@ export function Shop({ lang, results, criteria, category, onCategory, cart, agen
 
 interface CardProps {
   p: Product; lang: Lang; cart: CartLine[]; agent: ConsoleState; store: Store;
-  onAdd: (id: string, size: string, sellerId?: string) => void; onOpen: (id: string) => void; readOnly: boolean;
+  onAdd: (id: string, size: string, sellerId?: string) => void; onQty: (id: string, qty: number) => void;
+  onOpen: (id: string) => void; readOnly: boolean;
+}
+
+const Minus = () => <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden><path d="M2.5 6h7" /></svg>;
+const Plus = () => <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden><path d="M2.5 6h7M6 2.5v7" /></svg>;
+
+/** 담긴 상품의 수량 조절. 장바구니와 카드가 같은 컨트롤을 쓴다. */
+export function Stepper({ qty, max, lang, onQty, disabled }: { qty: number; max: number; lang: Lang; onQty: (n: number) => void; disabled?: boolean }) {
+  return (
+    <div className="stepper" role="group" aria-label={lang === 'ko' ? `수량 ${qty}` : `Quantity ${qty}`}>
+      <button type="button" aria-label={t(SV.less, lang)} disabled={disabled} onClick={() => onQty(qty - 1)}><Minus /></button>
+      <output aria-live="polite">{qty}</output>
+      <button type="button" aria-label={t(SV.plus, lang)} disabled={disabled || qty >= max} onClick={() => onQty(qty + 1)}><Plus /></button>
+    </div>
+  );
 }
 
 const shipText = (fee: number, lang: Lang) => (fee <= 0 ? t(SV.freeShip, lang) : SV.shipFee[lang](money(fee, lang)));
 
-function Card({ p, lang, cart, agent, store, onAdd, onOpen, readOnly }: CardProps) {
+function Card({ p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: CardProps) {
+  const [nudge, setNudge] = useState(0);
   const line = cart.find((l) => l.productId === p.id);
   const keys = Object.keys(p.sizes);
   const [picked, setPicked] = useState<string | null>(null);
@@ -104,7 +121,6 @@ function Card({ p, lang, cart, agent, store, onAdd, onOpen, readOnly }: CardProp
   const src = photoUrl(p.id);
   const credit = photoCredit(p.id);
   const level: Level | undefined = agent.candidates.includes(p.id) ? conf?.level : undefined;
-  const canAdd = !readOnly && !!sel && (!!lead || !!line);
 
   return (
     <article data-flip={p.id} data-pid={p.id} className={`prod ${level ? `lv-${level}` : ''} ${p.stock === 0 ? 'out' : ''}`}>
@@ -122,7 +138,9 @@ function Card({ p, lang, cart, agent, store, onAdd, onOpen, readOnly }: CardProp
         {line && (
           <div className="ship">
             <span className="ship-s">{t(sellerOf(line.sellerId).name, lang)}</span>
-            <span>{t(C.cart, lang)} {line.qty}</span>
+            {linePrice !== undefined && linePrice !== line.priceAtAdd
+              ? <span className="moved">{SV.changedPrice[lang](lang === 'ko' ? '담은 뒤 가격' : 'Price since added', money(line.priceAtAdd, lang), money(linePrice, lang))}</span>
+              : <span>{line.size !== 'FREE' ? `${line.size}, ` : ''}{money(line.priceAtAdd * line.qty, lang)}</span>}
           </div>
         )}
         {!line && lead && (
@@ -133,7 +151,7 @@ function Card({ p, lang, cart, agent, store, onAdd, onOpen, readOnly }: CardProp
         )}
         {level && conf?.reason && <p className="reason">{t(conf.reason, lang)}</p>}
         {keys.length > 1 && (
-          <div className="szs" role="group" aria-label={t(SZ.pick, lang)}>
+          <div className={`szs ${nudge ? 'nudge' : ''}`} key={nudge} role="group" aria-label={t(SZ.pick, lang)}>
             {keys.map((z) => {
               const n = avail.includes(z);
               const locked = !!line && line.size !== z;
@@ -144,10 +162,21 @@ function Card({ p, lang, cart, agent, store, onAdd, onOpen, readOnly }: CardProp
             })}
           </div>
         )}
+        {nudge > 0 && !sel && <p className="hint" role="alert">{t(SV.pickSizeFirst, lang)}</p>}
         <div className="buy">
-          <button className="btn sm primary" disabled={!canAdd} onClick={() => sel && onAdd(p.id, sel, line?.sellerId ?? lead?.offer.sellerId)}>
-            {sel ? t(C.add, lang) : t(SZ.choose, lang)}
-          </button>
+          {line ? (
+            <>
+              <Stepper qty={line.qty} max={store.getOffer(p.id, line.sellerId)?.sizes[line.size] ?? line.qty} lang={lang} disabled={readOnly} onQty={(n) => onQty(p.id, n)} />
+              <span className="added">{t(SV.inCart, lang)}</span>
+            </>
+          ) : (
+            <button
+              className="btn sm primary" disabled={readOnly || p.stock === 0 || (!!sel && !lead)}
+              onClick={() => (sel ? onAdd(p.id, sel, lead?.offer.sellerId) : setNudge((n) => n + 1))}
+            >
+              {p.stock === 0 ? t(C.soldOut, lang) : t(C.add, lang)}
+            </button>
+          )}
           {sellers > 1 && <button className="more" onClick={() => onOpen(p.id)}>{SV.compareSellers[lang](sellers)}</button>}
         </div>
       </div>

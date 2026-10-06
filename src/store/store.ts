@@ -45,6 +45,12 @@ export interface Store {
   /** 담긴 줄을 다른 판매처로 옮긴다. 그 판매처에 같은 사이즈 재고가 있어야 한다. */
   switchSeller(id: string, sellerId: string): boolean;
   removeFromCart(id: string): void;
+  /** 담긴 수량을 바꾼다. 0이면 뺀다. 그 판매처의 같은 사이즈 재고를 넘을 수 없다. 바뀐 수량을 돌려준다. */
+  setQty(id: string, qty: number): number;
+  /** 담은 뒤 판매처 쪽에서 바뀐 것(가격, 재고). 결제 직전에 다시 확인받는 근거다. */
+  cartIssues(): CartIssue[];
+  /** 바뀐 내용을 장바구니에 반영한다: 지금 가격으로 고치고, 남은 재고만큼만 남긴다. */
+  refreshCart(): void;
   /** 상품가 + 판매처별 배송비 */
   cartTotal(): number;
   quote(): Quote[];
@@ -56,6 +62,10 @@ export interface Store {
   setPrice(id: string, price: number, sellerId?: string): void;
   reset(): void;
 }
+
+export type CartIssue =
+  | { productId: string; kind: 'price'; from: number; to: number }
+  | { productId: string; kind: 'stock'; want: number; left: number };
 
 /** 장바구니를 판매처별 묶음으로. 결제 화면과 장바구니가 같은 계산을 쓴다. */
 export function quoteOf(cart: CartLine[], t: number): Quote[] {
@@ -162,6 +172,33 @@ export function createStore(opts: { now?: () => number } = {}): Store {
     },
     removeFromCart(id) {
       set({ ...state, cart: state.cart.filter((l) => l.productId !== id) });
+    },
+    setQty(id, qty) {
+      const l = lineOf(id);
+      if (!l) return 0;
+      const o = state.offers[`${id}@${l.sellerId}`];
+      const n = Math.max(0, Math.min(qty, o?.sizes[l.size] ?? 0));
+      set({ ...state, cart: n === 0 ? state.cart.filter((x) => x.productId !== id) : state.cart.map((x) => (x.productId === id ? { ...x, qty: n } : x)) });
+      return n;
+    },
+    cartIssues() {
+      const out: CartIssue[] = [];
+      for (const l of state.cart) {
+        const o = state.offers[`${l.productId}@${l.sellerId}`];
+        const left = o?.sizes[l.size] ?? 0;
+        if (left < l.qty) out.push({ productId: l.productId, kind: 'stock', want: l.qty, left });
+        else if (o && o.price !== l.priceAtAdd) out.push({ productId: l.productId, kind: 'price', from: l.priceAtAdd, to: o.price });
+      }
+      return out;
+    },
+    refreshCart() {
+      const cart = state.cart.flatMap((l) => {
+        const o = state.offers[`${l.productId}@${l.sellerId}`];
+        const left = o?.sizes[l.size] ?? 0;
+        if (!o || left <= 0) return [];
+        return [{ ...l, qty: Math.min(l.qty, left), priceAtAdd: o.price }];
+      });
+      set({ ...state, cart });
     },
     cartTotal: () => quote().reduce((a, q) => a + q.total, 0),
     quote,

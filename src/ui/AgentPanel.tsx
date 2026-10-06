@@ -194,7 +194,7 @@ export function AgentPanel(p: Props) {
   );
 }
 
-/** 담기 승인 카드. 무엇을, 어느 판매처에서, 얼마에, 언제 받는지 한 번에 본다. */
+/** 담기 승인 카드. 무엇을, 어느 판매처에서, 얼마에, 언제 받는지, 담으면 장바구니가 어떻게 되는지 한 번에 본다. */
 function CartAsk({ lang, store, entry, why, onApprove, onReject }: {
   lang: Lang; store: Store; entry: LogEntry; why?: { ko: string; en: string };
   onApprove: () => void; onReject: () => void;
@@ -205,58 +205,59 @@ function CartAsk({ lang, store, entry, why, onApprove, onReject }: {
   if (!prod || !o) return null;
   const s = sellerOf(o.sellerId);
   const src = photoUrl(prod.id);
-  const size = o.size;
+  const now = store.getOffer(prod.id, o.sellerId)?.price ?? o.price;
+  const after = store.cartTotal() + o.price + Math.max(0, o.shipping);
   return (
     <div className="card ask-me cart-ask" data-action="">
-      <p className="kick">{t(TH.cartAsk, lang)}</p>
+      <h2 className="q">{t(TH.cartAsk, lang)}</h2>
       <div className="pick">
         <span className={`thumb lg sw sw-${prod.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
         <div>
           <div className="brand">{prod.brand}</div>
-          <h2>{t(prod.name, lang)}</h2>
-          {size && size !== 'FREE' && <span className="size">{size}</span>}
+          <p className="pick-n">{t(prod.name, lang)}</p>
+          {o.size !== 'FREE' && <span className="size">{o.size}</span>}
         </div>
+        <b className="pick-p">{money(o.price, lang)}</b>
       </div>
       <dl className="facts">
         <div><dt>{t(SV.sellers, lang)}</dt><dd>{t(s.name, lang)}</dd></div>
-        <div><dt>{t(SV.price, lang)}</dt><dd className="num">{money(o.price, lang)}</dd></div>
         <div><dt>{t(SV.shipping, lang)}</dt><dd>{o.shipping <= 0 ? t(SV.freeShip, lang) : money(o.shipping, lang)}</dd></div>
         <div><dt>{t(SV.arrive, lang)}</dt><dd>{t(arrivalLabel(o.arriveAt, store.now()), lang)}</dd></div>
         <div><dt>{t(SV.returns, lang)}</dt><dd>{t(returnLabel(s), lang)}</dd></div>
+        <div className="after"><dt>{t(TH.after, lang)}</dt><dd>{money(after, lang)}</dd></div>
       </dl>
+      {now !== o.price && <p className="warnline" role="alert">{TH.staleAdd[lang](money(o.price, lang), money(now, lang))}</p>}
       {why && <p className="why"><b>{t(TH.sellerWhy, lang)}</b>{t(why, lang)}</p>}
       <div className="row">
-        <button className="btn primary nod" onClick={onApprove}>{t(C.approveCart, lang)}</button>
+        <button className="btn nod" onClick={onApprove}>{t(C.approveCart, lang)}</button>
         <button className="btn" onClick={onReject}>{t(C.skipCart, lang)}</button>
       </div>
     </div>
   );
 }
 
-/** 결제 직전 승인. 판매처별로 주문이 어떻게 나뉘는지, 배송비와 도착일, 배송지를 함께 본다. */
+/** 결제 직전 승인. 얼마가(상품·배송비), 어디로(판매처별 주문), 한도 대비 어느 정도인지, 승인하면 무슨 일이 생기는지 본다. */
 function PayAsk({ lang, store, payment, onApprove, onReject }: {
   lang: Lang; store: Store; payment: NonNullable<ConsoleState['payment']>;
   onApprove: () => void; onReject: () => void;
 }) {
   const groups = store.quote();
   const now = store.now();
+  const ship = groups.reduce((a, g) => a + g.shipping, 0);
+  const issues = store.cartIssues();
+  const ratio = Math.min(1, payment.total / payment.limit);
+  const gap = payment.limit - payment.total;
   return (
     <div className={`card ask-me pay ${payment.exceeded ? 'over' : ''}`} data-action="">
-      <p className="kick">{t(TH.payAsk, lang)}</p>
-      <div className="total">
-        <span className="big">{money(payment.total, lang)}</span>
-        <span className="lim">{TH.limitOf[lang](money(payment.limit, lang))}</span>
-      </div>
-      {payment.exceeded && <p className="warnline">{t(C.exceeded, lang)}</p>}
-      <p className="label">{t(SV.payBreak, lang)}{groups.length > 1 ? `, ${SV.orderCount[lang](groups.length)}` : ''}</p>
+      <h2 className="q">{t(TH.payAsk, lang)}</h2>
       <ul className="split">
         {groups.map((g) => {
           const s = sellerOf(g.sellerId);
           return (
             <li key={g.sellerId}>
-              <div className="split-h"><b>{t(s.name, lang)}</b><span className="num">{money(g.total, lang)}</span></div>
+              <div className="split-h"><b>{t(s.name, lang)}</b><span>{money(g.total, lang)}</span></div>
               <div className="split-items">
-                {g.lines.map((l) => <span key={l.productId}>{t(store.getProduct(l.productId)!.name, lang)}{l.size !== 'FREE' ? `, ${l.size}` : ''}</span>)}
+                {g.lines.map((l) => <span key={l.productId}>{t(store.getProduct(l.productId)!.name, lang)}{l.size !== 'FREE' ? `, ${l.size}` : ''}{l.qty > 1 ? ` ×${l.qty}` : ''}</span>)}
               </div>
               <div className="split-m">
                 <span>{g.shipping <= 0 ? t(SV.freeShip, lang) : SV.shipFee[lang](money(g.shipping, lang))}</span>
@@ -267,10 +268,28 @@ function PayAsk({ lang, store, payment, onApprove, onReject }: {
           );
         })}
       </ul>
-      <div className="addr"><span>{t(SV.address, lang)}</span><b>{t(SV.addressV, lang)}</b></div>
+      <dl className="sums">
+        <div><dt>{t(SV.itemsTotal, lang)}</dt><dd>{money(payment.total - ship, lang)}</dd></div>
+        <div><dt>{t(SV.shipTotalL, lang)}</dt><dd>{ship > 0 ? money(ship, lang) : t(SV.freeShip, lang)}</dd></div>
+        <div className="grand"><dt>{t(SV.grand, lang)}{groups.length > 1 ? `, ${SV.orderCount[lang](groups.length)}` : ''}</dt><dd>{money(payment.total, lang)}</dd></div>
+      </dl>
+      <div className={`meter ${payment.exceeded ? 'over' : ''}`} role="img" aria-label={payment.exceeded ? SV.overBy[lang](money(-gap, lang)) : SV.underBy[lang](money(gap, lang))}>
+        <div className="meter-bar"><i style={{ transform: `scaleX(${ratio})` }} /></div>
+        <div className="meter-l">
+          <span>{payment.exceeded ? SV.overBy[lang](money(-gap, lang)) : SV.underBy[lang](money(gap, lang))}</span>
+          <span>{TH.limitOf[lang](money(payment.limit, lang))}</span>
+        </div>
+      </div>
+      {payment.exceeded && <p className="warnline">{t(C.exceeded, lang)}</p>}
+      {issues.length > 0 && <p className="warnline" role="alert">{t(SV.liveChanged, lang)}</p>}
+      <dl className="kv">
+        <div><dt>{t(SV.address, lang)}</dt><dd>{t(SV.addressV, lang)}</dd></div>
+      </dl>
       <p className="note">{t(TH.payNote, lang)}</p>
       <div className="row">
-        <button className="btn primary nod" onClick={onApprove}>{t(C.approvePay, lang)}</button>
+        <button className={`btn ${payment.exceeded ? 'primary' : 'nod'}`} onClick={onApprove}>
+          {payment.exceeded ? SV.approveOver[lang](money(payment.total, lang)) : SV.approvePayN[lang](money(payment.total, lang))}
+        </button>
         <button className="btn danger" onClick={onReject}>{t(C.declinePay, lang)}</button>
       </div>
     </div>

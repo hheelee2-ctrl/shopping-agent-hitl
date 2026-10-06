@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { Lang } from '../engine/types';
 import type { ConsoleState } from '../state/console';
-import { C, PHASE, money, t } from './copy';
+import { C, PHASE, SV, money, t } from './copy';
 import { Mark } from './Mark';
 import type { MarkPhase } from './Mark';
 import { Spring, makeLoop, reducedMotion } from './motion';
@@ -88,14 +88,14 @@ export function Dock({ lang, state, request, running, nod, onRequest, onRun, onA
             {mode === 'plan' && (
               <>
                 <span className="dock-line">{t(C.planTitle, lang)}</span>
-                <button className="btn sm primary ok" onClick={onApprove}>{t(C.approveStart, lang)}</button>
+                <button className="btn sm nod" onClick={onApprove}>{t(C.approveStart, lang)}</button>
                 <button className="btn sm" onClick={onReject}>{t(C.cancel, lang)}</button>
               </>
             )}
             {mode === 'cart' && pendingCart && (
               <>
                 <span className="dock-line">{t(pendingCart.label, lang)}</span>
-                <button className="btn sm primary ok" onClick={onApprove}>{t(C.approveCart, lang)}</button>
+                <button className="btn sm nod" onClick={onApprove}>{t(C.approveCart, lang)}</button>
                 <button className="btn sm" onClick={onReject}>{t(C.skipCart, lang)}</button>
               </>
             )}
@@ -108,8 +108,8 @@ export function Dock({ lang, state, request, running, nod, onRequest, onRun, onA
             )}
             {mode === 'pay' && payment && (
               <>
-                <span className="dock-line"><b>{money(payment.total, lang)}</b> <i>{t(C.limitShort, lang)} {money(payment.limit, lang)}</i></span>
-                <button className="btn sm primary ok" onClick={onApprove}>{t(C.approvePay, lang)}</button>
+                <span className="dock-line">{t(SV.grand, lang)} <b>{money(payment.total, lang)}</b> <i>{t(C.limitShort, lang)} {money(payment.limit, lang)}</i></span>
+                <button className={`btn sm ${payment.exceeded ? 'primary' : 'nod'}`} onClick={onApprove}>{payment.exceeded ? SV.approveOver[lang](money(payment.total, lang)) : SV.approvePayN[lang](money(payment.total, lang))}</button>
                 <button className="btn sm danger" onClick={onReject}>{t(C.declinePay, lang)}</button>
               </>
             )}

@@ -164,3 +164,23 @@ describe('도착 마감 해석', () => {
     expect(parseMulti('코트랑 로퍼 이번 주 안에').items.every((c) => c.deliverBy?.weekday === 6)).toBe(true);
   });
 });
+
+describe('장바구니 변경 감지', () => {
+  it('담은 뒤 가격이 바뀌면 이슈로 잡히고, refreshCart로 지금 가격이 된다', () => {
+    const s = createStore();
+    s.addToCart('c1', 'user', 'M', 'off-noirlab');
+    s.setPrice('c1', 189000, 'off-noirlab');
+    expect(s.cartIssues()).toEqual([{ productId: 'c1', kind: 'price', from: 178000, to: 189000 }]);
+    s.refreshCart();
+    expect(s.cartIssues()).toEqual([]);
+    expect(s.getState().cart[0].priceAtAdd).toBe(189000);
+  });
+  it('수량은 그 판매처 재고를 넘지 못하고, 0이면 빠진다', () => {
+    const s = createStore();
+    s.addToCart('c1', 'user', 'M', 'off-noirlab');
+    const max = s.getOffer('c1', 'off-noirlab')!.sizes.M;
+    expect(s.setQty('c1', 99)).toBe(max);
+    expect(s.setQty('c1', 0)).toBe(0);
+    expect(s.getState().cart).toHaveLength(0);
+  });
+});

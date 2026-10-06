@@ -269,15 +269,50 @@ export class RuleAgent implements AgentAdapter {
     // 7) 결제 직전 승인 — Dial과 무관하게 사람이 승인한다
     await d(500);
     if (!ok()) return;
-    this.gatePending = true;
-    this.emitGate();
-    const a = await this.wait();
-    this.gatePending = false;
-    if (!ok()) return;
-    if (a === 'reject') {
-      return this.finish('cancelled', this.undoEmptied
-        ? { ko: '담은 항목을 모두 되돌려서 중단했어요.', en: 'Everything was undone, so the run stopped.' }
-        : { ko: '결제 전에 중단했어요. 담긴 항목은 되돌릴 수 있어요.', en: 'Stopped before payment. Items in the cart can still be undone.' });
+    for (let round = 1; ; round++) {
+      this.gatePending = true;
+      this.emitGate();
+      const a = await this.wait();
+      this.gatePending = false;
+      if (!ok()) return;
+      if (a === 'reject') {
+        return this.finish('cancelled', this.undoEmptied
+          ? { ko: '담은 항목을 모두 되돌려서 중단했어요.', en: 'Everything was undone, so the run stopped.' }
+          : { ko: '결제 전에 중단했어요. 담긴 항목은 되돌릴 수 있어요.', en: 'Stopped before payment. Items in the cart can still be undone.' });
+      }
+      // 승인한 금액과 지금 판매처 조건이 다르면 결제하지 않고 다시 확인받는다
+      const issues = this.store.cartIssues();
+      if (issues.length === 0) break;
+      const before = this.store.cartTotal();
+      const said = issues.map((x) => {
+        const n = this.store.getProduct(x.productId)!.name;
+        return x.kind === 'price'
+          ? { ko: `${n.ko} ${won(x.from).ko}에서 ${won(x.to).ko}로`, en: `${n.en} ${won(x.from).en} to ${won(x.to).en}` }
+          : x.left === 0
+            ? { ko: `${n.ko} 품절`, en: `${n.en} sold out` }
+            : { ko: `${n.ko} ${x.left}개만 남음`, en: `${n.en}: only ${x.left} left` };
+      });
+      this.emit({
+        type: 'needs_input', id: `q-payfix${round}`,
+        question: {
+          ko: `결제 직전에 판매처 조건이 바뀌었어요. ${said.map((x) => x.ko).join(', ')}. 결제하지 않았어요.`,
+          en: `Seller terms changed right before payment: ${said.map((x) => x.en).join('; ')}. Nothing was charged.`,
+        },
+        options: [
+          { id: 'refresh', label: { ko: '바뀐 내용으로 다시 확인', en: 'Review with the new terms' } },
+          { id: 'stop', label: { ko: '결제하지 않고 중단', en: 'Stop without paying' } },
+        ],
+      });
+      const f = await this.wait();
+      if (!ok()) return;
+      if (f !== 'refresh') return this.finish('cancelled', { ko: '판매처 조건이 바뀌어 결제하지 않았어요. 장바구니는 그대로예요.', en: 'Terms changed, so nothing was paid. Your cart is unchanged.' });
+      this.store.refreshCart();
+      if (this.store.getState().cart.length === 0) return this.finish('cancelled', { ko: '담은 상품이 모두 품절돼 결제하지 않았어요.', en: 'Everything sold out, so nothing was paid.' });
+      this.emit({
+        type: 'tool_call', id: `t-refresh${round}`, tool: 'pay', status: 'done',
+        label: { ko: '장바구니를 지금 조건으로 고침', en: 'Cart updated to current terms' },
+        note: { ko: `합계 ${won(before).ko}에서 ${won(this.store.cartTotal()).ko}로`, en: `Total ${won(before).en} to ${won(this.store.cartTotal()).en}` },
+      });
     }
     this.paid = true;
     const orders = this.store.checkout('agent') ?? [];

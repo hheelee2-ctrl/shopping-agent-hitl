@@ -15,7 +15,8 @@ import { AgentPanel } from './ui/AgentPanel';
 import { Compare } from './ui/Compare';
 import { Dock } from './ui/Dock';
 import { CartDrawer, type DrawerTab } from './ui/CartDrawer';
-import { C, SV, t } from './ui/copy';
+import { C, SV, money, t } from './ui/copy';
+import { Toasts, useToasts } from './ui/Toasts';
 import { Wordmark } from './ui/Wordmark';
 import { OfferSheet, Shop } from './ui/Shop';
 import type { Config } from './ui/Setup';
@@ -68,6 +69,9 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const [sizes, setSizes] = useState(initial.sizes);
   const [nod, setNod] = useState(0);
   const [cmpClosed, setCmpClosed] = useState(false);
+  const toasts = useToasts();
+  const pushToast = toasts.push;
+  const openCart = useCallback(() => { setDrawerTab('cart'); setCartOpen(true); }, []);
 
   const { phase } = state;
   const running = !['idle', 'done', 'failed', 'cancelled', 'undone'].includes(phase);
@@ -103,8 +107,21 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     setCmpClosed(false);
     emit({ type: 'start' }, 'user');
     setAsked(request);
-    agent.start({ request, dial, limit, sizes }, (event) => emit({ type: 'event', event }));
-  }, [agent, request, dial, limit, sizes, emit]);
+    agent.start({ request, dial, limit, sizes }, (event) => {
+      emit({ type: 'event', event });
+      // 에이전트가 실제로 담은 순간을 사람이 놓치지 않게 알린다
+      if (event.type === 'tool_call' && event.tool === 'cart_add' && event.status === 'done' && event.undoable && event.itemIds?.[0]) {
+        const pid = event.itemIds[0];
+        const p = store.getProduct(pid);
+        const o = event.offer;
+        pushToast({
+          tone: 'ok', pid, title: t(SV.agentAdded, lang),
+          sub: p ? `${t(p.name, lang)}${o && o.size !== 'FREE' ? ` ${o.size}` : ''}${o ? `, ${t(sellerOf(o.sellerId).name, lang)}, ${money(o.price, lang)}` : ''}` : undefined,
+          action: { label: t(SV.viewCart, lang), run: openCart },
+        });
+      }
+    });
+  }, [agent, request, dial, limit, sizes, emit, store, pushToast, lang, openCart]);
 
   const reset = useCallback(() => {
     agent.stop();
@@ -121,23 +138,55 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     const p = store.getProduct(id);
     const tag = size === 'FREE' ? '' : ` ${size}`;
     const r = store.addToCart(id, 'user', size, sellerId);
-    if (r.ok && p) {
-      const s = sellerOf(r.line.sellerId).name;
-      note({ ko: `직접 담기: ${p.name.ko}${tag}, ${s.ko}`, en: `Added by you: ${p.name.en}${tag}, ${s.en}` });
+    if (!p) return;
+    if (!r.ok) {
+      pushToast({ tone: 'err', pid: id, title: t(SV.addFail[r.reason], lang), sub: t(p.name, lang) });
+      return;
     }
+    const s = sellerOf(r.line.sellerId).name;
+    note({ ko: `직접 담기: ${p.name.ko}${tag}, ${s.ko}`, en: `Added by you: ${p.name.en}${tag}, ${s.en}` });
+    pushToast({
+      tone: 'ok', pid: id, title: t(SV.added, lang),
+      sub: `${t(p.name, lang)}${tag}, ${t(s, lang)}, ${money(r.line.priceAtAdd, lang)}${r.line.qty > 1 ? `, ${r.line.qty}${lang === 'ko' ? '개' : ' pcs'}` : ''}`,
+      action: { label: t(C.undo, lang), run: () => { store.setQty(id, r.line.qty - 1); note({ ko: `담기 되돌림: ${p.name.ko}`, en: `Undid add: ${p.name.en}` }); } },
+    });
+  };
+  const userQty = (id: string, qty: number) => {
+    const p = store.getProduct(id);
+    const got = store.setQty(id, qty);
+    if (got < qty) pushToast({ tone: 'warn', pid: id, title: t(SV.qtyMax, lang), sub: p ? t(p.name, lang) : undefined });
+    if (got === 0 && p) note({ ko: `직접 빼기: ${p.name.ko}`, en: `Removed by you: ${p.name.en}` });
   };
   const userRemove = (id: string) => {
     const p = store.getProduct(id);
+    const line = store.getState().cart.find((l) => l.productId === id);
     store.removeFromCart(id);
-    if (p) note({ ko: `직접 빼기: ${p.name.ko}`, en: `Removed by you: ${p.name.en}` });
+    if (!p || !line) return;
+    note({ ko: `직접 빼기: ${p.name.ko}`, en: `Removed by you: ${p.name.en}` });
+    pushToast({
+      tone: 'ok', pid: id, title: t(SV.removed, lang), sub: t(p.name, lang),
+      action: { label: t(C.undo, lang), run: () => { if (store.addToCart(id, line.addedBy, line.size, line.sellerId).ok) store.setQty(id, line.qty); } },
+    });
   };
   const userCheckout = () => {
     const made = store.checkout('user');
-    if (made) {
-      note({ ko: `직접 결제: 주문 ${made.length}건`, en: `You paid: ${made.length} order${made.length > 1 ? 's' : ''}` });
-      setDrawerTab('orders');
-    }
+    if (made) note({ ko: `직접 결제: 주문 ${made.length}건`, en: `You paid: ${made.length} order${made.length > 1 ? 's' : ''}` });
+    return made;
   };
+
+  // 담아 둔 상품의 판매처 가격이 바뀌면 알린다 (결제 전에 사람이 알아야 하는 변화)
+  useEffect(() => market.subscribe(() => {
+    const e = market.feed()[0];
+    if (!e || e.kind !== 'reprice') return;
+    const line = store.getState().cart.find((l) => l.productId === e.productId && l.sellerId === e.sellerId);
+    const p = store.getProduct(e.productId);
+    if (!line || !p) return;
+    pushToast({
+      tone: 'warn', pid: p.id, title: t(SV.priceMoved, lang),
+      sub: SV.changedPrice[lang](t(p.name, lang), money(line.priceAtAdd, lang), money(e.to, lang)),
+      action: { label: t(SV.viewCart, lang), run: openCart },
+    });
+  }), [market, store, pushToast, lang, openCart]);
 
   return (
     <>
@@ -161,7 +210,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
       <main className="layout">
         <Shop
           lang={lang} results={results} criteria={criteria} category={category} onCategory={setCategory}
-          cart={vCart} agent={vState} onAdd={userAdd} onOpen={setSheet} readOnly={replaying} market={market} store={store}
+          cart={vCart} agent={vState} onAdd={userAdd} onQty={userQty} onOpen={setSheet} readOnly={replaying} market={market} store={store}
         />
         <AgentPanel
           lang={lang} store={store} state={vState} cartIds={cartIds}
@@ -193,8 +242,11 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
       <CartDrawer
         lang={lang} open={cartOpen} tab={drawerTab} onTab={setDrawerTab} now={store.now()}
         state={replaying ? { ...shop, products: vProducts, cart: vCart } : shop} readOnly={replaying} onClose={closeDrawer}
-        onRemove={userRemove} onCheckout={userCheckout}
+        onRemove={userRemove} onQty={userQty} onCheckout={userCheckout} onRefresh={() => store.refreshCart()}
+        issues={replaying ? [] : store.cartIssues()} onOrders={() => setDrawerTab('orders')}
       />
+
+      <Toasts items={toasts.items} drop={toasts.drop} closeLabel={t(C.close, lang)} />
 
       {sheet && (
         <OfferSheet

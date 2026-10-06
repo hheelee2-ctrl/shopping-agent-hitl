@@ -481,3 +481,32 @@ describe('판매처·배송', () => {
     expect(last(h.events, 'result')!.summary.ko).toMatch(/주문 \d건/);
   });
 });
+
+describe('결제 직전 재확인', () => {
+  it('결제 게이트에서 판매처 가격이 바뀌면 결제하지 않고 다시 묻고, 새 금액으로 다시 승인받는다', async () => {
+    const h = setup('검정 울 코트, 20만원 이하');
+    await h.until((e) => e.type === 'payment_gate');
+    h.store.setPrice('c1', 199000);
+    h.agent.approve();
+    await h.until((e) => e.type === 'needs_input' && e.id.startsWith('q-payfix'));
+    expect(h.store.getState().orders).toHaveLength(0);
+    h.agent.answer('refresh');
+    await tick(); await tick();
+    expect(last(h.events, 'payment_gate')!.total).toBe(199000);
+    h.agent.approve();
+    await h.until((e) => e.type === 'result');
+    expect(last(h.events, 'result')!.status).toBe('done');
+    expect(h.store.getState().orders[0].total).toBe(199000);
+  });
+  it('중단을 고르면 아무것도 결제되지 않는다', async () => {
+    const h = setup('검정 울 코트, 20만원 이하');
+    await h.until((e) => e.type === 'payment_gate');
+    h.store.setPrice('c1', 199000);
+    h.agent.approve();
+    await h.until((e) => e.type === 'needs_input' && e.id.startsWith('q-payfix'));
+    h.agent.answer('stop');
+    await h.until((e) => e.type === 'result');
+    expect(last(h.events, 'result')!.status).toBe('cancelled');
+    expect(h.store.getState().orders).toHaveLength(0);
+  });
+});
