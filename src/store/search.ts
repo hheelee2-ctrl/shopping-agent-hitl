@@ -17,6 +17,7 @@ const WEIGHT: Record<Exclude<Dim, 'category'>, number> = {
   season: 0.15,
   style: 0.15,
   budget: 0.25,
+  size: 0.2,
 };
 
 export function scoreProduct(p: Product, c: Criteria): Scored | null {
@@ -47,6 +48,8 @@ export function scoreProduct(p: Product, c: Criteria): Scored | null {
     add('budget', ok ? 1 : 0);
   }
 
+  if (c.size) add('size', (p.sizes[c.size] ?? 0) > 0 ? 1 : 0);
+
   return { product: p, score: total === 0 ? 1 : got / total, matched, partial, missed };
 }
 
@@ -58,7 +61,7 @@ export function searchProducts(products: Product[], c: Criteria): Scored[] {
     .sort((a, b) => b.score - a.score || a.product.price - b.product.price);
 }
 
-export const isEligible = (s: Scored) => !s.missed.includes('budget') && s.product.stock > 0;
+export const isEligible = (s: Scored) => !s.missed.includes('budget') && !s.missed.includes('size') && s.product.stock > 0;
 
 const list = (dims: Dim[], lang: keyof L) => dims.map((d) => DIM_L[d][lang]).join('·');
 
@@ -69,9 +72,11 @@ export function reasonOf(s: Scored): L {
     if (s.matched.length) out.push(lang === 'ko' ? `${list(s.matched, lang)} 일치` : `${list(s.matched, lang)} match`);
     if (s.partial.length) out.push(lang === 'ko' ? `${list(s.partial, lang)} 부분 일치` : `${list(s.partial, lang)} partial`);
     const budget = s.missed.includes('budget');
-    const others = s.missed.filter((d) => d !== 'budget');
+    const noSize = s.missed.includes('size');
+    const others = s.missed.filter((d) => d !== 'budget' && d !== 'size');
     if (others.length) out.push(lang === 'ko' ? `${list(others, lang)} 불일치` : `${list(others, lang)} mismatch`);
     if (budget) out.push(lang === 'ko' ? '예산 초과' : 'over budget');
+    if (noSize) out.push(lang === 'ko' ? '요청한 사이즈 없음' : 'size unavailable');
     if (out.length === 0) out.push(lang === 'ko' ? '종류만 일치 (구분할 조건이 적음)' : 'Type only (few criteria to tell apart)');
     return out.join(' · ');
   };

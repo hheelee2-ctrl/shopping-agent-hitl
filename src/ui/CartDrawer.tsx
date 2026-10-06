@@ -29,7 +29,7 @@ export function CartDrawer({ lang, open, state, onClose, onRemove, onCheckout, r
             return (
               <li key={l.productId}>
                 <div>
-                  <div className="name">{t(p.name, lang)} ×{l.qty}</div>
+                  <div className="name">{t(p.name, lang)}{l.size !== 'FREE' ? ` · ${l.size}` : ''} ×{l.qty}</div>
                   <div className="stock">{money(l.priceAtAdd * l.qty, lang)}{l.addedBy === 'agent' ? ` · ${t(C.byAgent, lang)}` : ''}</div>
                 </div>
                 <button className="btn sm" disabled={readOnly} onClick={() => onRemove(l.productId)}>{t(C.remove, lang)}</button>

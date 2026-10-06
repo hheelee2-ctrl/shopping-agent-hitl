@@ -70,8 +70,28 @@ function take<T extends string>(text: string, dict: Dict<T>): { found: T[]; rest
 const num = (s: string) => Math.round(parseFloat(s.replace(/,/g, '')) * 1);
 
 /** 규칙 기반 요청 해석. 모르는 표현은 unknown으로 남겨 에이전트가 Escalation하게 한다. */
+const SIZE_WORDS: [RegExp, string][] = [
+  [/엑스라지|extra\s*large/i, 'XL'], [/스몰|small/i, 'S'], [/미디엄|medium/i, 'M'], [/라지|large/i, 'L'],
+];
+
+/** 요청에서 사이즈를 뽑는다. 뽑은 부분은 지워서 unknown으로 남지 않게 한다. */
+function takeSize(text: string): { size?: string; rest: string } {
+  for (const [re, v] of SIZE_WORDS) if (re.test(text)) return { size: v, rest: text.replace(re, ' ') };
+  // 알파벳 사이즈: 'M 사이즈', 'size L'처럼 표시가 있거나, 대문자 단독 토큰일 때만
+  const marked = text.match(/(?:^|[\s,])(xxl|xl|xs|s|m|l)\s*(?:사이즈|size)(?=$|[\s,.])/i) ?? text.match(/\bsize\s*(xxl|xl|xs|s|m|l)\b/i);
+  if (marked) return { size: marked[1].toUpperCase(), rest: text.replace(marked[0], ' ') };
+  const bare = text.match(/(?:^|[\s,])(XXL|XL|XS|S|M|L)(?=$|[\s,.])/);
+  if (bare) return { size: bare[1], rest: text.replace(bare[0], ' ') };
+  const shoe = text.match(/(?:^|[\s,])(2[2-9][05])\s*(?:mm|사이즈)?(?=$|[\s,.])/);
+  if (shoe) return { size: shoe[1], rest: text.replace(shoe[0], ' ') };
+  const waist = text.match(/(?:^|[\s,])(2[6-9]|3[0-6])\s*(?:인치|사이즈)(?=$|[\s,.])/);
+  if (waist) return { size: waist[1], rest: text.replace(waist[0], ' ') };
+  return { rest: text };
+}
+
 export function parseRequest(input: string): Criteria {
-  let text = input.toLowerCase();
+  const sz = takeSize(input);
+  let text = sz.rest.toLowerCase();
   let maxPrice: number | undefined;
   let minPrice: number | undefined;
 
@@ -108,6 +128,7 @@ export function parseRequest(input: string): Criteria {
     styles: style.found,
     maxPrice,
     minPrice,
+    size: sz.size,
     unknown,
   };
 }
@@ -136,6 +157,7 @@ export function describeCriteria(c: Criteria): Chip[] {
     const v = won(c.minPrice);
     chips.push({ label: DIM_L.budget, value: { ko: `${v.ko} 이상`, en: `from ${v.en}` } });
   }
+  if (c.size) chips.push({ label: DIM_L.size, value: { ko: c.size, en: c.size } });
   return chips;
 }
 

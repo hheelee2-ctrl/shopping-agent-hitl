@@ -4,7 +4,7 @@ import type { ConsoleState } from '../state/console';
 import type { Store } from '../store/store';
 import { COLOR_L, MATERIAL_L } from '../store/labels';
 import { photoUrl } from '../store/photos';
-import { C, LEVEL, money, t } from './copy';
+import { C, LEVEL, SZ, money, t } from './copy';
 import { ConfRing } from './ConfRing';
 import { Mark } from './Mark';
 
@@ -37,6 +37,7 @@ export function Compare({ lang, store, state, onPick, onClose }: Props) {
     { key: 'price', label: X.price, cells: items.map((p) => money(p.price, lang)) },
     { key: 'color', label: X.color, cells: items.map((p) => p.colors.map((c) => t(COLOR_L[c], lang)).join(' · ')) },
     { key: 'mat', label: X.material, cells: items.map((p) => p.materials.map((m) => t(MATERIAL_L[m], lang)).join(' · ')) },
+    { key: 'size', label: SZ.pick, cells: items.map((p) => Object.entries(p.sizes).filter(([, n]) => n > 0).map(([z]) => z).join(' ')) },
     { key: 'stock', label: C.left, cells: items.map((p) => String(p.stock)) },
   ];
   const diff = (cells: string[]) => new Set(cells).size > 1;

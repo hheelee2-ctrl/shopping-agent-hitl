@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Dial, Lang } from '../engine/types';
+import type { Dial, Lang, SizeProfile } from '../engine/types';
 import { DEFAULT_LIMIT } from '../store/catalog';
-import { DIAL, t } from './copy';
+import { DIAL, SZ, t } from './copy';
 import { SETUP } from './landCopy';
 import { LimitSlider } from './LimitSlider';
 import { Magnetic } from './Magnetic';
@@ -9,9 +9,10 @@ import { Mark } from './Mark';
 import type { MarkPhase } from './Mark';
 import { Rise } from './Rise';
 import { Seg } from './Seg';
+import { DEFAULT_SIZES, SizeProfileEditor } from './SizeProfile';
 import { ThemeButton } from './ThemeButton';
 
-export interface Config { dial: Dial; limit: number }
+export interface Config { dial: Dial; limit: number; sizes: SizeProfile }
 
 interface Props {
   lang: Lang;
@@ -27,6 +28,7 @@ interface Props {
 export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
   const [dial, setDial] = useState<Dial>('cart-only');
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
+  const [sizes, setSizes] = useState<SizeProfile>(DEFAULT_SIZES);
   const [nod, setNod] = useState(0);
   const [phase, setPhase] = useState<MarkPhase>('idle');
   const [leaving, setLeaving] = useState(false);
@@ -40,7 +42,7 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
     const at = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
     at(() => setPhase('busy'), 260);
     at(() => setPhase('done'), 1200);
-    at(() => onConfirm({ dial, limit }), 1900);
+    at(() => onConfirm({ dial, limit, sizes }), 1900);
   };
 
   const label = !leaving ? t(SETUP.go, lang) : phase === 'done' ? t(SETUP.ready, lang) : t(SETUP.preparing, lang);
@@ -79,6 +81,12 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
           <p className="setup-desc">{t(SETUP.limitNote, lang)}</p>
         </section>
 
+        <section className="setup-block">
+          <p className="label">{t(SZ.title, lang)}</p>
+          <SizeProfileEditor lang={lang} value={sizes} onChange={setSizes} disabled={leaving} />
+          <p className="setup-desc">{t(SZ.note, lang)}</p>
+        </section>
+
         <div className="setup-actions">
           <Magnetic>
             <button className={`btn primary cta ${phase === 'done' ? 'ok' : ''}`} onClick={go} disabled={leaving}>
@@ -88,7 +96,6 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
           </Magnetic>
           <a className="link" href="#/">{t(SETUP.back, lang)}</a>
         </div>
-        <p className="mono setup-mock">{t(SETUP.mock, lang)}</p>
       </main>
     </div>
   );

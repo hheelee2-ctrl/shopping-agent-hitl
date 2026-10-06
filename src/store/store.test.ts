@@ -4,6 +4,10 @@ import { isEligible, searchProducts } from './search';
 import { createStore } from './store';
 
 describe('parseRequest', () => {
+  it('요청에서 사이즈를 뽑고 unknown으로 남기지 않는다', () => {
+    expect(parseRequest('검정 울 코트 L 사이즈')).toMatchObject({ size: 'L', unknown: [] });
+    expect(parseRequest('화이트 스니커즈 270')).toMatchObject({ size: '270', unknown: [] });
+  });
   it('색상·소재·종류·가격 상한을 해석한다', () => {
     const c = parseRequest('검정 울 코트, 20만원 이하');
     expect(c).toMatchObject({ category: 'coat', colors: ['black'], materials: ['wool'], maxPrice: 200000, unknown: [] });
@@ -50,12 +54,13 @@ describe('searchProducts', () => {
 describe('store', () => {
   it('재고 이상으로는 담을 수 없다', () => {
     const s = createStore();
-    expect(s.addToCart('s1', 'user').ok).toBe(true);
-    expect(s.addToCart('s1', 'user')).toEqual({ ok: false, reason: 'sold-out' });
+    const z = s.availableSizes('s1')[0];
+    expect(s.addToCart('s1', 'user', z).ok).toBe(true);
+    expect(s.addToCart('s1', 'user', z)).toEqual({ ok: false, reason: 'sold-out' });
   });
   it('checkout은 재고를 차감하고 장바구니를 비운다', () => {
     const s = createStore();
-    s.addToCart('c1', 'user');
+    s.addToCart('c1', 'user', s.availableSizes('c1')[0]);
     const before = s.getProduct('c1')!.stock;
     const order = s.checkout();
     expect(order?.total).toBe(178000);
@@ -66,7 +71,7 @@ describe('store', () => {
     const s = createStore();
     let n = 0;
     s.subscribe(() => n++);
-    s.addToCart('c1', 'agent');
+    s.addToCart('c1', 'agent', s.availableSizes('c1')[0]);
     s.setStock('c1', 0);
     expect(n).toBe(2);
   });
@@ -75,7 +80,7 @@ describe('store', () => {
 describe('setPrice', () => {
   it('상품 가격은 바뀌지만 이미 담긴 줄은 담은 시점 가격을 유지한다', () => {
     const s = createStore();
-    s.addToCart('c1', 'agent');
+    s.addToCart('c1', 'agent', s.availableSizes('c1')[0]);
     s.setPrice('c1', 199000);
     expect(s.getProduct('c1')!.price).toBe(199000);
     expect(s.cartTotal()).toBe(178000);
@@ -98,5 +103,27 @@ describe('parseMulti', () => {
     const r = parseMulti('검정 울 코트, 20만원 이하');
     expect(r.items).toHaveLength(1);
     expect(r.items[0].maxPrice).toBe(200000);
+  });
+});
+
+describe('size', () => {
+  it('사이즈를 고르지 않으면 여러 사이즈 상품은 담을 수 없다', () => {
+    const s = createStore();
+    expect(s.addToCart('c1', 'user')).toEqual({ ok: false, reason: 'size' });
+  });
+  it('담은 상품의 다른 사이즈는 같은 줄로 담을 수 없다', () => {
+    const s = createStore();
+    const [a, b] = s.availableSizes('c1');
+    expect(s.addToCart('c1', 'user', a).ok).toBe(true);
+    expect(s.addToCart('c1', 'user', b)).toEqual({ ok: false, reason: 'other-size' });
+  });
+  it('사이즈 재고는 합이 상품 재고이고, 결제하면 그 사이즈만 줄어든다', () => {
+    const s = createStore();
+    const p = s.getProduct('c1')!;
+    expect(Object.values(p.sizes).reduce((x, y) => x + y, 0)).toBe(p.stock);
+    s.addToCart('c1', 'user', 'M');
+    const before = s.getProduct('c1')!.sizes.M;
+    s.checkout();
+    expect(s.getProduct('c1')!.sizes.M).toBe(before - 1);
   });
 });

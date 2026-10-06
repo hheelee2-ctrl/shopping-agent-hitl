@@ -1,3 +1,4 @@
+import { DEFAULT_PROFILE } from '../store/catalog';
 import { describe, expect, it } from 'vitest';
 import type { AgentEvent, Dial } from '../engine/types';
 import { createStore } from '../store/store';
@@ -5,11 +6,12 @@ import { RuleAgent } from './agent';
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
-function setup(request: string, dial: Dial = 'auto', opts: { limit?: number; simulateStockout?: boolean; simulatePriceChange?: boolean } = {}) {
+function setup(request: string, dial: Dial = 'auto', opts: { limit?: number; before?: (s: ReturnType<typeof createStore>) => void } = {}) {
   const store = createStore();
+  opts.before?.(store);
   const events: AgentEvent[] = [];
   const agent = new RuleAgent(store, () => Promise.resolve());
-  agent.start({ request, dial, limit: opts.limit ?? 300000, simulateStockout: opts.simulateStockout ?? false, simulatePriceChange: opts.simulatePriceChange }, (e) => events.push(e));
+  agent.start({ request, dial, limit: opts.limit ?? 300000, sizes: DEFAULT_PROFILE }, (e) => events.push(e));
   const until = async (pred: (e: AgentEvent) => boolean) => {
     for (let i = 0; i < 300; i++) {
       if (events.some(pred)) return;
@@ -85,24 +87,32 @@ describe('Escalation은 계산된 조건에서 나온다', () => {
   });
 });
 
-describe('S3 재고 변동·한도 (store가 실제로 바뀐다)', () => {
+describe('S3 재고 변동·한도 (시장이 store를 실제로 바꾼다)', () => {
+  /** 승인을 기다리는 사이 다른 구매자가 마지막 재고를 가져간다 */
+  const sellOut = async (h: ReturnType<typeof setup>) => {
+    await h.until((e) => e.type === 'needs_input');
+    h.agent.answer('s1'); // 동점 후보 중 마지막 1개 남은 s1
+    await h.until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
+    h.store.setStock('s1', 0);
+    h.agent.approve();
+  };
   it('담기 직전 다른 구매자가 재고를 가져가면 실패 후 대안을 제시한다', async () => {
-    const { store, agent, until } = setup('화이트 스니커즈 한 켤레', 'auto', { simulateStockout: true });
-    await until((e) => e.type === 'needs_input');
-    agent.answer('s1'); // 동점 후보 중 마지막 1개 남은 s1
-    await until((e) => e.type === 'tool_call' && e.status === 'failed');
-    expect(store.getProduct('s1')!.stock).toBe(0);
-    await until((e) => e.type === 'needs_input' && e.id === 'q-alt1');
-    expect(store.getState().cart).toHaveLength(0);
+    const h = setup('화이트 스니커즈 한 켤레', 'cart-only');
+    await sellOut(h);
+    await h.until((e) => e.type === 'tool_call' && e.status === 'failed');
+    expect(h.store.getProduct('s1')!.stock).toBe(0);
+    await h.until((e) => e.type === 'needs_input' && e.id === 'q-alt1');
+    expect(h.store.getState().cart).toHaveLength(0);
   });
-  it('대안이 한도를 넘으면 Dial=auto여도 exceeded', async () => {
-    const { agent, events, until } = setup('화이트 스니커즈 한 켤레', 'auto', { simulateStockout: true });
-    await until((e) => e.type === 'needs_input');
-    agent.answer('s1');
-    await until((e) => e.type === 'needs_input' && e.id === 'q-alt1');
-    agent.answer('s3');
-    await until((e) => e.type === 'payment_gate');
-    expect(last(events, 'payment_gate')).toMatchObject({ total: 342000, limit: 300000, exceeded: true });
+  it('대안이 한도를 넘으면 exceeded', async () => {
+    const h = setup('화이트 스니커즈 한 켤레', 'cart-only');
+    await sellOut(h);
+    await h.until((e) => e.type === 'needs_input' && e.id === 'q-alt1');
+    h.agent.answer('s3');
+    await h.until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval' && e.itemIds?.[0] === 's3');
+    h.agent.approve();
+    await h.until((e) => e.type === 'payment_gate');
+    expect(last(h.events, 'payment_gate')).toMatchObject({ total: 342000, limit: 300000, exceeded: true });
   });
 });
 
@@ -119,7 +129,7 @@ describe('Action Audit / 되돌리기', () => {
   it('사람이 장바구니에서 직접 빼도 게이트가 갱신된다', async () => {
     const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하');
     await until((e) => e.type === 'payment_gate');
-    store.addToCart('sh1', 'user');
+    store.addToCart('sh1', 'user', store.availableSizes('sh1')[0]);
     await tick();
     expect(last(events, 'payment_gate')?.total).toBe(178000 + 69000);
     agent.reject();
@@ -150,8 +160,9 @@ describe('낡은 승인 방지 (Stale Approval)', () => {
     expect(t && t.type === 'tool_call' && t.label.ko).toContain('178,000원');
   });
   it('승인 직후 가격이 오르면 담지 않고 다시 묻는다. 새 가격으로 담으면 그 가격이 장바구니에 기록된다', async () => {
-    const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하', 'cart-only', { simulatePriceChange: true });
+    const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하', 'cart-only');
     await until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
+    store.setPrice('c1', 199000); // 승인을 기다리는 사이 판매처가 가격을 올림
     agent.approve();
     await until((e) => e.type === 'needs_input');
     expect(last(events, 'needs_input')?.id).toBe('q-stale1');
@@ -163,8 +174,9 @@ describe('낡은 승인 방지 (Stale Approval)', () => {
     expect(last(events, 'payment_gate')?.total).toBe(199000);
   });
   it('새 가격을 거절하면 아무것도 담기지 않고 끝난다', async () => {
-    const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하', 'cart-only', { simulatePriceChange: true });
+    const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하', 'cart-only');
     await until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
+    store.setPrice('c1', 199000); // 승인을 기다리는 사이 판매처가 가격을 올림
     agent.approve();
     await until((e) => e.type === 'needs_input');
     agent.answer('skip');
@@ -172,10 +184,11 @@ describe('낡은 승인 방지 (Stale Approval)', () => {
     expect(last(events, 'result')?.status).toBe('cancelled');
     expect(store.getState().cart).toHaveLength(0);
   });
-  it('승인 단계가 없는 Dial=auto에서는 낡을 승인이 없으므로 묻지 않는다', async () => {
-    const { events, until } = setup('검정 울 코트, 20만원 이하', 'auto', { simulatePriceChange: true });
+  it('승인 단계가 없는 Dial=auto에서는 낡을 승인이 없으므로 묻지 않고, 담는 순간의 가격을 기록한다', async () => {
+    const { store, events, until } = setup('검정 울 코트, 20만원 이하', 'auto', { before: (s) => s.setPrice('c1', 199000) });
     await until((e) => e.type === 'payment_gate');
     expect(events.some((e) => e.type === 'needs_input')).toBe(false);
+    expect(store.getState().cart[0].priceAtAdd).toBe(199000);
   });
 });
 
@@ -273,5 +286,97 @@ describe('거절 사유 되먹임', () => {
     expect(last(h.events, 'result')?.status).toBe('cancelled');
     expect(rejects).toBe(3);
     expect(asked).toBe(2);
+  });
+});
+
+describe('사이즈', () => {
+  const noSizes = (request: string, dial: Dial = 'auto', before?: (s: ReturnType<typeof createStore>) => void) => {
+    const store = createStore();
+    before?.(store);
+    const events: AgentEvent[] = [];
+    const agent = new RuleAgent(store, () => Promise.resolve());
+    agent.start({ request, dial, limit: 500000 }, (e) => events.push(e));
+    const until = async (pred: (e: AgentEvent) => boolean) => {
+      for (let i = 0; i < 300; i++) { if (events.some(pred)) return; await tick(); }
+      throw new Error('timeout: ' + JSON.stringify(events.map((e) => e.type)));
+    };
+    return { store, agent, events, until };
+  };
+
+  it('내 사이즈가 있으면 묻지 않고 그 사이즈로 담는다', async () => {
+    const h = setup('검정 울 코트, 20만원 이하');
+    await h.until((e) => e.type === 'payment_gate');
+    expect(h.events.some((e) => e.type === 'needs_input')).toBe(false);
+    expect(h.store.getState().cart[0]).toMatchObject({ productId: 'c1', size: 'M' });
+  });
+
+  it('내 사이즈가 비어 있으면 담기 전에 사이즈를 묻고, 고른 사이즈로 담는다', async () => {
+    const h = noSizes('검정 울 코트, 20만원 이하');
+    await h.until((e) => e.type === 'needs_input');
+    const q = last(h.events, 'needs_input')!;
+    expect(q.id.startsWith('q-size')).toBe(true);
+    expect(q.options.some((o) => o.id.startsWith('size:'))).toBe(true);
+    expect(h.store.getState().cart).toHaveLength(0);
+    h.agent.answer('size:L');
+    await h.until((e) => e.type === 'payment_gate');
+    expect(h.store.getState().cart[0]).toMatchObject({ productId: 'c1', size: 'L' });
+  });
+
+  it('한 번 알려준 사이즈는 같은 요청의 다음 항목(같은 사이즈 체계)에서 다시 묻지 않는다', async () => {
+    const h = noSizes('검정 울 코트와 자켓');
+    let lastQ = '';
+    for (let i = 0; i < 400 && !h.events.some((e) => e.type === 'payment_gate'); i++) {
+      const e = h.events[h.events.length - 1];
+      if (e?.type === 'needs_input' && e.id !== lastQ) {
+        lastQ = e.id;
+        h.agent.answer(e.id.startsWith('q-size') ? 'size:M' : e.options[0].id);
+      }
+      await tick();
+    }
+    expect(h.events.filter((e) => e.type === 'needs_input' && e.id.startsWith('q-size'))).toHaveLength(1);
+  });
+
+  it('요청에 적은 사이즈로 검색하고, 그 사이즈가 있는 상품만 후보가 된다', async () => {
+    const h = setup('화이트 스니커즈 260', 'auto', { before: (s) => s.setSizeStock('s1', '260', 0) });
+    await h.until((e) => e.type === 'payment_gate' || e.type === 'needs_input' || e.type === 'result');
+    const cart = h.store.getState().cart;
+    expect(cart.every((l) => l.size === '260')).toBe(true);
+  });
+
+  it('승인 대기 중에 그 사이즈만 팔려도 다른 사이즈를 다시 묻는다', async () => {
+    const h = setup('검정 울 코트, 20만원 이하', 'cart-only');
+    await h.until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
+    h.store.setSizeStock('c1', 'M', 0);
+    h.agent.approve();
+    await h.until((e) => e.type === 'needs_input');
+    expect(last(h.events, 'needs_input')!.id.startsWith('q-size')).toBe(true);
+    expect(h.store.getState().cart).toHaveLength(0);
+  });
+
+  it('이미 담긴 상품이면 중복 담기를 묻는다', async () => {
+    const h = setup('검정 울 코트, 20만원 이하', 'auto', { before: (s) => { s.addToCart('c1', 'user', 'M'); } });
+    await h.until((e) => e.type === 'needs_input');
+    expect(last(h.events, 'needs_input')!.id.startsWith('q-dup')).toBe(true);
+    h.agent.answer('keep');
+    await h.until((e) => e.type === 'payment_gate');
+    expect(h.store.getState().cart).toMatchObject([{ productId: 'c1', qty: 1 }]);
+  });
+
+  it('"한 개 더 담기"는 같은 사이즈로 수량을 늘린다', async () => {
+    const h = setup('검정 울 코트, 20만원 이하', 'auto', { before: (s) => { s.setSizeStock('c1', 'M', 2); s.addToCart('c1', 'user', 'M'); } });
+    await h.until((e) => e.type === 'needs_input');
+    h.agent.answer('more');
+    await h.until((e) => e.type === 'payment_gate');
+    expect(h.store.getState().cart).toMatchObject([{ productId: 'c1', size: 'M', qty: 2 }]);
+  });
+
+  it('내 사이즈가 남은 상품이 하나도 없으면 사이즈 조건을 풀지 묻는다', async () => {
+    const h = setup('검정 울 코트, 20만원 이하', 'auto', {
+      before: (s) => { for (const p of Object.values(s.getState().products)) if (p.category === 'coat') s.setSizeStock(p.id, 'M', 0); },
+    });
+    await h.until((e) => e.type === 'needs_input');
+    expect(last(h.events, 'needs_input')!.id.startsWith('q-sizefree')).toBe(true);
+    h.agent.answer('nosize');
+    await h.until((e) => e.type === 'needs_input' && e.id.startsWith('q-size') && !e.id.startsWith('q-sizefree'));
   });
 });

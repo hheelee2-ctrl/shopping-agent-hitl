@@ -3,6 +3,15 @@ import type { Phase } from '../state/console';
 
 export const t = (l: L, lang: Lang) => l[lang];
 
+export const SZ = {
+  title: { ko: '내 사이즈', en: 'My sizes' },
+  note: { ko: '에이전트가 담을 때 기본으로 씁니다. 미설정이면 담기 전에 물어봅니다.', en: 'Used by the agent when adding. If unset, it asks first.' },
+  none: { ko: '미설정', en: 'Unset' },
+  kind: { top: { ko: '상의·아우터', en: 'Tops' }, shoe: { ko: '신발', en: 'Shoes' }, bottom: { ko: '하의', en: 'Bottoms' } },
+  pick: { ko: '사이즈', en: 'Size' },
+  choose: { ko: '사이즈 선택', en: 'Select size' },
+} as const;
+
 export const C = {
   brand: { ko: 'Nod', en: 'Nod' },
   searchPh: { ko: '검색 (예: 검정 울 코트 20만원 이하)', en: 'Search (e.g. black wool coat under 200000)' },
@@ -11,6 +20,7 @@ export const C = {
   scrubTitle: { ko: '행동 타임라인', en: 'Action timeline' },
   replay: { ko: '되감기 중', en: 'Replay' },
   live: { ko: '실시간', en: 'Live' },
+  market: { ko: '쇼핑몰 실시간', en: 'Shop activity' },
   play: { ko: '▶ 처음부터 재생', en: '▶ Replay from start' },
   pause: { ko: '❚❚ 멈춤', en: '❚❚ Pause' },
   backToLive: { ko: '실시간으로', en: 'Back to live' },
@@ -25,7 +35,7 @@ export const C = {
   empty: { ko: '장바구니가 비었어요.', en: 'Your cart is empty.' },
   total: { ko: '합계', en: 'Total' },
   remove: { ko: '빼기', en: 'Remove' },
-  checkout: { ko: '결제 (시뮬레이션)', en: 'Checkout (simulated)' },
+  checkout: { ko: '결제하기', en: 'Checkout' },
   orders: { ko: '주문 완료', en: 'Orders' },
   close: { ko: '닫기', en: 'Close' },
 
@@ -37,8 +47,6 @@ export const C = {
   dial: { ko: '자율도', en: 'Autonomy' },
   dialNote: { ko: '어떤 단계에서도 결제는 직접 승인해요.', en: 'You approve payment at every level.' },
   limit: { ko: '결제 한도', en: 'Payment limit' },
-  priceChange: { ko: '담기 승인 직후 판매처가 가격을 올림 (시연 · 승인 단계가 있을 때)', en: 'Seller raises the price right after you approve (demo — needs an approval step)' },
-  stockout: { ko: '담기 직전 다른 구매자가 마지막 재고를 구매 (시연)', en: 'Another buyer takes the last unit just before adding (demo)' },
   run: { ko: '맡기기', en: 'Hand off' },
   rerun: { ko: '다시 맡기기', en: 'Run again' },
   reset: { ko: '초기화', en: 'Reset' },
@@ -58,7 +66,7 @@ export const C = {
     ko: '한도를 넘었어요. 자율도와 관계없이 직접 확인이 필요해요.',
     en: 'Over your limit. Needs your review regardless of autonomy level.',
   },
-  approvePay: { ko: '승인 (시뮬레이션)', en: 'Approve (simulated)' },
+  approvePay: { ko: '결제 승인', en: 'Approve payment' },
   declinePay: { ko: '결제 안 함', en: "Don't pay" },
   audit: { ko: '행동 기록', en: 'Action audit' },
   auditEmpty: { ko: '아직 행동이 없어요.', en: 'No actions yet.' },
@@ -73,14 +81,15 @@ export const C = {
   statusFailed: { ko: '실패', en: 'Failed' },
 } satisfies Record<string, L>;
 
-export const PRESETS: { text: L; label?: L; stockout?: boolean; priceChange?: boolean }[] = [
+export const PRESETS: { text: L; label?: L }[] = [
   { text: { ko: '검정 울 코트, 20만원 이하', en: 'black wool coat under 200000' } },
   { text: { ko: '가을에 입기 좋은 자켓', en: 'jacket for autumn' } },
-  { text: { ko: '화이트 스니커즈 한 켤레', en: 'white sneakers' }, stockout: true },
+  { text: { ko: '화이트 스니커즈 한 켤레', en: 'white sneakers' } },
   { text: { ko: '검정 가죽 로퍼 20만원 이하', en: 'black leather loafers under 200000' } },
+  { text: { ko: '검정 울 코트 XL', en: 'black wool coat, size XL' } },
+  { text: { ko: '화이트 스니커즈 280', en: 'white sneakers, size 280' } },
   { text: { ko: '코트 힙한 느낌', en: 'coat hype vibe' } },
   { text: { ko: '검정 울 코트 20만원 이하랑 검정 가죽 로퍼, 합쳐서 35만원', en: 'black wool coat under 200000 and black leather loafers, total 350000' }, label: { ko: '코트 + 로퍼, 합쳐서 35만원', en: 'coat + loafers, 350000 total' } },
-  { text: { ko: '검정 울 코트, 20만원 이하', en: 'black wool coat under 200000' }, label: { ko: '검정 울 코트 · 승인 뒤 가격 인상', en: 'black wool coat · price rises after approval' }, priceChange: true },
 ];
 
 export const DIAL: Record<Dial, L> = {

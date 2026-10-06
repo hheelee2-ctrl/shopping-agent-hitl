@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { Dial, Lang } from '../engine/types';
+import type { Dial, Lang, SizeProfile } from '../engine/types';
 import type { ConsoleState, Phase } from '../state/console';
 import type { Store } from '../store/store';
 import { AuditLog } from './AuditLog';
@@ -8,7 +8,8 @@ import { ConfRing } from './ConfRing';
 import { Scrubber } from './Scrubber';
 import { Seg } from './Seg';
 import type { Frame } from '../state/timeline';
-import { C, DIAL, LEVEL, PHASE, PRESETS, money, t } from './copy';
+import { SizeProfileEditor } from './SizeProfile';
+import { C, DIAL, SZ, LEVEL, PHASE, PRESETS, money, t } from './copy';
 
 interface Props {
   lang: Lang;
@@ -18,15 +19,13 @@ interface Props {
   request: string;
   dial: Dial;
   limit: number;
-  stockout: boolean;
-  priceChange: boolean;
+  sizes: SizeProfile;
+  onSizes: (s: SizeProfile) => void;
   running: boolean;
   onRequest: (s: string) => void;
-  onPreset: (text: string, stockout: boolean, priceChange: boolean) => void;
+  onPreset: (text: string) => void;
   onDial: (d: Dial) => void;
   onLimit: (n: number) => void;
-  onStockout: (b: boolean) => void;
-  onPriceChange: (b: boolean) => void;
   onRun: () => void;
   onReset: () => void;
   onApprove: () => void;
@@ -77,7 +76,7 @@ export function AgentPanel(p: Props) {
         />
         <div className="presets" aria-label={t(C.presets, lang)}>
           {PRESETS.map((x, i) => (
-            <button key={i} className="chip btnchip" disabled={p.running} onClick={() => p.onPreset(t(x.text, lang), !!x.stockout, !!x.priceChange)}>
+            <button key={i} className="chip btnchip" disabled={p.running} onClick={() => p.onPreset(t(x.text, lang))}>
               {t(x.label ?? x.text, lang)}
             </button>
           ))}
@@ -96,14 +95,10 @@ export function AgentPanel(p: Props) {
       </div>
       <p className="note">{t(C.dialNote, lang)}</p>
 
-      <label className="check">
-        <input type="checkbox" checked={p.stockout} disabled={p.running} onChange={(e) => p.onStockout(e.target.checked)} />
-        <span>{t(C.stockout, lang)}</span>
-      </label>
-      <label className="check">
-        <input type="checkbox" checked={p.priceChange} disabled={p.running} onChange={(e) => p.onPriceChange(e.target.checked)} />
-        <span>{t(C.priceChange, lang)}</span>
-      </label>
+      <div className="section">
+        <p className="label">{t(SZ.title, lang)}</p>
+        <SizeProfileEditor lang={lang} value={p.sizes} onChange={p.onSizes} disabled={p.running} />
+      </div>
 
       <div className="row section">
         <button className="btn primary" onClick={p.onRun} disabled={p.running || p.request.trim() === ''}>
@@ -203,7 +198,7 @@ export function AgentPanel(p: Props) {
 
         {result && (
           <CostMeter
-            lang={lang} request={p.request} limit={p.limit} stockout={p.stockout} priceChange={p.priceChange}
+            lang={lang} request={p.request} limit={p.limit} sizes={p.sizes}
             dial={p.dial} disabled={p.running} onPick={p.onDial}
           />
         )}

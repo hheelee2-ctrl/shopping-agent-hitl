@@ -3,7 +3,7 @@ import { CATEGORY_L, COLOR_L } from '../store/labels';
 import { describeCriteria, parseMulti } from '../store/parser';
 import { isEligible, reasonOf, searchProducts, type Scored } from '../store/search';
 import type { Store } from '../store/store';
-import type { Category, Color, Criteria } from '../store/types';
+import { sizeKindOf, type Category, type Color, type Criteria, type SizeKind } from '../store/types';
 
 type Delay = (ms: number) => Promise<void>;
 const realDelay: Delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -17,6 +17,8 @@ const TIE_GAP = 0.1;
 const CAT_KEYS = Object.keys(CATEGORY_L) as Category[];
 const name = (s: Scored) => s.product.name;
 const won = (n: number): L => ({ ko: `${n.toLocaleString('ko-KR')}원`, en: `KRW ${n.toLocaleString('en-US')}` });
+
+const priced = (s: Scored): L => ({ ko: `${s.product.name.ko} · ${won(s.product.price).ko}`, en: `${s.product.name.en} · ${won(s.product.price).en}` });
 
 type ShopResult = 'added' | 'skipped' | 'end';
 interface Ctx { multi: boolean; budget?: number }
@@ -34,10 +36,9 @@ export class RuleAgent implements AgentAdapter {
   private paid = false;
   private gatePending = false;
   private undoEmptied = false;
-  private stockoutDone = false;
-  private priceChangeDone = false;
   private runId = 0;
   private lines = new Map<string, string>(); // tool_call id -> productId
+  private sizeMemo: Partial<Record<SizeKind, string>> = {}; // 이번 요청에서 알려준 사이즈
   private unsub: (() => void) | null = null;
 
   constructor(private store: Store, private delay: Delay = realDelay) {}
@@ -50,9 +51,8 @@ export class RuleAgent implements AgentAdapter {
     this.paid = false;
     this.gatePending = false;
     this.undoEmptied = false;
-    this.stockoutDone = false;
-    this.priceChangeDone = false;
     this.lines.clear();
+    this.sizeMemo = {};
     this.unsub = this.store.subscribe(() => this.onStoreChange());
     const id = ++this.runId;
     void this.run(id);
@@ -120,11 +120,27 @@ export class RuleAgent implements AgentAdapter {
     return base === 'high' && tie.has(s.product.id) ? 'medium' : base;
   }
 
+  /** 요청에 사이즈가 없으면 내 사이즈(프로필, 이번 요청에서 알려준 값)를 쓴다. */
+  private wantedSize(c: Criteria): string | undefined {
+    if (c.size) return c.size;
+    if (!c.category) return undefined;
+    const kind = sizeKindOf(c.category);
+    if (kind === 'free') return undefined;
+    return this.sizeMemo[kind] ?? this.opts.sizes?.[kind];
+  }
+
+  private chipsOf(c: Criteria) {
+    const chips = describeCriteria(c);
+    const mine = !c.size && this.wantedSize(c);
+    if (mine) chips.push({ label: { ko: '사이즈', en: 'Size' }, value: { ko: `${mine} (내 사이즈)`, en: `${mine} (your size)` } });
+    return chips;
+  }
+
   /** 항목별 조건을 사람이 확인할 칩으로 보여준다. 한 개면 기존 칩 그대로, 여러 개면 항목 단위로 묶는다. */
   private announce(items: Criteria[], budget?: number) {
-    if (items.length === 1) return this.emit({ type: 'understood', chips: describeCriteria(items[0]), unknown: items[0].unknown });
+    if (items.length === 1) return this.emit({ type: 'understood', chips: this.chipsOf(items[0]), unknown: items[0].unknown });
     const chips = items.map((c, i) => {
-      const ds = describeCriteria(c);
+      const ds = this.chipsOf(c);
       return {
         label: { ko: `항목 ${i + 1}`, en: `Item ${i + 1}` },
         value: { ko: ds.map((x) => x.value.ko).join(' · ') || '?', en: ds.map((x) => x.value.en).join(' · ') || '?' },
@@ -234,7 +250,7 @@ export class RuleAgent implements AgentAdapter {
     this.store.checkout();
     await d(600);
     if (!ok()) return;
-    this.finish('done', { ko: '결제 승인이 완료됐어요 (시뮬레이션 — 실제 결제는 실행되지 않아요).', en: 'Payment approved (simulation — no real payment is made).' });
+    this.finish('done', { ko: '결제 승인이 완료됐어요.', en: 'Payment approved.' });
   }
 
   /** 항목 하나를 검색 → 비교 → (예산 확인) → 담기까지 진행한다. 여러 항목이면 항목 번호를 id와 라벨에 붙인다. */
@@ -263,6 +279,7 @@ export class RuleAgent implements AgentAdapter {
     // 4) 검색 (쇼핑몰 현재 state를 읽는다)
     let eligible: Scored[] = [];
     let relaxed = false;
+    let sizeOff = false;
     for (let round = 1; ; round++) {
       const sid = `t-search${round}${sfx}`;
       const slabel = tag({ ko: '상품 검색', en: 'Search products' });
@@ -272,7 +289,8 @@ export class RuleAgent implements AgentAdapter {
       const inStock = Object.values(this.store.getState().products).filter(
         (p) => p.stock > 0 && !excluded.ids.has(p.id) && !excluded.brands.has(p.brand) && !p.colors.some((c) => excluded.colors.has(c)),
       );
-      const all = searchProducts(inStock, criteria);
+      const eff = sizeOff ? undefined : this.wantedSize(criteria);
+      const all = searchProducts(inStock, { ...criteria, size: eff });
       eligible = all.filter(isEligible);
       const near = eligible.filter((s) => eligible[0].score - s.score < TIE_GAP);
       const tie = new Set(near.length > 1 ? near.map((s) => s.product.id) : []);
@@ -287,6 +305,26 @@ export class RuleAgent implements AgentAdapter {
         this.emit({ type: 'confidence', itemId: s.product.id, level: this.levelOf(s, tie), reason: reasonOf(s) });
       }
       if (eligible.length > 0) break;
+
+      // 사이즈 때문에 비었으면 사이즈 조건을 풀지 묻는다 (한 번만)
+      if (!sizeOff && eff && searchProducts(inStock, { ...criteria, size: undefined }).some(isEligible)) {
+        this.emit({
+          type: 'needs_input', id: `q-sizefree${sfx}`,
+          question: { ko: `사이즈 ${eff}이(가) 남은 상품이 없어요. 사이즈 조건을 빼고 볼까요?`, en: `Nothing is left in size ${eff}. Search without the size filter?` },
+          options: [
+            { id: 'nosize', label: { ko: '사이즈 조건 빼고 보기', en: 'Ignore size' } },
+            { id: 'stop', label: { ko: '중단', en: 'Stop' } },
+          ],
+        });
+        const a = await this.wait();
+        if (!ok()) return 'end';
+        if (a !== 'nosize') {
+          this.finish('cancelled', { ko: '사이즈가 없어 중단했어요.', en: `Stopped — size ${eff} is unavailable.` });
+          return 'end';
+        }
+        sizeOff = true;
+        continue;
+      }
 
       // 결과가 없으면 예산을 풀지 묻는다 (한 번만)
       if (!relaxed && criteria.maxPrice !== undefined) {
@@ -335,7 +373,7 @@ export class RuleAgent implements AgentAdapter {
       this.emit({
         type: 'needs_input', id: `q-pick${sfx}`,
         question: { ko: '후보 간 차이가 작아 제가 고를 수 없어요. 어느 쪽으로 할까요?', en: "The candidates are too close for me to choose. Which one?" },
-        options: options.map((s) => ({ id: s.product.id, label: name(s) })),
+        options: options.map((s) => ({ id: s.product.id, label: priced(s) })),
       });
       const a = await this.wait();
       if (!ok()) return 'end';
@@ -382,10 +420,71 @@ export class RuleAgent implements AgentAdapter {
         }
       }
 
+      // 6-b) 이미 담긴 상품이면 먼저 묻는다
+      const inCart = this.store.getState().cart.find((l) => l.productId === pick.product.id);
+      let forced: string | undefined;
+      if (inCart) {
+        this.emit({
+          type: 'needs_input', id: `q-dup${attempt}${sfx}`,
+          question: { ko: `${name(pick).ko}은(는) 이미 장바구니에 있어요 (${inCart.size}, ${inCart.qty}개). 어떻게 할까요?`, en: `${name(pick).en} is already in your cart (${inCart.size}, ×${inCart.qty}). What now?` },
+          options: [
+            { id: 'keep', label: { ko: '그대로 두기', en: 'Keep as is' } },
+            { id: 'more', label: { ko: '한 개 더 담기', en: 'Add one more' } },
+            ...(round0 < 3 ? [{ id: 'other', label: { ko: '다른 상품 찾기', en: 'Find another' } }] : []),
+            { id: 'stop', label: { ko: '여기서 중단', en: 'Stop here' } },
+          ],
+        });
+        const a = await this.wait();
+        if (!ok()) return 'end';
+        if (a === 'keep') return 'added';
+        if (a === 'other' && round0 < 3) { excluded.ids.add(pick.product.id); continue redo; }
+        if (a !== 'more') { this.finish('cancelled', { ko: '요청에 따라 중단했어요.', en: 'Stopped as requested.' }); return 'end'; }
+        forced = inCart.size;
+      }
+
+      // 6-c) 사이즈 확정: 요청·내 사이즈가 지금 남아 있으면 그대로, 아니면 묻는다
+      const kind = sizeKindOf(pick.product.category);
+      const avail = this.store.availableSizes(pick.product.id);
+      let size: string | undefined = kind === 'free' ? avail[0] : undefined;
+      if (kind !== 'free' && avail.length > 0) {
+        const want = forced ?? criteria.size ?? this.sizeMemo[kind] ?? this.opts.sizes?.[kind];
+        if (want && avail.includes(want)) size = want;
+        else if (forced) size = undefined;
+        else {
+          this.emit({
+            type: 'needs_input', id: `q-size${attempt}${sfx}`,
+            question: want
+              ? { ko: `${name(pick).ko}은(는) ${want} 사이즈가 없어요. 남은 사이즈로 담을까요?`, en: `${name(pick).en} has no size ${want} left. Pick another size?` }
+              : { ko: `${name(pick).ko}은(는) 어떤 사이즈로 담을까요?`, en: `Which size for ${name(pick).en}?` },
+            options: [
+              ...avail.map((z) => ({ id: `size:${z}`, label: { ko: `${z}`, en: `${z}` } })),
+              ...(round0 < 3 ? [{ id: 'other', label: { ko: '다른 상품 보기', en: 'Show others' } }] : []),
+              { id: 'stop', label: { ko: '여기서 중단', en: 'Stop here' } },
+            ],
+          });
+          const a = await this.wait();
+          if (!ok()) return 'end';
+          if (a === 'other' && round0 < 3) { excluded.ids.add(pick.product.id); continue redo; }
+          if (!a.startsWith('size:')) { this.finish('cancelled', { ko: '요청에 따라 중단했어요.', en: 'Stopped as requested.' }); return 'end'; }
+          size = a.slice(5);
+          this.sizeMemo[kind] = size;
+        }
+      }
+      const szTag = size && size !== 'FREE' ? size : '';
+
       const tid = `t-cart${attempt}${sfx}`;
       const seen = this.store.getProduct(pick.product.id)?.price ?? pick.product.price;
       // 승인받는 화면에 가격을 함께 보여준다. 나중에 가격이 달라졌는지는 이 가격과 비교한다.
-      const clabel = tag({ ko: `장바구니에 담기 · ${name(pick).ko} · ${won(seen).ko}`, en: `Add to cart · ${name(pick).en} · ${won(seen).en}` });
+      const clabel = tag({
+        ko: `장바구니에 담기 · ${name(pick).ko}${szTag ? ` (${szTag})` : ''} · ${won(seen).ko}`,
+        en: `Add to cart · ${name(pick).en}${szTag ? ` (${szTag})` : ''} · ${won(seen).en}`,
+      });
+      if (!size) {
+        this.emit({ type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: 'failed', itemIds: [pick.product.id], note: { ko: '남은 사이즈가 없어요', en: 'No size left' } });
+        const r = await this.altFlow(id, pick, eligible, `a${attempt}${sfx}`, ctx, { ko: '모든 사이즈가 품절이에요', en: 'sold out in every size' });
+        if (r === 'end' || r === 'skipped') return r;
+        pick = r; continue;
+      }
       this.emit({ type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: gated ? 'awaiting-approval' : 'running', itemIds: [pick.product.id] });
       if (gated) {
         const a = await this.wait();
@@ -419,23 +518,13 @@ export class RuleAgent implements AgentAdapter {
               ...(excluded.brands.size ? [{ label: { ko: '제외 브랜드', en: 'Excluded brand' }, value: { ko: [...excluded.brands].join(' · '), en: [...excluded.brands].join(' · ') } }] : []),
               ...(excluded.colors.size ? [{ label: { ko: '제외 색상', en: 'Excluded color' }, value: { ko: [...excluded.colors].map((c) => COLOR_L[c].ko).join(' · '), en: [...excluded.colors].map((c) => COLOR_L[c].en).join(' · ') } }] : []),
             ];
-            this.emit({ type: 'understood', chips: [...describeCriteria(criteria), ...extra], unknown: [] });
+            this.emit({ type: 'understood', chips: [...this.chipsOf(criteria), ...extra], unknown: [] });
           }
           continue redo;
         }
       }
       await d(600);
       if (!ok()) return 'end';
-      if (this.opts.simulateStockout && !this.stockoutDone) {
-        this.stockoutDone = true;
-        this.store.setStock(pick.product.id, 0); // 다른 구매자가 마지막 재고를 가져갔다
-      }
-      if (this.opts.simulatePriceChange && gated && !this.priceChangeDone) {
-        this.priceChangeDone = true;
-        const p = this.store.getProduct(pick.product.id);
-        if (p) this.store.setPrice(p.id, Math.round((p.price * 1.12) / 1000) * 1000); // 승인한 직후 판매처가 가격을 올렸다
-      }
-
       // 승인받은 가격과 지금 가격이 다르면 담지 않고 다시 묻는다 (사람이 승인한 내용이 낡았다)
       const now = this.store.getProduct(pick.product.id)?.price ?? seen;
       if (gated && now !== seen) {
@@ -463,32 +552,48 @@ export class RuleAgent implements AgentAdapter {
         }
       }
 
-      const res = this.store.addToCart(pick.product.id, 'agent');
+      const res = this.store.addToCart(pick.product.id, 'agent', size);
       if (res.ok) {
         this.lines.set(tid, pick.product.id);
         this.emit({ type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: 'done', itemIds: [pick.product.id], undoable: true });
         return 'added';
       }
+      // 이 사이즈만 막 품절이고 다른 사이즈가 남았으면 사이즈부터 다시 묻는다
+      const left = this.store.availableSizes(pick.product.id);
       this.emit({
         type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: 'failed', itemIds: [pick.product.id],
-        note: { ko: '담는 시점에 품절로 확인됐어요', en: 'Found sold out at the moment of adding' },
+        note: left.length > 0
+          ? { ko: `담는 시점에 ${szTag || '이 사이즈'}가 품절로 확인됐어요`, en: `Size ${szTag || ''} sold out at the moment of adding` }
+          : { ko: '담는 시점에 품절로 확인됐어요', en: 'Found sold out at the moment of adding' },
       });
-      const alts = eligible.filter((s) => s.product.id !== pick.product.id && (this.store.getProduct(s.product.id)?.stock ?? 0) > 0).slice(0, 2);
-      if (alts.length === 0) return give('failed', { ko: '품절이고 대안도 없어요.', en: 'Sold out and no alternatives.' });
-      this.emit({
-        type: 'needs_input', id: `q-alt${attempt}${sfx}`,
-        question: { ko: `${name(pick).ko}이(가) 품절이에요. 대안으로 진행할까요?`, en: `${name(pick).en} just sold out. Proceed with an alternative?` },
-        options: [...alts.map((s) => ({ id: s.product.id, label: name(s) })), { id: 'stop', label: { ko: '여기서 중단', en: 'Stop here' } }],
-      });
-      const a = await this.wait();
-      if (!ok()) return 'end';
-      const alt = alts.find((s) => s.product.id === a);
-      if (!alt) {
-        this.finish('cancelled', { ko: '요청에 따라 중단했어요. 담은 항목은 없어요.', en: 'Stopped as requested. Nothing was added.' });
-        return 'end';
-      }
-      pick = alt;
+      if (left.length > 0 && !forced) { delete this.sizeMemo[kind]; continue; }
+      const r = await this.altFlow(id, pick, eligible, `${attempt}${sfx}`, ctx, { ko: '품절이에요', en: 'just sold out' });
+      if (r === 'end' || r === 'skipped') return r;
+      pick = r;
     }
     }
+  }
+
+  /** 담을 수 없을 때: 남은 대안 중에서 고르게 한다. 고른 상품을 돌려주고, 대안이 없거나 중단이면 end/skipped. */
+  private async altFlow(id: number, pick: Scored, eligible: Scored[], key: string, ctx: Ctx, why: L): Promise<Scored | 'end' | 'skipped'> {
+    const alts = eligible.filter((s) => s.product.id !== pick.product.id && this.store.availableSizes(s.product.id).length > 0).slice(0, 2);
+    if (alts.length === 0) {
+      if (ctx.multi) return 'skipped';
+      this.finish('failed', { ko: '품절이고 대안도 없어요.', en: 'Sold out and no alternatives.' });
+      return 'end';
+    }
+    this.emit({
+      type: 'needs_input', id: `q-alt${key}`,
+      question: { ko: `${name(pick).ko}은(는) ${why.ko}. 대안으로 진행할까요?`, en: `${name(pick).en} is ${why.en}. Proceed with an alternative?` },
+      options: [...alts.map((s) => ({ id: s.product.id, label: priced(s) })), { id: 'stop', label: { ko: '여기서 중단', en: 'Stop here' } }],
+    });
+    const a = await this.wait();
+    if (!this.alive(id)) return 'end';
+    const alt = alts.find((s) => s.product.id === a);
+    if (!alt) {
+      this.finish('cancelled', { ko: '요청에 따라 중단했어요. 담은 항목은 없어요.', en: 'Stopped as requested. Nothing was added.' });
+      return 'end';
+    }
+    return alt;
   }
 }

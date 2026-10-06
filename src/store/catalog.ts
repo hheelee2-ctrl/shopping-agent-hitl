@@ -1,4 +1,5 @@
-import type { Category, Color, Material, Product, Season, Style } from './types';
+import { SIZE_SETS, sizeKindOf, type Category, type Color, type Material, type Product, type Season, type Style } from './types';
+import type { SizeProfile } from '../engine/types';
 
 // 전부 가상 데이터. 실제 브랜드·가격·재고와 무관.
 type Row = [
@@ -55,13 +56,26 @@ const ROWS: Row[] = [
   ['b3', 'bag', '나일론 백팩 (블랙)', 'Nylon Backpack (Black)', 'TRAIL & CO', 88000, 9, ['black'], ['nylon'], ALL, ['light', 'casual']],
 ];
 
+/** 가운데 사이즈부터 한 개씩 나눠 담는다. 재고가 적은 상품은 일부 사이즈만 남는다. */
+const ORDER: Record<string, number[]> = { top: [1, 2, 0, 3], shoe: [2, 1, 3, 0], bottom: [2, 1, 3, 0], free: [0] };
+export function allocate(category: Category, total: number): Record<string, number> {
+  const kind = sizeKindOf(category);
+  const set = SIZE_SETS[kind];
+  const out = Object.fromEntries(set.map((s) => [s, 0])) as Record<string, number>;
+  const order = ORDER[kind];
+  for (let i = 0; i < total; i++) out[set[order[i % order.length]]]++;
+  return out;
+}
+
 export function buildCatalog(): Record<string, Product> {
   return Object.fromEntries(
     ROWS.map(([id, category, ko, en, brand, price, stock, colors, materials, seasons, styles]) => [
       id,
-      { id, category, name: { ko, en }, brand, price, stock, colors, materials, seasons, styles } satisfies Product,
+      { id, category, name: { ko, en }, brand, price, sizes: allocate(category, stock), stock, colors, materials, seasons, styles } satisfies Product,
     ]),
   );
 }
 
+/** 처음 시작할 때 채워 두는 내 사이즈. 재고가 가장 많이 배분되는 사이즈다. */
+export const DEFAULT_PROFILE: SizeProfile = { top: 'M', shoe: '270', bottom: '32' };
 export const DEFAULT_LIMIT = 300000;

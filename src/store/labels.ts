@@ -1,7 +1,7 @@
 import type { L } from '../engine/types';
 import type { Category, Color, Material, Season, Style } from './types';
 
-export type Dim = 'category' | 'color' | 'material' | 'season' | 'style' | 'budget';
+export type Dim = 'category' | 'color' | 'material' | 'season' | 'style' | 'budget' | 'size';
 
 export const DIM_L: Record<Dim, L> = {
   category: { ko: '종류', en: 'type' },
@@ -10,6 +10,7 @@ export const DIM_L: Record<Dim, L> = {
   season: { ko: '계절', en: 'season' },
   style: { ko: '스타일', en: 'style' },
   budget: { ko: '예산', en: 'budget' },
+  size: { ko: '사이즈', en: 'size' },
 };
 
 export const CATEGORY_L: Record<Category, L> = {

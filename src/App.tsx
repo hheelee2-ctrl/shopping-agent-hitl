@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { RuleAgent } from './agent/agent';
 import type { L, Lang } from './engine/types';
 import { initialState, reduce } from './state/console';
@@ -7,6 +7,7 @@ import { appendFrame, baseline, viewAt } from './state/timeline';
 import type { Frame } from './state/timeline';
 import { parseRequest } from './store/parser';
 import { searchProducts } from './store/search';
+import { createMarket } from './store/market';
 import { createStore } from './store/store';
 import type { Category } from './store/types';
 import { AgentPanel } from './ui/AgentPanel';
@@ -31,6 +32,7 @@ interface AppProps {
 export default function App({ lang, onLang, theme, onTheme, initial }: AppProps) {
   const store = useMemo(() => createStore(), []);
   const agent = useMemo(() => new RuleAgent(store), [store]);
+  const market = useMemo(() => createMarket(store), [store]);
   const shop = useStore(store);
   const [state, dispatch] = useReducer(reduce, initialState);
 
@@ -59,10 +61,9 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const [request, setRequest] = useState(t(PRESETS[0].text, 'ko'));
   const [dial, setDial] = useState(initial.dial);
   const [limit, setLimit] = useState(initial.limit);
+  const [sizes, setSizes] = useState(initial.sizes);
   const [nod, setNod] = useState(0);
   const [cmpClosed, setCmpClosed] = useState(false);
-  const [stockout, setStockout] = useState(false);
-  const [priceChange, setPriceChange] = useState(false);
 
   const { phase } = state;
   const running = !['idle', 'done', 'failed', 'cancelled', 'undone'].includes(phase);
@@ -75,6 +76,13 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const vProducts = view?.products ?? shop.products;
   const cartCount = vCart.reduce((s, l) => s + l.qty, 0);
   const cartIds = useMemo(() => new Set(vCart.map((l) => l.productId)), [vCart]);
+
+  // 같은 쇼핑몰에서 다른 구매자·판매처가 움직인다. 보고 있는 상품(후보·장바구니)에 더 몰린다.
+  useEffect(() => { market.start(); return () => market.stop(); }, [market]);
+  useEffect(() => { market.setBusy(running); }, [market, running]);
+  useEffect(() => {
+    market.setInterest([...new Set([...state.candidates, ...shop.cart.map((l) => l.productId)])]);
+  }, [market, state.candidates, shop.cart]);
 
   // 사람의 검색도 에이전트와 같은 해석·점수화를 쓴다
   const criteria = useMemo(() => (query.trim() ? parseRequest(query) : null), [query]);
@@ -89,19 +97,21 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const run = useCallback(() => {
     setCmpClosed(false);
     emit({ type: 'start' }, 'user');
-    agent.start({ request, dial, limit, simulateStockout: stockout, simulatePriceChange: priceChange }, (event) => emit({ type: 'event', event }));
-  }, [agent, request, dial, limit, stockout, priceChange, emit]);
+    agent.start({ request, dial, limit, sizes }, (event) => emit({ type: 'event', event }));
+  }, [agent, request, dial, limit, sizes, emit]);
 
   const reset = useCallback(() => {
     agent.stop();
     store.reset();
+    market.rebase();
     emit({ type: 'reset' }, 'user');
-  }, [agent, store, emit]);
+  }, [agent, store, market, emit]);
 
   const ack = (fn: () => void) => () => { emit({ type: 'user_ack' }, 'user'); setNod((n) => n + 1); fn(); };
-  const userAdd = (id: string) => {
+  const userAdd = (id: string, size: string) => {
     const p = store.getProduct(id);
-    if (store.addToCart(id, 'user').ok && p) note({ ko: `직접 담기 · ${p.name.ko}`, en: `Added by you · ${p.name.en}` });
+    const tag = size === 'FREE' ? '' : ` (${size})`;
+    if (store.addToCart(id, 'user', size).ok && p) note({ ko: `직접 담기 · ${p.name.ko}${tag}`, en: `Added by you · ${p.name.en}${tag}` });
   };
   const userRemove = (id: string) => {
     const p = store.getProduct(id);
@@ -109,7 +119,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     if (p) note({ ko: `직접 빼기 · ${p.name.ko}`, en: `Removed by you · ${p.name.en}` });
   };
   const userCheckout = () => {
-    if (store.checkout()) note({ ko: '직접 결제 완료(모의)', en: 'You checked out (mock)' });
+    if (store.checkout()) note({ ko: '직접 결제 완료', en: 'You checked out' });
   };
 
   return (
@@ -133,15 +143,15 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
       <main className="layout">
         <Shop
           lang={lang} results={results} criteria={criteria} category={category} onCategory={setCategory}
-          cart={vCart} agent={vState} onAdd={userAdd} readOnly={replaying}
+          cart={vCart} agent={vState} onAdd={userAdd} readOnly={replaying} market={market} store={store}
         />
         <AgentPanel
           lang={lang} store={store} state={vState} cartIds={cartIds}
           readOnly={replaying} frames={frames} cursor={cursor} onCursor={setCursor}
-          request={request} dial={dial} limit={limit} stockout={stockout} priceChange={priceChange} running={running}
+          request={request} dial={dial} limit={limit} sizes={sizes} onSizes={setSizes} running={running}
           onRequest={setRequest}
-          onPreset={(text, so, pc) => { setRequest(text); setStockout(so); setPriceChange(pc); }}
-          onDial={setDial} onLimit={setLimit} onStockout={setStockout} onPriceChange={setPriceChange}
+          onPreset={setRequest}
+          onDial={setDial} onLimit={setLimit}
           onRun={run} onReset={reset}
           onApprove={ack(() => agent.approve())} onReject={ack(() => agent.reject())} onAnswer={(id) => ack(() => agent.answer(id))()}
           onUndo={(id) => agent.undo(id)}

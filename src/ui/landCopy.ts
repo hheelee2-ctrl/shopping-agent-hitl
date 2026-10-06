@@ -131,5 +131,4 @@ export const SETUP = {
   preparing: { ko: '준비하는 중', en: 'Getting ready' },
   ready: { ko: '준비됐습니다', en: 'Ready' },
   back: { ko: '처음으로', en: 'Back' },
-  mock: { ko: '가상 데이터 · 결제 미구현', en: 'Mock data · no payment' },
 } as const;

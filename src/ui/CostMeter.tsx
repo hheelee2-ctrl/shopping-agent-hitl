@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Dial, L, Lang } from '../engine/types';
+import type { Dial, L, Lang, SizeProfile } from '../engine/types';
 import { interventionCost, type Cost } from '../agent/cost';
 import { DIAL, t } from './copy';
 
@@ -9,8 +9,8 @@ const X = {
   busy: { ko: '계산 중', en: 'Running' } satisfies L,
   times: { ko: '회', en: '×' } satisfies L,
   note: {
-    ko: '승인은 모두 수락하고, 질문은 첫 번째 선택지로 답한다고 가정해 별도 쇼핑몰에서 끝까지 돌린 횟수예요. 결제 승인은 어느 단계에서도 1번이에요.',
-    en: 'Counted by running the request to the end on a separate shop, accepting every approval and picking the first option on questions. Payment approval is 1 at every level.',
+    ko: '승인은 모두 수락하고, 질문은 첫 번째 선택지로 답한다고 가정해 시장이 잠잠하다고 보고 별도 쇼핑몰에서 끝까지 돌린 횟수예요. 결제 승인은 어느 단계에서도 1번이에요.',
+    en: 'Counted on a separate, quiet shop, accepting every approval and picking the first option on questions. Payment approval is 1 at every level.',
   } satisfies L,
   plan: { ko: '계획 승인', en: 'Plan approval' } satisfies L,
   cart: { ko: '담기 승인', en: 'Cart approval' } satisfies L,
@@ -21,20 +21,20 @@ const DIALS: Dial[] = ['always', 'cart-only', 'auto'];
 const KINDS = ['plan', 'cart', 'ask', 'pay'] as const;
 
 interface Props {
-  lang: Lang; request: string; limit: number; stockout: boolean; priceChange: boolean; dial: Dial; disabled: boolean;
+  lang: Lang; request: string; limit: number; sizes: SizeProfile; dial: Dial; disabled: boolean;
   onPick: (d: Dial) => void;
 }
 
 /** 에이전트가 낸 이벤트를 세어, 자율도를 바꾸면 사람의 부담이 어떻게 달라지는지 보여준다. */
-export function CostMeter({ lang, request, limit, stockout, priceChange, dial, disabled, onPick }: Props) {
+export function CostMeter({ lang, request, limit, sizes, dial, disabled, onPick }: Props) {
   const [rows, setRows] = useState<Record<Dial, Cost> | null>(null);
   const [busy, setBusy] = useState(false);
-  const key = `${request}|${limit}|${stockout}|${priceChange}`;
+  const key = `${request}|${limit}|${JSON.stringify(sizes)}`;
   useEffect(() => { setRows(null); }, [key]);
 
   const run = async () => {
     setBusy(true);
-    const o = { request, limit, simulateStockout: stockout, simulatePriceChange: priceChange };
+    const o = { request, limit, sizes };
     const [a, c, u] = await Promise.all(DIALS.map((d) => interventionCost({ ...o, dial: d })));
     setRows({ always: a, 'cart-only': c, auto: u });
     setBusy(false);
