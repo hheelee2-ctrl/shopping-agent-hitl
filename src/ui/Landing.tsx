@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { Dial, Lang } from '../engine/types';
 import { DIAL, t } from './copy';
 import { HeroDemo } from './HeroDemo';
@@ -37,11 +37,10 @@ function Cta({ lang }: { lang: Lang }) {
 
 function Approval({ lang }: { lang: Lang }) {
   const [dial, setDial] = useState<Dial>('cart-only');
-  const [nod, setNod] = useState(0);
   const [plan, cart] = APPROVES[dial];
   const opts = (Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }));
   const cells = [plan, cart];
-  const pick = (d: Dial) => { if (d !== dial) { setDial(d); setNod((n) => n + 1); } };
+  const pick = (d: Dial) => setDial(d);
   return (
     <>
       <Seg options={opts} value={dial} onChange={pick} label={t(LAND.approvalTitle, lang)} />
@@ -60,7 +59,7 @@ function Approval({ lang }: { lang: Lang }) {
         })}
       </ul>
       <div className="approval-foot">
-        <Mark size={22} nod={nod} />
+        <Mark size={22} />
         <p className="note">{t(LAND.payNote, lang)}</p>
       </div>
     </>
@@ -73,17 +72,12 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
   const r2 = useReveal<HTMLDivElement>();
   const r3 = useReveal<HTMLDivElement>();
   const r4 = useReveal<HTMLDivElement>();
-  const [nod, setNod] = useState(0);
-  const [endNod, setEndNod] = useState(0);
-  useEffect(() => { const id = window.setInterval(() => setEndNod((n) => n + 1), 3600); return () => window.clearInterval(id); }, []);
-  // 첫 진입 때 로고가 한 번 끄덕인다
-  useEffect(() => { const id = window.setTimeout(() => setNod(1), 900); return () => window.clearTimeout(id); }, []);
 
   return (
     <div className="land">
       <header className="land-top">
-        <a className="logo" href="#/" onMouseEnter={() => setNod((n) => n + 1)} aria-label="Nod">
-          <Wordmark size={24} nod={nod} />
+        <a className="logo" href="#/" aria-label="Nod">
+          <Wordmark size={24} />
         </a>
         <nav className="land-nav" aria-label="sections">
           {LAND.nav.map((n) => <a key={n.id} href={`#${n.id}`} onClick={goTo(n.id)}>{t(n.l, lang)}</a>)}
@@ -169,7 +163,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
 
       <section className="sec end">
         <div className="end-field" ref={r4}>
-          <Wordmark size={112} nod={endNod} tone="on-brand" className="end-mark" />
+          <Wordmark size={112} tone="on-brand" className="end-mark" />
           <h2 className="end-title"><Rise text={t(LAND.endTitle, lang)} /></h2>
           <Cta lang={lang} />
         </div>

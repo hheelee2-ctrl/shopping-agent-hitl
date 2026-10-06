@@ -10,20 +10,20 @@ h1, h2, h3, p { margin: 0; }
 fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .num { font-variant-numeric: tabular-nums; }
 
-/* ---- Nod 점 · 워드마크 ---- */
-.nd { display: inline-block; flex: none; width: 0.5em; height: 0.5em; border-radius: 50%; background: var(--brand); transform-origin: 50% 100%; position: relative; }
-.nd.t-on-brand { background: var(--on-brand); }
-.nd.t-ink { background: var(--ink); }
-.nd.ph-busy { animation: ndThink 1.15s cubic-bezier(0.45, 0, 0.25, 1) infinite; }
-.nd::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 0 currentColor; color: var(--brand); opacity: 0; pointer-events: none; }
-.nd.ph-done::after { animation: ndRing 900ms var(--ease) 120ms both; }
-.nd.t-on-brand::after { color: var(--on-brand); }
-@keyframes ndThink { 0%, 100% { transform: translateY(0) scale(1, 1); } 30% { transform: translateY(22%) scale(1.06, 0.9); } 55% { transform: translateY(-4%) scale(0.98, 1.03); } }
-@keyframes ndRing { 0% { opacity: 0.55; box-shadow: 0 0 0 0 currentColor; } 100% { opacity: 0; box-shadow: 0 0 0 0.5em currentColor; } }
-@media (prefers-reduced-motion: reduce) { .nd.ph-busy, .nd.ph-done::after { animation: none; } }
+/* ---- Nod 원 · 워드마크: 크기는 늘 같고 안쪽만 바뀐다 ---- */
+.nd { display: inline-block; flex: none; width: 0.52em; height: 0.52em; overflow: visible; }
+.nd-c { fill: var(--brand); transition: fill var(--dur) var(--ease); }
+.nd.t-on-brand .nd-c { fill: var(--on-brand); }
+.nd-arc { fill: none; stroke: var(--on-brand); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 30 70; opacity: 0; transform-origin: 12px 12px; transition: opacity var(--dur-fast) var(--ease); }
+.nd.t-on-brand .nd-arc, .nd.t-on-brand .nd-ck { stroke: var(--brand-deep); }
+.nd.ph-busy .nd-arc { opacity: 1; animation: ndSpin 0.9s linear infinite; }
+.nd-ck { fill: none; stroke: var(--on-brand); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; }
+.nd.ph-done .nd-ck { stroke-dashoffset: 0; transition: stroke-dashoffset 420ms var(--ease) 80ms; }
+@keyframes ndSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .nd.ph-busy .nd-arc { animation: none; } }
 .wm { display: inline-flex; align-items: baseline; font-weight: 800; letter-spacing: -0.04em; line-height: 1; color: var(--ink); }
-.wm > span:not(.nd) { display: inline-block; }
-.wm .nd { width: 0.52em; height: 0.52em; margin: 0 0.035em 0 0.03em; }
+.wm > span { display: inline-block; }
+.wm .nd { margin: 0 0.035em 0 0.03em; }
 .wm-on-brand { color: var(--on-brand); }
 
 /* ---- header ---- */
@@ -106,11 +106,9 @@ fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .btn.sm { min-height: 36px; padding: 0 16px; font-size: var(--t-sm); }
 .btn.block { width: 100%; min-height: 52px; font-size: var(--t-lg); }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
-/* 끄덕: 승인 버튼. 누르면 버튼 안의 점이 내려앉았다 돌아온다 */
-.btn.nod { background: var(--brand); color: var(--on-brand); padding-left: 14px; }
-.btn.nod::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: currentColor; transition: transform 380ms var(--ease); }
+/* 승인 버튼: 브랜드 초록 */
+.btn.nod { background: var(--brand); color: var(--on-brand); }
 .btn.nod:hover:not(:disabled) { background: var(--brand-deep); }
-.btn.nod:active:not(:disabled)::before { transform: translateY(5px); }
 .link-btn { all: unset; cursor: pointer; font-size: var(--t-xs); color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
 .link-btn:hover { color: var(--ink); }
 .link-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -923,3 +921,57 @@ button.pb-row:focus-visible { outline: 2px solid var(--brand); }
 .hd-seller { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--t-base); padding-top: var(--sp-3); border-top: 1px solid var(--line); }
 .hd-seller b { flex: 1; font-weight: 700; }
 .hd-seller strong { font-size: var(--t-lg); font-weight: 800; letter-spacing: -0.03em; }
+
+/* ── 단순화: 카드·승인·기록 ── */
+.ship-line { margin-top: var(--sp-1); font-size: var(--t-sm); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ship-line.moved { color: var(--warn); font-weight: 600; }
+.cmp-chip { padding: 3px 10px; font-weight: 600; color: var(--ink-3); box-shadow: none; background: var(--bg-2); }
+.prod .reason { -webkit-line-clamp: 1; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+
+.suggest { gap: var(--sp-3); }
+.sg.more { background: none; box-shadow: none; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
+
+.progress { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--t-sm); color: var(--ink-2); padding: 2px 4px; }
+.progress b { color: var(--ink); font-weight: 700; margin-right: 4px; }
+.pdots { list-style: none; display: flex; gap: 4px; margin: 0; padding: 0; flex: none; }
+.pdots li { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.pdots li.done { background: var(--brand); }
+.pdots li.now { background: var(--brand); width: 16px; border-radius: 3px; }
+.plan .steps li .st-ic { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); margin: 0 5px; }
+
+.cand { grid-auto-columns: 64px; gap: var(--sp-2); }
+.cand li { gap: 2px; }
+.cand .conf { font-size: 11px; color: var(--ink-3); }
+.cand .ring { width: 12px; height: 12px; }
+
+.cart-ask .pick { grid-template-columns: 64px 1fr auto; gap: var(--sp-3); align-items: start; margin-bottom: var(--sp-4); }
+.cart-ask .pick-n { font-size: var(--t-md); margin: 0 0 6px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.cart-ask .pick-n .size { font-size: var(--t-xs); font-weight: 700; color: var(--ink-2); background: var(--bg-2); padding: 1px 6px; border-radius: 4px; }
+.pick-s { display: flex; align-items: center; gap: 6px; font-size: var(--t-sm); font-weight: 600; }
+.pick-t { font-size: var(--t-sm); color: var(--ink-3); margin-top: 2px; }
+.pick-p { font-size: var(--t-md); font-weight: 800; }
+details.why-box { margin: var(--sp-3) 0 0; padding: 0; background: none; display: block; }
+details.why-box > summary { cursor: pointer; font-size: var(--t-sm); font-weight: 600; color: var(--ink-3); list-style: none; padding: 4px 0; }
+details.why-box > summary::-webkit-details-marker { display: none; }
+details.why-box > summary::after { content: ' ›'; }
+details.why-box[open] > summary::after { content: ' ‹'; }
+details.why-box[open] { padding-bottom: var(--sp-1); }
+details.why-box .pbars { margin-top: var(--sp-2); }
+details.why-box p { margin-top: var(--sp-2); }
+
+.pay-total { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.pay-total span { font-size: var(--t-sm); color: var(--ink-3); font-weight: 600; }
+.pay-total b { font-size: var(--t-2xl); font-weight: 800; letter-spacing: -0.04em; }
+.pay .split { list-style: none; padding: 0; margin: 0 0 var(--sp-4); display: grid; gap: var(--sp-2); }
+.pay .split-h { font-size: var(--t-sm); }
+.pay .split-h .muted { color: var(--ink-3); font-weight: 500; }
+.pay-addr { font-size: var(--t-sm); color: var(--ink-3); margin: var(--sp-3) 0 var(--sp-4); }
+
+.history { margin: var(--sp-4) 0 var(--sp-2); border-top: 1px solid var(--line); padding-top: var(--sp-3); }
+.history > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; font-size: var(--t-sm); font-weight: 700; color: var(--ink-3); }
+.history > summary::-webkit-details-marker { display: none; }
+.history > summary span { font-size: var(--t-xs); background: var(--bg-2); border-radius: var(--r-pill); padding: 0 7px; }
+.history[open] > summary { margin-bottom: var(--sp-3); }
+.pay .split li.split-h { display: flex; align-items: center; gap: var(--sp-2); padding: 10px 12px; }
+.pay .split-h b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.progress > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

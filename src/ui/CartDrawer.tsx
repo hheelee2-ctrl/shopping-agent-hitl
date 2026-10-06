@@ -201,7 +201,6 @@ function Group({ g, lang, now, state, readOnly, onQty, onRemove }: {
       <footer>
         <span>{g.shipping > 0 ? SV.shipFee[lang](money(g.shipping, lang)) : t(SV.freeShip, lang)}</span>
         {left > 0 && <span className="hint">{SV.freeLeft[lang](money(left, lang))}</span>}
-        <span className="ret">{t(returnLabel(s), lang)}</span>
       </footer>
     </section>
   );

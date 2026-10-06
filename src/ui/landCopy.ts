@@ -8,7 +8,7 @@ export const LAND = {
     { id: 'trust', l: { ko: '한도와 기록', en: 'Limits & log' } },
   ] satisfies { id: string; l: L }[],
   heroA: { ko: '말하면 찾고,', en: 'Say it.' },
-  heroB: { ko: '끄덕이면 담아요', en: 'Nod to add it.' },
+  heroB: { ko: '승인하면 담아요', en: 'Approve, then it’s in.' },
   heroSub: {
     ko: '여러 판매처를 배송비까지 합쳐 비교하고, 담기 전에 묻습니다. 결제는 언제나 직접 합니다.',
     en: 'It compares sellers including shipping, and asks before it adds. You always pay yourself.',
@@ -18,11 +18,11 @@ export const LAND = {
   how: { ko: '작동 방식', en: 'How it works' },
   demoTag: { ko: '판매처 3곳 비교 끝', en: 'Compared 3 sellers' },
   demoLine: { ko: '이대로 담을까요?', en: 'Add this?' },
-  demoBtn: { ko: '끄덕, 담기', en: 'Nod, add it' },
+  demoBtn: { ko: '담기', en: 'Add' },
   demoBusy: { ko: '담는 중', en: 'Adding' },
   demoDone: { ko: '담았습니다', en: 'Added' },
   demoDoneLine: { ko: '담았습니다. 결제는 직접 합니다.', en: 'Added. You still pay yourself.' },
-  demoHint: { ko: '직접 눌러보세요. 끄덕이면 점도 끄덕입니다.', en: 'Try it. When you nod, the dot nods too.' },
+  demoHint: { ko: '직접 눌러보세요.', en: 'Try it.' },
 
   whyTitle: { ko: '비교는 맡기고, 결정은 직접', en: 'Hand off the comparing. Keep the deciding' },
   scenes: [
@@ -43,7 +43,7 @@ export const LAND = {
   steps: [
     { t: { ko: '요청', en: 'Ask' }, d: { ko: '찾을 것을 말합니다', en: 'Say what you want' } },
     { t: { ko: '미리보기', en: 'Preview' }, d: { ko: '담기 전에 계획부터 보여줍니다', en: 'The plan comes before the action' } },
-    { t: { ko: '승인', en: 'Approve' }, d: { ko: '끄덕이면 담고, 아니면 멈춥니다', en: 'Nod and it adds. Otherwise it stops' } },
+    { t: { ko: '승인', en: 'Approve' }, d: { ko: '승인하면 담고, 아니면 멈춥니다', en: 'Approve and it adds. Otherwise it stops' } },
     { t: { ko: '결제 직전', en: 'Before payment' }, d: { ko: '결제는 직접 합니다', en: 'You pay yourself' } },
   ] satisfies { t: L; d: L }[],
 

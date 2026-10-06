@@ -94,7 +94,7 @@ export const SV = {
   keepShopping: { ko: '쇼핑 계속하기', en: 'Keep shopping' },
   overBy: { ko: (s: string) => `한도보다 ${s} 많아요`, en: (s: string) => `${s} over your limit` },
   underBy: { ko: (s: string) => `한도까지 ${s} 남아요`, en: (s: string) => `${s} left before your limit` },
-  approvePayN: { ko: (s: string) => `끄덕, ${s} 결제`, en: (s: string) => `Nod, pay ${s}` },
+  approvePayN: { ko: (s: string) => `${s} 결제`, en: (s: string) => `Pay ${s}` },
   approveOver: { ko: (s: string) => `한도를 넘지만 ${s} 결제`, en: (s: string) => `Pay ${s} over limit` },
   liveChanged: { ko: '방금 판매처 조건이 바뀌었어요. 승인하면 결제하지 않고 바뀐 내용을 먼저 보여드려요.', en: 'Seller terms just changed. If you approve, you will see the changes before anything is paid.' },
 } as const;
@@ -116,6 +116,13 @@ export const TH = {
   sizeSum: { ko: '내 사이즈', en: 'My sizes' },
   payAsk: { ko: '결제를 승인할까요?', en: 'Approve payment?' },
   payNote: { ko: '승인하면 판매처마다 주문이 접수돼요. Nod는 판매자가 아니에요.', en: 'Approving places one order per seller. Nod is not the seller.' },
+  more: { ko: '더 보기', en: 'More' },
+  less: { ko: '접기', en: 'Less' },
+  history: { ko: '기록', en: 'History' },
+  whyHere: { ko: '왜 여기서?', en: 'Why here?' },
+  step: { ko: (i: number, n: number) => `${i}/${n}단계`, en: (i: number, n: number) => `Step ${i}/${n}` },
+  itemsN: { ko: (n: number) => `${n}개`, en: (n: number) => `${n} item${n > 1 ? 's' : ''}` },
+  total: { ko: '결제 금액', en: 'Total' },
 } as const;
 
 export const SZ = {
@@ -173,9 +180,9 @@ export const C = {
   resetNote: { ko: '쇼핑몰(재고·장바구니)도 처음 상태로 돌아가요.', en: 'Also restores the shop (stock and cart).' },
 
   planTitle: { ko: '에이전트의 계획', en: "Agent's plan" },
-  approveStart: { ko: '끄덕, 시작', en: 'Nod, start' },
+  approveStart: { ko: '이대로 시작', en: 'Start' },
   cancel: { ko: '취소', en: 'Cancel' },
-  approveCart: { ko: '끄덕, 담기', en: 'Nod, add it' },
+  approveCart: { ko: '담기', en: 'Add' },
   skipCart: { ko: '담지 않기', en: "Don't add" },
   compare: { ko: '나란히 비교', en: 'Compare' },
   candidates: { ko: '후보', en: 'Candidates' },
@@ -186,7 +193,7 @@ export const C = {
     ko: '한도를 넘었어요. 자율도와 관계없이 직접 확인이 필요해요.',
     en: 'Over your limit. Needs your review regardless of autonomy level.',
   },
-  approvePay: { ko: '끄덕, 결제', en: 'Nod, pay' },
+  approvePay: { ko: '결제', en: 'Pay' },
   declinePay: { ko: '결제 안 함', en: "Don't pay" },
   audit: { ko: '행동 기록', en: 'Action audit' },
   auditEmpty: { ko: '아직 행동이 없어요.', en: 'No actions yet.' },
@@ -245,7 +252,7 @@ export const LEVEL: Record<Level, L> = {
 export const PHASE: Record<Phase, L> = {
   idle: { ko: '맡길 일을 기다려요', en: 'Ready when you are' },
   planning: { ko: '요청을 읽는 중', en: 'Reading your request' },
-  'awaiting-approval': { ko: '끄덕임을 기다려요', en: 'Waiting for your nod' },
+  'awaiting-approval': { ko: '승인을 기다려요', en: 'Waiting for approval' },
   executing: { ko: '찾고 비교하는 중', en: 'Searching and comparing' },
   'needs-input': { ko: '답을 기다려요', en: 'Waiting for your answer' },
   'payment-gate': { ko: '결제 승인을 기다려요', en: 'Waiting for payment approval' },

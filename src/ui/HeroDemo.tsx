@@ -21,7 +21,7 @@ const T_IDLE = 5.5;
 interface Geo { bx: number; by: number; px: number; py: number; w: number; h: number }
 
 /**
- * 히어로 데모. 가상 커서가 승인 버튼으로 가서 누르면 마크의 점이 끄덕이고, 링으로 변해 돌다가 체크로 닫힌다.
+ * 히어로 데모. 가상 커서가 담기 버튼을 누르면 로고의 원 안에서 호가 돌다가 체크가 들어간다.
  * 커서와 판의 기울기는 시간 t만의 순수 함수(스프링의 합)이고, 사용자가 포인터를 올리면 그 포인터가 대신 조작한다.
  */
 export function HeroDemo({ lang, onDone }: { lang: Lang; onDone?: () => void }) {
@@ -31,7 +31,6 @@ export function HeroDemo({ lang, onDone }: { lang: Lang; onDone?: () => void }) 
   const btn = useRef<HTMLButtonElement>(null);
   const cur = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState<Stage>('idle');
-  const [nod, setNod] = useState(0);
   const [press, setPress] = useState(false);
   const manual = useRef(false);
   const timers = useRef<number[]>([]);
@@ -47,7 +46,7 @@ export function HeroDemo({ lang, onDone }: { lang: Lang; onDone?: () => void }) 
   const runManual = () => {
     if (stageRef.current !== 'idle') return;
     setP(true);
-    later(() => { setP(false); setNod((n) => n + 1); }, 140);
+    later(() => setP(false), 140);
     later(() => go('busy'), 260);
     later(() => go('done'), 1500);
     later(() => go('idle'), 3600);
@@ -90,7 +89,6 @@ export function HeroDemo({ lang, onDone }: { lang: Lang; onDone?: () => void }) 
         cu.style.transform = `translate(${cx.toFixed(1)}px, ${cy.toFixed(1)}px) scale(${down ? 0.84 : 1})`;
         setP(down);
         const next: Stage = t >= T_IDLE ? 'idle' : t >= T_DONE ? 'done' : t >= T_BUSY ? 'busy' : 'idle';
-        if (next === 'busy' && stageRef.current === 'idle') setNod((n) => n + 1);
         go(next);
         tx.to(clamp(cx / geo.w - 0.5, -0.5, 0.5));
         ty.to(clamp(cy / geo.h - 0.5, -0.5, 0.5));
@@ -143,7 +141,7 @@ export function HeroDemo({ lang, onDone }: { lang: Lang; onDone?: () => void }) 
         <div className="plate-shell">
           <div className="plate-body" ref={body}>
             <div className="hd-top">
-              <Wordmark size={22} nod={nod} phase={phase} />
+              <Wordmark size={22} phase={phase} />
               <span>{t(LAND.demoTag, lang)}</span>
             </div>
             <div className="hd-prod">

@@ -66,7 +66,6 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const [dial, setDial] = useState(initial.dial);
   const [limit, setLimit] = useState(initial.limit);
   const [sizes, setSizes] = useState(initial.sizes);
-  const [nod, setNod] = useState(0);
   const [cmpClosed, setCmpClosed] = useState(false);
   const toasts = useToasts();
   const pushToast = toasts.push;
@@ -132,7 +131,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
 
   const closeDrawer = useCallback(() => setCartOpen(false), []);
   const closeSheet = useCallback(() => setSheet(null), []);
-  const ack = (fn: () => void) => () => { emit({ type: 'user_ack' }, 'user'); setNod((n) => n + 1); fn(); };
+  const ack = (fn: () => void) => () => { emit({ type: 'user_ack' }, 'user'); fn(); };
   const userAdd = (id: string, size: string, sellerId?: string) => {
     const p = store.getProduct(id);
     const tag = size === 'FREE' ? '' : ` ${size}`;
@@ -190,7 +189,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   return (
     <>
       <header className={`top ${replaying ? 'replay' : ''}`}>
-        <a className="logo" href="#/" aria-label={t(C.brand, lang)}><Wordmark size={26} nod={nod} phase={phase === 'planning' || phase === 'executing' ? 'busy' : 'idle'} /></a>
+        <a className="logo" href="#/" aria-label={t(C.brand, lang)}><Wordmark size={26} phase={phase === 'planning' || phase === 'executing' ? 'busy' : phase === 'done' ? 'done' : 'idle'} /></a>
         <input
           className="search" type="search" value={query} placeholder={t(C.searchPh, lang)}
           aria-label={t(C.searchPh, lang)} onChange={(e) => setQuery(e.target.value)}

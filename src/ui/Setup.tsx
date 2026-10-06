@@ -23,13 +23,12 @@ interface Props {
 }
 
 /**
- * 에이전트 실행 전 첫 단계. 확정하면 마크가 끄덕이고(승인), 링으로 돌다가(준비 중), 체크로 닫힌 뒤 워크스페이스로 넘어간다.
+ * 에이전트 실행 전 첫 단계. 확정하면 로고의 원 안에서 호가 돌다가(준비 중) 체크가 들어간 뒤 워크스페이스로 넘어간다.
  */
 export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
   const [dial, setDial] = useState<Dial>('cart-only');
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
   const [sizes, setSizes] = useState<SizeProfile>(DEFAULT_SIZES);
-  const [nod, setNod] = useState(0);
   const [phase, setPhase] = useState<MarkPhase>('idle');
   const [leaving, setLeaving] = useState(false);
   const timers = useRef<number[]>([]);
@@ -38,7 +37,6 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
   const go = () => {
     if (leaving) return;
     setLeaving(true);
-    setNod(1);
     const at = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
     at(() => setPhase('busy'), 260);
     at(() => setPhase('done'), 1200);
@@ -62,7 +60,7 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
       </header>
 
       <main className="setup-in">
-        <div className="setup-mark"><Wordmark size={64} nod={nod} phase={phase} /></div>
+        <div className="setup-mark"><Wordmark size={64} phase={phase} /></div>
         <h1 className="setup-title"><Rise text={t(SETUP.title, lang)} /></h1>
         <p className="sec-sub">{t(SETUP.sub, lang)}</p>
 

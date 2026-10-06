@@ -26,7 +26,6 @@ function useTyped(text: string, on: boolean) {
 function Stage({ step, lang, onNext }: { step: number; lang: Lang; onNext: () => void }) {
   const [added, setAdded] = useState(false);
   const [limit, setLimit] = useState(300000);
-  const [nod, setNod] = useState(0);
   useEffect(() => { if (step < 2) setAdded(false); }, [step]);
   const req = t(TOUR.request, lang);
   const typed = useTyped(req, step === 0);
@@ -35,7 +34,7 @@ function Stage({ step, lang, onNext }: { step: number; lang: Lang; onNext: () =>
   return (
     <div className="tour-stage" aria-live="polite">
       <div className="tour-bar">
-        <Wordmark size={18} nod={nod} />
+        <Wordmark size={18} />
         <span className="tour-bar-t">{t(TOUR.stageTitle, lang)}</span>
         <span className={`tour-cart ${added ? 'on' : ''}`}>{t(TOUR.cart, lang)} {added ? 1 : 0}</span>
       </div>
@@ -72,7 +71,7 @@ function Stage({ step, lang, onNext }: { step: number; lang: Lang; onNext: () =>
             </div>
             {!added ? (
               <div className="row">
-                <button className="btn primary" onClick={() => { setAdded(true); setNod((n) => n + 1); }}>{t(TOUR.approve, lang)}</button>
+                <button className="btn primary" onClick={() => setAdded(true)}>{t(TOUR.approve, lang)}</button>
                 <button className="btn" onClick={onNext}>{t(TOUR.skip, lang)}</button>
               </div>
             ) : (

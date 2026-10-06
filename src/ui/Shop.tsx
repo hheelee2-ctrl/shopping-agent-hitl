@@ -4,7 +4,7 @@ import type { ConsoleState } from '../state/console';
 import { CATEGORY_L } from '../store/labels';
 import { describeCriteria } from '../store/parser';
 import type { Scored } from '../store/search';
-import { DUTY_OVER, sellerOf } from '../store/sellers';
+import { DUTY_OVER, arrivalLabel, sellerOf } from '../store/sellers';
 import type { Category, CartLine, Criteria, Product } from '../store/types';
 import { photoCredit, photoUrl } from '../store/photos';
 import { useFlip } from './useFlip';
@@ -12,7 +12,7 @@ import { useFlight } from './useFlight';
 import type { Market } from '../store/market';
 import type { Store } from '../store/store';
 import { MarketTicker } from './MarketTicker';
-import { PriceBars, SellerBadge, SellerStack, Terms } from './Sellers';
+import { PriceBars, SellerBadge, Terms } from './Sellers';
 import { C, LEVEL, SV, SZ, money, t } from './copy';
 
 interface Props {
@@ -96,20 +96,14 @@ export function Stepper({ qty, max, lang, onQty, disabled }: { qty: number; max:
 
 
 function Card({ p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: CardProps) {
-  const [nudge, setNudge] = useState(0);
   const line = cart.find((l) => l.productId === p.id);
   const keys = Object.keys(p.sizes);
-  const [picked, setPicked] = useState<string | null>(null);
-  // 이미 담은 사이즈가 있으면 그 사이즈로 고정, 사이즈가 하나뿐이면 미리 선택
-  const sel = line?.size ?? (keys.length === 1 ? keys[0] : picked);
-  // 고른 사이즈가 다른 구매로 사라지면 선택을 풀어 다시 고르게 한다
-  useEffect(() => { if (picked && (p.sizes[picked] ?? 0) <= 0) setPicked(null); }, [p.sizes, picked]);
-
-  const ranked = store.rankOffers(p.id, sel ?? undefined);
+  // 사이즈가 하나뿐이면 바로 담고, 여러 개면 시트에서 사이즈·판매처를 고른다
+  const only = keys.length === 1 ? keys[0] : null;
+  const ranked = store.rankOffers(p.id, line?.size ?? only ?? undefined);
   const lead = line ? ranked.find((r) => r.offer.sellerId === line.sellerId) : ranked[0];
   const linePrice = line ? store.getOffer(p.id, line.sellerId)?.price : undefined;
   const sellers = store.offersOf(p.id).length;
-  const avail = store.availableSizes(p.id);
   const now = store.now();
 
   const conf = agent.confidence[p.id];
@@ -121,6 +115,7 @@ function Card({ p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: C
   const src = photoUrl(p.id);
   const credit = photoCredit(p.id);
   const level: Level | undefined = agent.candidates.includes(p.id) ? conf?.level : undefined;
+  const ship = lead ? `${lead.shipping <= 0 ? t(SV.freeShip, lang) : money(lead.shipping, lang)} · ${t(arrivalLabel(lead.arriveAt, now), lang)}` : '';
 
   return (
     <article data-flip={p.id} data-pid={p.id} className={`prod ${level ? `lv-${level}` : ''} ${p.stock === 0 ? 'out' : ''}`}>
@@ -136,52 +131,24 @@ function Card({ p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: C
         <h3 className="name">{t(p.name, lang)}</h3>
         <div className="price-row">
           <span className={`price ${repriced ? 'repriced' : ''}`}>{p.stock === 0 ? t(C.soldOut, lang) : money(shown, lang)}</span>
-          {sellers > 1 && (
-            <button className="cmp-chip" onClick={() => onOpen(p.id)} aria-label={SV.compareSellers[lang](sellers)}>
-              <SellerStack ids={store.offersOf(p.id).map((o) => o.sellerId)} lang={lang} />
-              <span>{SV.nCompare[lang](sellers)}</span>
-            </button>
+          {sellers > 1 && p.stock > 0 && (
+            <button className="cmp-chip" onClick={() => onOpen(p.id)}>{SV.nCompare[lang](sellers)}</button>
           )}
         </div>
-        {line ? (
-          <div className="ship">
-            <SellerBadge s={sellerOf(line.sellerId)} lang={lang} size={18} />
-            <span className="ship-s">{t(sellerOf(line.sellerId).name, lang)}</span>
-            {linePrice !== undefined && linePrice !== line.priceAtAdd && <span className="moved">{money(line.priceAtAdd, lang)} → {money(linePrice, lang)}</span>}
-          </div>
-        ) : lead && (
-          <>
-            <div className="ship">
-              <SellerBadge s={lead.seller} lang={lang} size={18} />
-              <span className="ship-s">{t(lead.seller.name, lang)}</span>
-            </div>
-            <Terms shipping={lead.shipping} arriveAt={lead.arriveAt} now={now} s={lead.seller} lang={lang} compact />
-          </>
-        )}
+        {line && linePrice !== undefined && linePrice !== line.priceAtAdd
+          ? <p className="ship-line moved">{money(line.priceAtAdd, lang)} → {money(linePrice, lang)}</p>
+          : ship && <p className="ship-line">{ship}</p>}
         {level && conf?.reason && <p className="reason">{t(conf.reason, lang)}</p>}
-        {keys.length > 1 && (
-          <div className={`szs ${nudge ? 'nudge' : ''}`} key={nudge} role="group" aria-label={t(SZ.pick, lang)}>
-            {keys.map((z) => {
-              const n = avail.includes(z);
-              const locked = !!line && line.size !== z;
-              return (
-                <button key={z} type="button" className={`sz ${sel === z ? 'on' : ''} ${!n ? 'out' : ''}`} aria-pressed={sel === z}
-                  disabled={readOnly || !n || locked} onClick={() => setPicked(z)}>{z}</button>
-              );
-            })}
-          </div>
-        )}
-        {nudge > 0 && !sel && <p className="hint" role="alert">{t(SV.pickSizeFirst, lang)}</p>}
         <div className="buy">
           {line ? (
             <>
               <Stepper qty={line.qty} max={store.getOffer(p.id, line.sellerId)?.sizes[line.size] ?? line.qty} lang={lang} disabled={readOnly} onQty={(n) => onQty(p.id, n)} />
-              <span className="added">{t(SV.inCart, lang)}</span>
+              <span className="added">{keys.length > 1 ? line.size : t(SV.inCart, lang)}</span>
             </>
           ) : (
             <button
-              className="btn sm primary" disabled={readOnly || p.stock === 0 || (!!sel && !lead)}
-              onClick={() => (sel ? onAdd(p.id, sel, lead?.offer.sellerId) : setNudge((n) => n + 1))}
+              className="btn sm primary" disabled={readOnly || p.stock === 0}
+              onClick={() => (only && lead ? onAdd(p.id, only, lead.offer.sellerId) : onOpen(p.id))}
             >
               {p.stock === 0 ? t(C.soldOut, lang) : t(C.add, lang)}
             </button>
