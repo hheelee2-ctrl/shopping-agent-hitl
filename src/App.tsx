@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { RuleAgent } from './agent/agent';
 import type { L, Lang } from './engine/types';
 import { initialState, reduce } from './state/console';
-import type { Action } from './state/console';
+import type { Action, Choice } from './state/console';
 import { appendFrame, baseline, viewAt } from './state/timeline';
 import type { Frame } from './state/timeline';
 import { parseRequest } from './store/parser';
@@ -105,6 +105,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     setCmpClosed(false);
     emit({ type: 'start' }, 'user');
     setAsked(request);
+    setRequest('');
     agent.start({ request, dial, limit, sizes }, (event) => {
       emit({ type: 'event', event });
       // 에이전트가 실제로 담은 순간을 사람이 놓치지 않게 알린다
@@ -131,7 +132,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
 
   const closeDrawer = useCallback(() => setCartOpen(false), []);
   const closeSheet = useCallback(() => setSheet(null), []);
-  const ack = (fn: () => void) => () => { emit({ type: 'user_ack' }, 'user'); fn(); };
+  const ack = (fn: () => void, choice?: Choice) => () => { emit({ type: 'user_ack', choice }, 'user'); fn(); };
   const userAdd = (id: string, size: string, sellerId?: string) => {
     const p = store.getProduct(id);
     const tag = size === 'FREE' ? '' : ` ${size}`;
@@ -214,10 +215,10 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           lang={lang} store={store} state={vState} cartIds={cartIds}
           readOnly={replaying} frames={frames} cursor={cursor} onCursor={setCursor}
           asked={asked} dial={dial} limit={limit} sizes={sizes} onSizes={setSizes} running={running}
-          request={request} onRequest={setRequest} onRun={run} onCompare={() => setCmpClosed(false)}
+          request={request} onRequest={setRequest} onRun={run} onCompare={() => setCmpClosed(false)} onOpen={setSheet}
           onDial={setDial} onLimit={setLimit}
           onReset={reset} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }}
-          onApprove={ack(() => agent.approve())} onReject={ack(() => agent.reject())} onAnswer={(id) => ack(() => agent.answer(id))()}
+          onApprove={ack(() => agent.approve(), 'approve')} onReject={ack(() => agent.reject(), 'reject')} onAnswer={(id) => ack(() => agent.answer(id), { option: id })()}
           onUndo={(id) => agent.undo(id)}
         />
       </main>
@@ -225,7 +226,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
       {!replaying && !cmpClosed && state.phase === 'needs-input' && state.question?.id.startsWith('q-pick') && (
         <Compare
           lang={lang} store={store} state={state}
-          onPick={(id) => ack(() => agent.answer(id))()} onClose={() => setCmpClosed(true)}
+          onPick={(id) => ack(() => agent.answer(id), { option: id })()} onClose={() => setCmpClosed(true)}
         />
       )}
 

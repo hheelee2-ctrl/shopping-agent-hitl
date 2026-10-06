@@ -1,19 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Dial, Lang, SizeProfile } from '../engine/types';
-import type { ConsoleState, LogEntry, Phase } from '../state/console';
+import type { ConsoleState, FeedItem, LogEntry, Phase } from '../state/console';
+import { Icon } from './Icon';
 import { photoUrl } from '../store/photos';
 import { arrivalLabel, sellerOf } from '../store/sellers';
 import type { Store } from '../store/store';
 import { AuditLog } from './AuditLog';
 import { CostMeter } from './CostMeter';
-import { ConfRing } from './ConfRing';
 import { Scrubber } from './Scrubber';
 import { Seg } from './Seg';
 import { Mark } from './Mark';
 import { PriceBars, SellerBadge } from './Sellers';
 import { SizeProfileEditor } from './SizeProfile';
 import type { Frame } from '../state/timeline';
-import { C, DIAL, LEVEL, PHASE, SUGGEST, SV, SZ, TH, money, t } from './copy';
+import { C, DIAL, PHASE, SUGGEST, SV, SZ, TH, money, t } from './copy';
 
 interface Props {
   lang: Lang;
@@ -31,6 +31,7 @@ interface Props {
   onRequest: (s: string) => void;
   onRun: () => void;
   onCompare: () => void;
+  onOpen: (id: string) => void;
   onDial: (d: Dial) => void;
   onLimit: (n: number) => void;
   onReset: () => void;
@@ -68,7 +69,7 @@ const dotClass = (p: Phase) =>
 
 export function AgentPanel(p: Props) {
   const { lang, state, store } = p;
-  const { phase, understood, plan, question, payment, result, log, candidates, confidence } = state;
+  const { phase, understood, plan, question, payment, result, log, confidence } = state;
   const pendingCart = log.find((l) => l.tool === 'cart_add' && l.status === 'awaiting-approval');
   const panel = useRef<HTMLElement>(null);
   const field = useRef<HTMLTextAreaElement>(null);
@@ -140,93 +141,132 @@ export function AgentPanel(p: Props) {
       <div className="agent-scroll">
       <fieldset className="plain thread" disabled={p.readOnly} aria-live="polite">
         {phase === 'idle' && (
-          <div className="suggest">
-            <p className="suggest-t">{t(TH.suggest, lang)}</p>
-            <div className="suggest-row">
-              {(moreSg ? SUGGEST.flatMap((g) => g.items) : SUGGEST.map((g) => g.items[0])).map((x, i) => (
-                <button key={i} className="sg" onClick={() => pick(t(x.text, lang))}>{t(x.label ?? x.text, lang)}</button>
-              ))}
-              <button className="sg more" onClick={() => setMoreSg((m) => !m)}>{t(moreSg ? TH.less : TH.more, lang)}</button>
+          <>
+            <Say><p>{t(TH.hello, lang)}</p></Say>
+            <div className="suggest">
+              <div className="suggest-row">
+                {(moreSg ? SUGGEST.flatMap((g) => g.items) : SUGGEST.map((g) => g.items[0])).map((x, i) => (
+                  <button key={i} className="sg" onClick={() => pick(t(x.text, lang))}>{t(x.label ?? x.text, lang)}</button>
+                ))}
+                <button className="sg more" onClick={() => setMoreSg((m) => !m)}>{t(moreSg ? TH.less : TH.more, lang)}</button>
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {p.asked && phase !== 'idle' && <p className="bubble">{p.asked}</p>}
 
-        {understood && (
+        {understood && (understood.chips.length > 0 || phase === 'needs-input') && (
           <div className="interp">
             {understood.chips.map((c, i) => <span key={i} className="chip"><i>{t(c.label, lang)}</i>{t(c.value, lang)}</span>)}
-            {understood.unknown.map((u) => <span key={u} className="chip bad"><i>?</i>{u}</span>)}
+            {phase === 'needs-input' && understood.unknown.map((u) => <span key={u} className="chip bad"><i>?</i>{u}</span>)}
           </div>
         )}
+
+        {state.feed.map((f) => {
+          if (f.k === 'found') return (
+            <Say key={f.id}>
+              <p>{TH.found[lang](f.ids.length)}</p>
+              <ul className="cand" aria-label={t(C.candidates, lang)}>
+                {f.ids.map((id) => {
+                  const prod = store.getProduct(id);
+                  const c = confidence[id];
+                  if (!prod) return null;
+                  const src = photoUrl(id);
+                  return (
+                    <li key={id} className={c ? `lv-${c.level}` : ''}>
+                      <button className={`cand-ph sw sw-${prod.colors[0]}`} title={t(prod.name, lang)} aria-label={t(prod.name, lang)} onClick={() => p.onOpen(id)}>
+                        {src && <img className="ph" src={src} alt="" />}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Say>
+          );
+          if (f.k === 'added') {
+            const prod = store.getProduct(f.pid);
+            if (!prod) return null;
+            const src = photoUrl(f.pid);
+            const s = f.offer ? sellerOf(f.offer.sellerId) : null;
+            return (
+              <Say key={f.id}>
+                <p>{t(TH.added, lang)}</p>
+                <button className="mini" onClick={() => p.onOpen(f.pid)}>
+                  <span className={`mini-ph sw sw-${prod.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
+                  <span className="mini-m"><b>{t(prod.name, lang)}{f.offer && f.offer.size !== 'FREE' ? ` ${f.offer.size}` : ''}</b>{s && <span>{t(s.name, lang)} · {t(arrivalLabel(f.offer!.arriveAt, store.now()), lang)}</span>}</span>
+                  {f.offer && <b className="mini-p">{money(f.offer.price, lang)}</b>}
+                </button>
+              </Say>
+            );
+          }
+          const prod = f.pid ? store.getProduct(f.pid) : undefined;
+          const q = f.kind === 'question' ? (f.q ? t(f.q, lang) : '')
+            : f.kind === 'cart' ? (prod ? TH.askCartQ[lang](t(prod.name, lang)) : '')
+            : f.kind === 'pay' ? (f.total !== undefined ? TH.askPayQ[lang](money(f.total, lang)) : '')
+            : t(TH.askPlanQ, lang);
+          const a = f.kind === 'question' ? (f.a ? t(f.a, lang) : '')
+            : f.kind === 'cart' ? t(f.ok ? C.approveCart : C.skipCart, lang)
+            : f.kind === 'pay' ? t(f.ok ? C.approvePay : C.declinePay, lang)
+            : t(f.ok ? C.approveStart : C.cancel, lang);
+          return (
+            <div key={f.id} className="qa">
+              {q && <Say quiet><p>{q}</p></Say>}
+              <p className={`bubble me ${f.ok ? '' : 'no'}`}>{a}</p>
+            </div>
+          );
+        })}
 
         {plan && askPlan && (
-          <div className="card plan ask-me" data-action="">
-            <h2>{t(C.planTitle, lang)}</h2>
-            <ol className="steps">
-              {plan.steps.map((s) => <li key={s.id}><span className="st-ic" aria-hidden /><span>{t(s.label, lang)}</span></li>)}
-            </ol>
-            <div className="row">
-              <button className="btn primary nod" onClick={p.onApprove}>{t(C.approveStart, lang)}</button>
-              <button className="btn" onClick={p.onReject}>{t(C.cancel, lang)}</button>
+          <Say>
+            <div className="card plan ask-me" data-action="">
+              <h2>{t(C.planTitle, lang)}</h2>
+              <ol className="steps">
+                {plan.steps.map((s) => <li key={s.id}><span className="st-ic" aria-hidden /><span>{t(s.label, lang)}</span></li>)}
+              </ol>
+              <div className="row">
+                <button className="btn primary nod" onClick={p.onApprove}>{t(C.approveStart, lang)}</button>
+                <button className="btn" onClick={p.onReject}>{t(C.cancel, lang)}</button>
+              </div>
             </div>
-          </div>
+          </Say>
         )}
 
-        {plan && !askPlan && !result && (() => {
-          const states = plan.steps.map((s) => stepState(s.tool, log, phase));
-          const cur = Math.max(0, states.findIndex((x) => x !== 'done'));
-          const i = states.every((x) => x === 'done') ? plan.steps.length - 1 : cur;
+        {pendingCart && <Say><CartAsk lang={lang} store={store} entry={pendingCart} why={whyOf(pendingCart)} onApprove={p.onApprove} onReject={p.onReject} /></Say>}
+
+        {question && phase === 'needs-input' && (
+          <Say>
+            <div className="card ask-me" data-action="">
+              <h2 className="q">{t(question.question, lang)}</h2>
+              <div className="opts">
+                {question.options.map((o, i) => (
+                  <button key={o.id} className={`btn ${i === 0 ? 'primary' : ''}`} onClick={() => p.onAnswer(o.id)}>{t(o.label, lang)}</button>
+                ))}
+                {question.id.startsWith('q-pick') && <button className="btn ghost cmp-open" onClick={p.onCompare}>{t(C.compare, lang)}</button>}
+              </div>
+            </div>
+          </Say>
+        )}
+
+        {payment && phase === 'payment-gate' && <Say><PayAsk lang={lang} store={store} payment={payment} onApprove={p.onApprove} onReject={p.onReject} /></Say>}
+
+        {(phase === 'planning' || phase === 'executing') && (() => {
+          const label = plan && !askPlan ? (() => {
+            const st = plan.steps.map((x) => stepState(x.tool, log, phase));
+            const i = Math.max(0, st.findIndex((x) => x !== 'done'));
+            return { i, n: plan.steps.length, text: t(plan.steps[i].label, lang).replace(/\s*\(.*\)$/, '') };
+          })() : null;
           return (
-            <div className="progress" aria-label={t(C.planTitle, lang)}>
-              <ol className="pdots">{states.map((st, k) => <li key={k} className={st || (k < i ? 'done' : '')} />)}</ol>
-              <span><b>{TH.step[lang](i + 1, plan.steps.length)}</b> {t(plan.steps[i].label, lang).replace(/\s*\(.*\)$/, '')}</span>
+            <div className="msg working" aria-live="polite">
+              <span className="msg-av"><Mark size={12} phase="busy" /></span>
+              <p>{label ? <><b>{TH.step[lang](label.i + 1, label.n)}</b> {label.text}</> : t(PHASE.planning, lang)}<span className="dots" aria-hidden><i /><i /><i /></span></p>
             </div>
           );
         })()}
 
-        {candidates.length > 0 && !result && phase !== 'payment-gate' && (
-          <ul className="cand" aria-label={t(C.candidates, lang)}>
-            {candidates.map((id) => {
-              const prod = store.getProduct(id);
-              const c = confidence[id];
-              if (!prod) return null;
-              const src = photoUrl(id);
-              return (
-                <li key={id} className={c ? `lv-${c.level}` : ''} title={t(prod.name, lang)}>
-                  <span className={`cand-ph sw sw-${prod.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
-                  {c && <span className={`conf ${c.level}`}><ConfRing level={c.level} />{c.level === 'high' ? t(LEVEL[c.level], lang) : ''}</span>}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-
-        {pendingCart && <CartAsk lang={lang} store={store} entry={pendingCart} why={whyOf(pendingCart)} onApprove={p.onApprove} onReject={p.onReject} />}
-
-        {question && phase === 'needs-input' && (
-          <div className="card ask-me" data-action="">
-            <h2 className="q">{t(question.question, lang)}</h2>
-            <div className="opts">
-              {question.id.startsWith('q-pick') && <button className="btn ghost cmp-open" onClick={p.onCompare}>{t(C.compare, lang)}</button>}
-              {question.options.map((o, i) => (
-                <button key={o.id} className={`btn ${i === 0 ? 'primary' : ''}`} onClick={() => p.onAnswer(o.id)}>{t(o.label, lang)}</button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {payment && phase === 'payment-gate' && <PayAsk lang={lang} store={store} payment={payment} onApprove={p.onApprove} onReject={p.onReject} />}
-
-        {result && (
-          <div className={`card result ${result.status}`}>
-            <p>{t(result.summary, lang)}</p>
-            {result.status === 'done' && <button className="btn sm" onClick={p.onOrders}>{t(TH.seeOrders, lang)}</button>}
-          </div>
-        )}
-
+        {result && <Result lang={lang} store={store} state={state} onOrders={p.onOrders} onPick={pick} />}
       </fieldset>
-      {(log.length > 0 || p.frames.length > 1) && (
+      {log.length > 0 && (
         <details className="history">
           <summary>{t(TH.history, lang)}<span>{log.length}</span></summary>
           {result && (
@@ -260,6 +300,62 @@ export function AgentPanel(p: Props) {
         {p.running && <p className="composer-hint">{t(C.busyHint, lang)}</p>}
       </form>
     </aside>
+  );
+}
+
+/** 에이전트의 한 마디. 왼쪽에 Nod 표식, 오른쪽에 내용. */
+function Say({ children, quiet }: { children: ReactNode; quiet?: boolean }) {
+  return (
+    <div className={`msg ${quiet ? 'quiet' : ''}`}>
+      <span className="msg-av"><Mark size={12} /></span>
+      <div className="msg-b">{children}</div>
+    </div>
+  );
+}
+
+/** 끝났을 때: 무엇이, 어디서, 언제 오는지 한 장으로. 그리고 다음에 맡길 일. */
+function Result({ lang, store, state, onOrders, onPick }: {
+  lang: Lang; store: Store; state: ConsoleState; onOrders: () => void; onPick: (s: string) => void;
+}) {
+  const r = state.result!;
+  const ok = r.status === 'done';
+  const added = state.feed.filter((f): f is Extract<FeedItem, { k: 'added' }> => f.k === 'added')
+    .filter((f) => !state.log.find((l) => l.id === f.id)?.undone);
+  const paid = [...state.feed].reverse().find((f) => f.k === 'decided' && f.kind === 'pay' && f.ok);
+  const total = paid && paid.k === 'decided' ? paid.total : undefined;
+  const next = SUGGEST.map((g) => g.items[1] ?? g.items[0]).slice(0, 3);
+  return (
+    <div className="msg">
+      <span className={`msg-av ${ok ? 'ok' : ''}`}><Mark size={12} phase={ok ? 'done' : 'idle'} /></span>
+      <div className="msg-b">
+        <div className={`card result ${r.status}`}>
+          <h2 className="res-t">{t(ok ? TH.doneTitle : TH.stopTitle, lang)}</h2>
+          <p className="res-s">{t(r.summary, lang)}</p>
+          {ok && added.length > 0 && (
+            <ul className="res-items">
+              {added.map((f) => {
+                const prod = store.getProduct(f.pid);
+                if (!prod) return null;
+                const src = photoUrl(f.pid);
+                return (
+                  <li key={f.id}>
+                    <span className={`mini-ph sw sw-${prod.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
+                    <span className="mini-m"><b>{t(prod.name, lang)}</b>{f.offer && <span>{t(sellerOf(f.offer.sellerId).name, lang)}</span>}</span>
+                    {f.offer && <span className="res-when"><Icon name="arrive" size={14} />{t(arrivalLabel(f.offer.arriveAt, store.now()), lang)}</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {ok && total !== undefined && <p className="res-total"><span>{t(TH.total, lang)}</span><b>{money(total, lang)}</b></p>}
+          {ok && <button className="btn sm" onClick={onOrders}>{t(TH.seeOrders, lang)}</button>}
+        </div>
+        <p className="next-t">{t(TH.next, lang)}</p>
+        <div className="suggest-row">
+          {next.map((x, i) => <button key={i} className="sg" onClick={() => onPick(t(x.text, lang))}>{t(x.label ?? x.text, lang)}</button>)}
+        </div>
+      </div>
+    </div>
   );
 }
 

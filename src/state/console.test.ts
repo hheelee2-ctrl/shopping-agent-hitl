@@ -54,3 +54,21 @@ describe('log / undo', () => {
     expect(s.log[0].undoBlocked).toEqual(L('no'));
   });
 });
+
+describe('대화 기록(feed)', () => {
+  it('질문에 답하면 질문과 고른 답이 남는다', () => {
+    const q: AgentEvent = { type: 'needs_input', id: 'q', question: L('뺄까요?'), options: [{ id: 'go', label: L('빼고 진행') }] };
+    const s = reduce(run([plan(false), q]), { type: 'user_ack', choice: { option: 'go' } });
+    expect(s.feed).toEqual([{ k: 'decided', id: 'd-0', kind: 'question', ok: true, q: L('뺄까요?'), a: L('빼고 진행') }]);
+  });
+  it('담기 승인·결제 거절이 순서대로 남고, 검색 결과·담김도 한 번씩만 쌓인다', () => {
+    const found: AgentEvent = { type: 'tool_call', id: 't1', tool: 'search', label: L('s'), status: 'done', itemIds: ['a', 'b'] };
+    const ask: AgentEvent = { type: 'tool_call', id: 't3', tool: 'cart_add', label: L('c'), status: 'awaiting-approval', itemIds: ['a'] };
+    const done: AgentEvent = { ...ask, status: 'done', undoable: true } as AgentEvent;
+    let s = run([plan(false), found, found, ask]);
+    s = reduce(s, { type: 'user_ack', choice: 'approve' });
+    s = run([done, done, { type: 'payment_gate', itemIds: ['a'], total: 9, limit: 10, exceeded: false }], s);
+    s = reduce(s, { type: 'user_ack', choice: 'reject' });
+    expect(s.feed.map((f) => (f.k === 'decided' ? `${f.kind}:${f.ok}` : f.k))).toEqual(['found', 'cart:true', 'added', 'pay:false']);
+  });
+});

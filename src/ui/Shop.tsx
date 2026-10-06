@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Lang, Level } from '../engine/types';
 import type { ConsoleState } from '../state/console';
 import { CATEGORY_L } from '../store/labels';
@@ -14,6 +14,7 @@ import type { Store } from '../store/store';
 import { MarketTicker } from './MarketTicker';
 import { PriceBars, SellerBadge, Terms } from './Sellers';
 import { C, LEVEL, SV, SZ, money, t } from './copy';
+import { Mark } from './Mark';
 
 interface Props {
   lang: Lang;
@@ -35,11 +36,26 @@ const CATS = Object.keys(CATEGORY_L) as Category[];
 
 export function Shop({ lang, results, criteria, category, onCategory, cart, agent, onAdd, onQty, onOpen, readOnly, market, store }: Props) {
   const chips = criteria ? describeCriteria(criteria) : [];
-  const gridRef = useFlip<HTMLDivElement>(results.map((r) => r.product.id).join());
+  // 에이전트가 일하는 동안: 후보를 앞으로 당기고, 나머지는 흐리게, 지금 보는 상품에 시선 표시
+  const active = !['idle', 'done', 'failed', 'cancelled', 'undone'].includes(agent.phase);
+  const looking = agent.phase === 'planning' || agent.phase === 'executing';
+  const cands = agent.candidates;
+  const ordered = active && cands.length
+    ? [...results].sort((a, b) => rank(a.product.id) - rank(b.product.id))
+    : results;
+  function rank(id: string) { const i = cands.indexOf(id); return i === -1 ? 999 : i; }
+  const [eye, setEye] = useState(0);
+  useEffect(() => {
+    if (!looking || cands.length === 0) return;
+    const id = window.setInterval(() => setEye((e) => e + 1), 650);
+    return () => window.clearInterval(id);
+  }, [looking, cands.length]);
+  const eyeId = looking && cands.length ? cands[eye % cands.length] : null;
+  const gridRef = useFlip<HTMLDivElement>(ordered.map((r) => r.product.id).join());
   useFlight(cart, !readOnly);
   const scanKey = criteria ? JSON.stringify(criteria) : category ?? '';
   return (
-    <section className="shop" aria-label="shop">
+    <section className={`shop ${active && cands.length ? 'focus' : ''}`} aria-label="shop">
       <div className="shop-bar">
         <div className="cats" role="group" aria-label="category">
           <button aria-pressed={category === null} onClick={() => onCategory(null)}>{t(C.all, lang)}</button>
@@ -64,8 +80,8 @@ export function Shop({ lang, results, criteria, category, onCategory, cart, agen
         <div className="grid-wrap">
           {scanKey && <div className="scan" key={scanKey} aria-hidden="true" />}
           <div className="grid" ref={gridRef}>
-            {results.map(({ product }) => (
-              <Card key={product.id} p={product} lang={lang} cart={cart} agent={agent} store={store} onAdd={onAdd} onQty={onQty} onOpen={onOpen} readOnly={!!readOnly} />
+            {ordered.map(({ product }, i) => (
+              <Card key={product.id} i={i} eye={eyeId === product.id} p={product} lang={lang} cart={cart} agent={agent} store={store} onAdd={onAdd} onQty={onQty} onOpen={onOpen} readOnly={!!readOnly} />
             ))}
           </div>
         </div>
@@ -75,6 +91,7 @@ export function Shop({ lang, results, criteria, category, onCategory, cart, agen
 }
 
 interface CardProps {
+  i: number; eye: boolean;
   p: Product; lang: Lang; cart: CartLine[]; agent: ConsoleState; store: Store;
   onAdd: (id: string, size: string, sellerId?: string) => void; onQty: (id: string, qty: number) => void;
   onOpen: (id: string) => void; readOnly: boolean;
@@ -95,7 +112,7 @@ export function Stepper({ qty, max, lang, onQty, disabled }: { qty: number; max:
 }
 
 
-function Card({ p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: CardProps) {
+function Card({ i, eye, p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: CardProps) {
   const line = cart.find((l) => l.productId === p.id);
   const keys = Object.keys(p.sizes);
   // 사이즈가 하나뿐이면 바로 담고, 여러 개면 시트에서 사이즈·판매처를 고른다
@@ -118,13 +135,15 @@ function Card({ p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: C
   const ship = lead ? `${lead.shipping <= 0 ? t(SV.freeShip, lang) : money(lead.shipping, lang)} · ${t(arrivalLabel(lead.arriveAt, now), lang)}` : '';
 
   return (
-    <article data-flip={p.id} data-pid={p.id} className={`prod ${level ? `lv-${level}` : ''} ${p.stock === 0 ? 'out' : ''}`}>
+    <article data-flip={p.id} data-pid={p.id} style={{ '--i': Math.min(i, 11) } as CSSProperties}
+      className={`prod ${level ? `lv-${level}` : ''} ${agent.candidates.includes(p.id) ? 'is-cand' : ''} ${eye ? 'eye' : ''} ${p.stock === 0 ? 'out' : ''}`}>
       <button className={`sw sw-${p.colors[0]}`} onClick={() => onOpen(p.id)} aria-label={SV.compareSellers[lang](sellers)}>
         {src && !broken && (
           <img className="ph" src={src} alt="" loading="lazy" title={credit ? `Photo: ${credit} / Unsplash` : undefined} onError={() => setBroken(true)} />
         )}
         {level && <span className={`pill ${level}`}>{t(LEVEL[level], lang)}</span>}
-        {line && <span className="incart">{line.addedBy === 'agent' ? t(C.byAgent, lang) : t(C.cart, lang)} {line.qty}</span>}
+        {eye && <span className="eye-tag"><Mark size={10} phase="busy" tone="on-brand" />{t(SV.looking, lang)}</span>}
+        {line && <span className="incart" key={line.qty}>{line.addedBy === 'agent' ? t(C.byAgent, lang) : t(C.cart, lang)} {line.qty}</span>}
       </button>
       <div className="meta">
         <div className="brand">{p.brand}</div>

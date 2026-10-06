@@ -25,6 +25,14 @@ export interface LogEntry {
   undoBlocked?: L;
 }
 
+/** 패널에 남는 대화 기록. 결정 카드가 사라져도 무엇을 묻고 어떻게 답했는지 남긴다. */
+export type FeedItem =
+  | { k: 'found'; id: string; ids: string[] }
+  | { k: 'added'; id: string; pid: string; offer?: LogEntry['offer'] }
+  | { k: 'decided'; id: string; kind: 'plan' | 'cart' | 'question' | 'pay'; ok: boolean; q?: L; a?: L; pid?: string; total?: number };
+
+export type Choice = 'approve' | 'reject' | { option: string };
+
 export interface ConsoleState {
   phase: Phase;
   understood: Extract<AgentEvent, { type: 'understood' }> | null;
@@ -35,6 +43,7 @@ export interface ConsoleState {
   question: Extract<AgentEvent, { type: 'needs_input' }> | null;
   payment: Extract<AgentEvent, { type: 'payment_gate' }> | null;
   result: Extract<AgentEvent, { type: 'result' }> | null;
+  feed: FeedItem[];
 }
 
 export const initialState: ConsoleState = {
@@ -47,12 +56,13 @@ export const initialState: ConsoleState = {
   question: null,
   payment: null,
   result: null,
+  feed: [],
 };
 
 export type Action =
   | { type: 'start' }
   | { type: 'reset' }
-  | { type: 'user_ack' } // 승인·답변 직후, 엔진 응답 전
+  | { type: 'user_ack'; choice?: Choice } // 승인·답변 직후, 엔진 응답 전
   | { type: 'event'; event: AgentEvent };
 
 export function reduce(state: ConsoleState, action: Action): ConsoleState {
@@ -61,11 +71,29 @@ export function reduce(state: ConsoleState, action: Action): ConsoleState {
       return initialState;
     case 'start':
       return { ...initialState, phase: 'planning' };
-    case 'user_ack':
-      return { ...state, phase: 'executing', question: null };
+    case 'user_ack': {
+      const d = decided(state, action.choice);
+      return { ...state, phase: 'executing', question: null, feed: d ? [...state.feed, d] : state.feed };
+    }
     case 'event':
       return applyEvent(state, action.event);
   }
+}
+
+function decided(s: ConsoleState, c: Choice | undefined): FeedItem | null {
+  if (!c) return null;
+  const id = `d-${s.feed.length}`;
+  if (s.phase === 'needs-input' && s.question && typeof c === 'object') {
+    const o = s.question.options.find((x) => x.id === c.option);
+    return { k: 'decided', id, kind: 'question', ok: true, q: s.question.question, a: o?.label };
+  }
+  if (typeof c === 'object') return null;
+  const ok = c === 'approve';
+  if (s.phase === 'payment-gate') return { k: 'decided', id, kind: 'pay', ok, total: s.payment?.total };
+  const cart = s.log.find((l) => l.tool === 'cart_add' && l.status === 'awaiting-approval');
+  if (cart) return { k: 'decided', id, kind: 'cart', ok, pid: cart.itemIds?.[0] };
+  if (s.phase === 'awaiting-approval') return { k: 'decided', id, kind: 'plan', ok };
+  return null;
 }
 
 function applyEvent(s: ConsoleState, e: AgentEvent): ConsoleState {
@@ -83,7 +111,13 @@ function applyEvent(s: ConsoleState, e: AgentEvent): ConsoleState {
       const log = i === -1 ? [...s.log, entry] : s.log.map((l, j) => (j === i ? { ...l, ...entry } : l));
       const candidates = e.tool === 'search' && e.status === 'done' && e.itemIds ? e.itemIds : s.candidates;
       const phase: Phase = e.status === 'awaiting-approval' ? 'awaiting-approval' : s.phase === 'planning' || s.phase === 'awaiting-approval' ? 'executing' : s.phase;
-      return { ...s, log, candidates, phase };
+      let feed = s.feed;
+      if (e.tool === 'search' && e.status === 'done' && e.itemIds?.length && !feed.some((f) => f.id === e.id)) feed = [...feed, { k: 'found', id: e.id, ids: e.itemIds }];
+      if (e.tool === 'cart_add' && e.status === 'done' && e.undoable && e.itemIds?.[0] && !feed.some((f) => f.id === e.id)) {
+        const prev = s.log.find((l) => l.id === e.id);
+        feed = [...feed, { k: 'added', id: e.id, pid: e.itemIds[0], offer: e.offer ?? prev?.offer }];
+      }
+      return { ...s, log, candidates, phase, feed };
     }
     case 'confidence':
       return { ...s, confidence: { ...s.confidence, [e.itemId]: { level: e.level, reason: e.reason } } };
