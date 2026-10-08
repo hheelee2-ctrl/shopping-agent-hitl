@@ -745,13 +745,18 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .done h2 { font-size: var(--t-2xl); font-weight: 800; letter-spacing: -0.05em; }
 .done > p { font-size: var(--t-base); color: var(--ink-2); word-break: keep-all; }
 .done-list { list-style: none; margin: 8px 0 0; padding: 0; width: 100%; display: grid; gap: 8px; }
-.done-list li { padding: 12px 16px; border-radius: var(--r-md); background: var(--bg); display: grid; gap: 4px; }
-.done-list li > div { display: flex; justify-content: space-between; gap: 12px; }
+.done-row { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; padding: 12px 16px; border-radius: var(--r-md); background: var(--bg); display: grid; gap: 4px; transition: box-shadow var(--dur-fast) var(--ease); }
+.done-row:hover { box-shadow: 0 0 0 1px var(--line-strong); }
+.done-row:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.done-row > div { display: flex; justify-content: space-between; gap: 12px; }
 .done-list b { font-size: var(--t-base); font-weight: 700; }
 .done-list span { font-size: var(--t-xs); color: var(--ink-3); }
 .done-list p { font-size: var(--t-sm); color: var(--ink-2); }
-.done-sum { width: 100%; display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; border-top: 1px solid var(--line); }
-.done-sum b { font-size: var(--t-xl); font-weight: 800; letter-spacing: -0.05em; }
+.done-sum { width: 100%; margin: 4px 0 0; display: grid; }
+.done-sum div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: var(--t-sm); }
+.done-sum dt { color: var(--ink-3); font-weight: 600; }
+.done-sum dd { margin: 0; font-weight: 600; text-align: right; word-break: keep-all; }
+.done-sum .grand dd, .kv .grand dd { font-size: var(--t-lg); font-weight: 800; letter-spacing: -0.04em; }
 
 /* agent: cart & pay asks */
 .cart-ask .pick { grid-template-columns: 72px 1fr auto; align-items: start; }
@@ -1152,3 +1157,67 @@ details.why-box p { margin-top: var(--sp-2); }
 .rcpt-tl b { font-weight: 700; color: var(--ink); }
 .rcpt-tl span { color: var(--ink-3); }
 @media (prefers-reduced-motion: reduce) { .pay-steps li { animation: none; } }
+
+/* ── 처리 중 표시 ── */
+.spin { display: inline-block; flex: none; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; opacity: 0.8; animation: ndSpin 0.8s linear infinite; vertical-align: -2px; }
+.btn .spin { margin-right: 8px; }
+.btn[aria-busy='true'] { cursor: progress; }
+@media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2.4s; } }
+
+/* ── 장바구니 결제 진행 ── */
+.paying { flex: 1; display: grid; align-content: start; justify-items: start; gap: 12px; padding-top: 8px; animation: enter var(--dur-slow) var(--ease) both; }
+.paying-mark { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--ok-soft); color: var(--ok); }
+.paying h2 { font-size: var(--t-2xl); font-weight: 800; letter-spacing: -0.05em; }
+.paying > p { font-size: var(--t-base); color: var(--ink-2); word-break: keep-all; }
+.paying .pay-steps { width: 100%; margin-top: 8px; padding: 16px; border-radius: var(--r-md); background: var(--bg); }
+.paying .pay-steps li:not(.done):not(.now) .ps-l { color: var(--ink-3); }
+.ps-ic .spin { border-width: 1.5px; color: var(--brand); }
+
+/* ── 주문 목록 ── */
+.order-row { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px; border-radius: var(--r-lg); background: var(--bg); transition: box-shadow var(--dur-fast) var(--ease); }
+.order-row:hover { box-shadow: 0 0 0 1px var(--line-strong); }
+.order-row:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.order-row .thumb { width: 48px; }
+.or-m { display: grid; gap: 3px; min-width: 0; }
+.or-top { display: flex; align-items: center; gap: 8px; font-size: var(--t-xs); color: var(--ink-3); }
+.or-name { font-size: var(--t-md); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.or-sub { font-size: var(--t-xs); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.order-row strong { font-size: var(--t-md); font-weight: 800; letter-spacing: -0.03em; }
+.st-chip { padding: 2px 8px; border-radius: var(--r-pill); font-size: 11px; font-weight: 700; background: var(--bg-2); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line); }
+.st-chip.st-shipped, .st-chip.st-transit { background: var(--ok-soft); color: var(--ok); box-shadow: none; }
+.st-chip.st-arrived { background: var(--brand); color: var(--on-brand); box-shadow: none; }
+
+/* ── 주문 상세 ── */
+.od { flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 12px; align-content: start; animation: enter var(--dur) var(--ease) both; }
+.od-hero, .od-sec { padding: 16px; border-radius: var(--r-lg); background: var(--bg); display: grid; gap: 12px; }
+.od-no { font-size: var(--t-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.od-hero h3 { font-size: var(--t-2xl); font-weight: 800; letter-spacing: -0.05em; margin-top: -6px; }
+.od-eta { font-size: var(--t-base); color: var(--ink-2); margin-top: -8px; }
+.od-sec > header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.od-sec h4 { font-size: var(--t-md); font-weight: 800; letter-spacing: -0.02em; }
+.od-sec .muted, .od .kv .muted { color: var(--ink-3); font-size: var(--t-xs); font-weight: 500; }
+.od .kv div:first-child { border-top: 0; padding-top: 0; }
+.od .kv dd { font-variant-numeric: tabular-nums; }
+.od .link-btn { display: inline-flex; align-items: center; gap: 6px; }
+.tl { list-style: none; margin: 0; padding: 0; display: grid; }
+.tl li { position: relative; display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 12px; padding: 0 0 16px; font-size: var(--t-sm); animation: enter var(--dur) var(--ease) both; }
+.tl li:nth-child(2) { animation-delay: 40ms; } .tl li:nth-child(3) { animation-delay: 80ms; } .tl li:nth-child(4) { animation-delay: 120ms; } .tl li:nth-child(5) { animation-delay: 160ms; }
+.tl li:last-child { padding-bottom: 0; }
+.tl li::before { content: ''; position: absolute; left: 6px; top: 14px; bottom: 0; width: 2px; background: var(--line); }
+.tl li:last-child::before { display: none; }
+.tl i { width: 14px; height: 14px; margin-top: 2px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 2px var(--line-strong); }
+.tl li.now i { background: var(--ok); box-shadow: 0 0 0 4px var(--ok-soft); }
+.tl li.past i { background: var(--ink-3); box-shadow: none; }
+.tl li.next { color: var(--ink-3); }
+.tl li.next i { box-shadow: inset 0 0 0 2px var(--line); }
+.tl div { display: grid; gap: 2px; min-width: 0; }
+.tl b { font-weight: 700; }
+.tl li.past b { color: var(--ink-2); }
+.tl span { font-size: var(--t-xs); color: var(--ink-3); }
+.tl time { font-size: var(--t-xs); color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tl.skel li { grid-template-columns: 14px 1fr; animation: none; }
+.tl.skel i, .tl.skel span { background: var(--bg-2); box-shadow: none; animation: skel 1.1s ease-in-out infinite alternate; }
+.tl.skel span { height: 28px; border-radius: var(--r-sm); }
+.tl.skel li:nth-child(2) span { width: 80%; } .tl.skel li:nth-child(3) span { width: 60%; }
+@keyframes skel { from { opacity: 0.45; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .tl li, .od, .paying { animation: none; } .tl.skel i, .tl.skel span { animation: none; } }

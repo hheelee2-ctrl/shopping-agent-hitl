@@ -391,7 +391,7 @@ function Result({ lang, store, state, onOrders, onPick }: {
           {ok && orders.length > 0 && (
             <>
               <dl className="rcpt-sum">
-                <div><dt>{t(TH.paidWith, lang)}</dt><dd>{t(TH.demoPay, lang)}</dd></div>
+                <div><dt>{t(TH.paidWith, lang)}</dt><dd>{t(SV.payMethodV, lang)}</dd></div>
                 <div className="grand"><dt>{t(TH.total, lang)}</dt><dd>{money(total, lang)}</dd></div>
               </dl>
               <ol className="rcpt-tl" aria-label={t(TH.tlPlaced, lang)}>

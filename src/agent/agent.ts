@@ -7,7 +7,9 @@ import type { Ranked, Store } from '../store/store';
 import { sizeKindOf, type Category, type Color, type Criteria, type SizeKind } from '../store/types';
 
 type Delay = (ms: number) => Promise<void>;
-const realDelay: Delay = (ms) => new Promise((r) => setTimeout(r, ms));
+/** 실제로 판매처에 묻고 기다리는 만큼의 호흡. 단계마다 길이가 조금씩 다르다. */
+const PACE = 1.8;
+const realDelay: Delay = (ms) => new Promise((r) => setTimeout(r, ms * PACE * (0.85 + Math.random() * 0.3)));
 
 /** 확신도 임계값. 점수는 search.ts에서 계산된 조건 일치도. */
 const HIGH = 0.9;

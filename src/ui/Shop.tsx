@@ -17,6 +17,7 @@ import { C, LEVEL, SV, SZ, money, t } from './copy';
 import { SIZE_COMMON } from '../store/types';
 const COMMON = new Set(Object.values(SIZE_COMMON).flat());
 import { Mark } from './Mark';
+import { Spinner } from './Spinner';
 
 interface Props {
   lang: Lang;
@@ -27,6 +28,8 @@ interface Props {
   cart: CartLine[];
   agent: ConsoleState;
   onAdd: (id: string, size: string, sellerId?: string) => void;
+  /** 지금 담는 중인 상품 */
+  adding?: string | null;
   onQty: (id: string, qty: number) => void;
   onOpen: (id: string) => void;
   readOnly?: boolean;
@@ -36,7 +39,7 @@ interface Props {
 
 const CATS = Object.keys(CATEGORY_L) as Category[];
 
-export function Shop({ lang, results, criteria, category, onCategory, cart, agent, onAdd, onQty, onOpen, readOnly, market, store }: Props) {
+export function Shop({ lang, results, criteria, category, onCategory, cart, agent, adding, onAdd, onQty, onOpen, readOnly, market, store }: Props) {
   const chips = criteria ? describeCriteria(criteria) : [];
   // 에이전트가 일하는 동안: 후보를 앞으로 당기고, 나머지는 흐리게, 지금 보는 상품에 시선 표시
   const active = !['idle', 'done', 'failed', 'cancelled', 'undone'].includes(agent.phase);
@@ -83,7 +86,7 @@ export function Shop({ lang, results, criteria, category, onCategory, cart, agen
           {scanKey && <div className="scan" key={scanKey} aria-hidden="true" />}
           <div className="grid" ref={gridRef}>
             {ordered.map(({ product }, i) => (
-              <Card key={product.id} i={i} eye={eyeId === product.id} p={product} lang={lang} cart={cart} agent={agent} store={store} onAdd={onAdd} onQty={onQty} onOpen={onOpen} readOnly={!!readOnly} />
+              <Card key={product.id} i={i} eye={eyeId === product.id} p={product} lang={lang} cart={cart} agent={agent} store={store} adding={adding === product.id} onAdd={onAdd} onQty={onQty} onOpen={onOpen} readOnly={!!readOnly} />
             ))}
           </div>
         </div>
@@ -94,7 +97,7 @@ export function Shop({ lang, results, criteria, category, onCategory, cart, agen
 
 interface CardProps {
   i: number; eye: boolean;
-  p: Product; lang: Lang; cart: CartLine[]; agent: ConsoleState; store: Store;
+  p: Product; lang: Lang; cart: CartLine[]; agent: ConsoleState; store: Store; adding: boolean;
   onAdd: (id: string, size: string, sellerId?: string) => void; onQty: (id: string, qty: number) => void;
   onOpen: (id: string) => void; readOnly: boolean;
 }
@@ -114,7 +117,7 @@ export function Stepper({ qty, max, lang, onQty, disabled }: { qty: number; max:
 }
 
 
-function Card({ i, eye, p, lang, cart, agent, store, onAdd, onQty, onOpen, readOnly }: CardProps) {
+function Card({ i, eye, p, lang, cart, agent, store, adding, onAdd, onQty, onOpen, readOnly }: CardProps) {
   const line = cart.find((l) => l.productId === p.id);
   const keys = Object.keys(p.sizes);
   // 사이즈가 하나뿐이면 바로 담고, 여러 개면 시트에서 사이즈·판매처를 고른다
@@ -168,10 +171,10 @@ function Card({ i, eye, p, lang, cart, agent, store, onAdd, onQty, onOpen, readO
             </>
           ) : (
             <button
-              className="btn sm primary" disabled={readOnly || p.stock === 0}
+              className="btn sm primary" disabled={readOnly || p.stock === 0 || adding} aria-busy={adding}
               onClick={() => (only && lead ? onAdd(p.id, only, lead.offer.sellerId) : onOpen(p.id))}
             >
-              {p.stock === 0 ? t(C.soldOut, lang) : t(C.add, lang)}
+              {adding ? <><Spinner />{t(C.adding, lang)}</> : p.stock === 0 ? t(C.soldOut, lang) : t(C.add, lang)}
             </button>
           )}
         </div>
@@ -181,8 +184,8 @@ function Card({ i, eye, p, lang, cart, agent, store, onAdd, onQty, onOpen, readO
 }
 
 /** 상품 한 개의 판매처를 나란히 놓고 고르는 시트. 총액(배송비 포함)이 낮은 순, 해외직구는 맨 뒤. */
-export function OfferSheet({ id, lang, store, cart, onAdd, onClose }: {
-  id: string; lang: Lang; store: Store; cart: CartLine[];
+export function OfferSheet({ id, lang, store, cart, adding, onAdd, onClose }: {
+  id: string; lang: Lang; store: Store; cart: CartLine[]; adding?: string | null;
   onAdd: (id: string, size: string, sellerId: string) => void; onClose: () => void;
 }) {
   const p = store.getProduct(id);
@@ -247,7 +250,9 @@ export function OfferSheet({ id, lang, store, cart, onAdd, onClose }: {
                   {sel.seller.overseas && sel.offer.price >= DUTY_OVER && <p className="warnline">{t(SV.duty, lang)}</p>}
                   {line && line.sellerId === sel.offer.sellerId
                     ? <p className="added">{SV.inCartAt[lang](t(sel.seller.name, lang))}</p>
-                    : <button className="btn primary block" disabled={!!line} onClick={() => onAdd(id, size, sel.offer.sellerId)}>{SV.addFrom[lang](t(sel.seller.name, lang), money(sel.landed, lang))}</button>}
+                    : <button className="btn primary block" disabled={!!line || !!adding} aria-busy={adding === id} onClick={() => onAdd(id, size, sel.offer.sellerId)}>
+                        {adding === id ? <><Spinner />{SV.holding[lang](t(sel.seller.name, lang))}</> : SV.addFrom[lang](t(sel.seller.name, lang), money(sel.landed, lang))}
+                      </button>}
                 </div>
               )}
             </>

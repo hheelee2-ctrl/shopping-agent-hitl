@@ -135,7 +135,14 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const closeDrawer = useCallback(() => setCartOpen(false), []);
   const closeSheet = useCallback(() => setSheet(null), []);
   const ack = (fn: () => void, choice?: Choice) => () => { emit({ type: 'user_ack', choice }, 'user'); fn(); };
+  // 담기는 판매처 재고를 확인하고 잡아두는 동안 잠깐 기다린다
+  const [adding, setAdding] = useState<string | null>(null);
   const userAdd = (id: string, size: string, sellerId?: string) => {
+    if (adding) return;
+    setAdding(id);
+    window.setTimeout(() => { setAdding(null); commitAdd(id, size, sellerId); }, 650 + Math.random() * 350);
+  };
+  const commitAdd = (id: string, size: string, sellerId?: string) => {
     const p = store.getProduct(id);
     const tag = size === 'FREE' ? '' : ` ${size}`;
     const r = store.addToCart(id, 'user', size, sellerId);
@@ -211,7 +218,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
       <main className="layout">
         <Shop
           lang={lang} results={results} criteria={criteria} category={category} onCategory={setCategory}
-          cart={vCart} agent={vState} onAdd={userAdd} onQty={userQty} onOpen={setSheet} readOnly={replaying} market={market} store={store}
+          cart={vCart} agent={vState} adding={adding} onAdd={userAdd} onQty={userQty} onOpen={setSheet} readOnly={replaying} market={market} store={store}
         />
         <AgentPanel
           lang={lang} store={store} state={vState} cartIds={cartIds}
@@ -243,7 +250,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
 
       {sheet && (
         <OfferSheet
-          id={sheet} lang={lang} store={store} cart={shop.cart}
+          id={sheet} lang={lang} store={store} cart={shop.cart} adding={adding}
           onAdd={(id, size, sid) => userAdd(id, size, sid)} onClose={closeSheet}
         />
       )}

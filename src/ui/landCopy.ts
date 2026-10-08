@@ -70,8 +70,8 @@ export const LAND = {
 
   endTitle: { ko: '한 번 맡겨보세요', en: 'Hand one off' },
   foot: {
-    ko: '이현희의 포트폴리오 프로젝트입니다. 상품, 판매처, 재고는 모두 가상입니다.',
-    en: "Hyeonhui Lee's portfolio project. Products, sellers and stock are fictional.",
+    ko: 'Nod는 판매자가 아닙니다. 주문, 배송, 반품은 각 판매처가 처리합니다.',
+    en: 'Nod is not the seller. Each seller handles its own orders, shipping and returns.',
   },
 } as const;
 
@@ -85,7 +85,7 @@ export const APPROVES: Record<Dial, [boolean, boolean]> = {
 /** 가이드 투어 — 실제 앱의 상품·가격(미드나잇 울 싱글 코트 178,000원)과 같은 값을 쓴다 */
 export const TOUR = {
   price: 178000,
-  stageTitle: { ko: '쇼핑 에이전트 · 예시', en: 'Shopping agent · example' },
+  stageTitle: { ko: '쇼핑 에이전트', en: 'Shopping agent' },
   cart: { ko: '장바구니', en: 'Cart' },
   reqLabel: { ko: '요청', en: 'Request' },
   request: { ko: '검정 울 코트, 20만원 이하', en: 'black wool coat under 200000' },
