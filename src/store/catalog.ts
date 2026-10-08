@@ -57,27 +57,50 @@ const ROWS: Row[] = [
   ['b3', 'bag', '나일론 백팩 (블랙)', 'Nylon Backpack (Black)', 'TRAIL & CO', 88000, 9, ['black'], ['nylon'], ALL, ['light', 'casual']],
 ];
 
-/** 가운데 사이즈부터 한 개씩 나눠 담는다. 재고가 적은 상품은 일부 사이즈만 남는다. */
-/** 주력 4사이즈(가운데부터)에 재고를 나눠 담는다. 그 밖의 사이즈는 재고가 넉넉한 상품만 한두 개씩 둔다. */
-const CORE: Record<string, string[]> = {
-  top: ['M', 'L', 'S', 'XL'],
-  shoe: ['270', '260', '280', '250'],
-  bottom: ['32', '30', '34', '28'],
-  free: ['FREE'],
-};
-export function allocate(category: Category, total: number): Record<string, number> {
+/** 사이즈 분포의 중심. 처음 채워 두는 내 사이즈와 같고, 어느 판매처든 이 사이즈는 하나 이상 둔다. */
+const CENTER: Record<string, string> = { top: 'M', shoe: '270', bottom: '32', free: 'FREE' };
+/** 사이즈 수가 많은 체계일수록 상품 재고를 늘려 끝 사이즈까지 닿게 한다. 1개 남은 상품은 그대로 둔다. */
+const SCALE: Record<string, number> = { top: 2, shoe: 3, bottom: 2.5, free: 1 };
+
+/** 문자열 시드 → [0,1) 난수. 같은 상품·판매처면 늘 같은 분포가 나온다. */
+function seeded(key: string) {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), a | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * total개를 사이즈 전체에 나눠 담는다. 가운데 사이즈에 많이, 끝으로 갈수록 적게(종 모양).
+ * 상품·판매처마다 분포를 조금씩 흔들고 몇 사이즈는 비워서, 같은 사이즈라도 판매처별로 있고 없음이 갈린다.
+ */
+export function allocate(category: Category, total: number, seed = ''): Record<string, number> {
   const kind = sizeKindOf(category);
   const set = SIZE_SETS[kind];
   const out = Object.fromEntries(set.map((s) => [s, 0])) as Record<string, number>;
-  const core = CORE[kind];
-  for (let i = 0; i < total; i++) out[core[i % core.length]]++;
-  // 재고 8개 이상인 상품만 주변 사이즈를 1개씩 더 둔다(가운데에 가까운 순)
-  if (total >= 8) {
-    const extra = set.filter((z) => !core.includes(z));
-    const mid = set.indexOf(core[0]);
-    extra.sort((a, b) => Math.abs(set.indexOf(a) - mid) - Math.abs(set.indexOf(b) - mid));
-    extra.slice(0, Math.min(extra.length, Math.floor(total / 4))).forEach((z) => { out[z] = 1; });
-  }
+  if (total <= 0) return out;
+  const rng = seeded(`${category}:${seed}`);
+  const c = set.indexOf(CENTER[kind]);
+  const mid = c + (rng() - 0.5) * 2;
+  const sigma = Math.max(1, set.length / 3.2);
+  const w = set.map((_, i) => {
+    const bell = Math.exp(-((i - mid) ** 2) / (2 * sigma * sigma));
+    const gap = i !== c && rng() < 0.15 ? 0 : 1; // 가끔 한 사이즈가 비어 있다
+    return bell * (0.5 + rng()) * gap;
+  });
+  const sum = w.reduce((a, b) => a + b, 0);
+  // 첫 하나는 중심 사이즈에, 나머지는 최대 나머지 방식으로 정수 배분
+  const raw = w.map((x) => (x / sum) * (total - 1));
+  set.forEach((z, i) => { out[z] = Math.floor(raw[i]); });
+  out[set[c]]++;
+  let left = total - Object.values(out).reduce((a, b) => a + b, 0);
+  const order = raw.map((r, i) => [r - Math.floor(r), i] as const).sort((a, b) => b[0] - a[0]);
+  for (let k = 0; left > 0; k = (k + 1) % order.length, left--) out[set[order[k][1]]]++;
   return out;
 }
 
@@ -108,14 +131,15 @@ export function summarize(p: Product, offers: Offer[]): Product {
 export function buildCatalog(): { products: Record<string, Product>; offers: Record<string, Offer> } {
   const offers: Offer[] = [];
   const products: Product[] = [];
-  for (const [id, category, ko, en, brand, price, stock, colors, materials, seasons, styles] of ROWS) {
+  for (const [id, category, ko, en, brand, price, listed, colors, materials, seasons, styles] of ROWS) {
     const ov = OVERRIDE[id] ?? {};
+    const stock = listed <= 1 ? listed : Math.round(listed * SCALE[sizeKindOf(category)]);
     const shelf = SHELF.has(brand);
     const nOff = Math.ceil(stock * 0.5);
     const nShelf = shelf ? Math.floor(stock * 0.25) : 0;
     const nDaero = stock - nOff - nShelf;
     const mk = (sellerId: string, p: number, n: number) => {
-      const sizes = allocate(category, n);
+      const sizes = allocate(category, n, `${id}@${sellerId}`);
       offers.push({ id: `${id}@${sellerId}`, productId: id, sellerId, price: p, sizes, stock: n });
     };
     mk(officialId(brand), ov.official ?? price, nOff);

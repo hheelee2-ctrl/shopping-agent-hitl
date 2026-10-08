@@ -384,6 +384,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .setup-title { font-size: clamp(34px, 5vw, 56px); font-weight: 600; letter-spacing: -0.05em; line-height: 1.06; word-break: keep-all; }
 .setup-block { width: 100%; display: grid; gap: 10px; transition: opacity var(--dur-slow) var(--ease); }
 .setup-desc { word-break: keep-all; font-size: 14px; color: var(--ink-2); min-height: 21px; }
+.sizes-saved { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; font-size: 15px; color: var(--ink); }
 .setup-actions { display: flex; align-items: center; gap: 24px; transition: opacity var(--dur-slow) var(--ease); }
 .setup.leaving .setup-block { opacity: 0.3; }
 .cta.ok, .cta.ok:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }

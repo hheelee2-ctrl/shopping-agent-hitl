@@ -7,6 +7,22 @@ import { Seg } from './Seg';
 export const DEFAULT_SIZES: SizeProfile = DEFAULT_PROFILE;
 const KINDS = ['top', 'shoe', 'bottom'] as const;
 
+const KEY = 'nod.sizes';
+/** 저장해 둔 내 사이즈. 없거나 읽을 수 없으면 null. 체계에 없는 사이즈는 버린다. */
+export function loadSizes(): SizeProfile | null {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw) as SizeProfile;
+    return Object.fromEntries(KINDS.filter((k) => v[k] && SIZE_SETS[k].includes(v[k]!)).map((k) => [k, v[k]]));
+  } catch { return null; }
+}
+export function saveSizes(v: SizeProfile) {
+  try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* 저장 불가 환경은 무시 */ }
+}
+export const sizeSummary = (v: SizeProfile, lang: Lang) =>
+  KINDS.map((k) => `${t(SZ.kind[k], lang)} ${v[k] ?? t(SZ.none, lang)}`).join(' · ');
+
 interface Props {
   lang: Lang;
   value: SizeProfile;

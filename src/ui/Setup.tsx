@@ -9,7 +9,7 @@ import { Wordmark } from './Wordmark';
 import type { MarkPhase } from './Mark';
 import { Rise } from './Rise';
 import { Seg } from './Seg';
-import { DEFAULT_SIZES, SizeProfileEditor } from './SizeProfile';
+import { DEFAULT_SIZES, loadSizes, saveSizes, SizeProfileEditor, sizeSummary } from './SizeProfile';
 import { ThemeButton } from './ThemeButton';
 
 export interface Config { dial: Dial; limit: number; sizes: SizeProfile }
@@ -28,7 +28,10 @@ interface Props {
 export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
   const [dial, setDial] = useState<Dial>('cart-only');
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
-  const [sizes, setSizes] = useState<SizeProfile>(DEFAULT_SIZES);
+  // 내 사이즈는 한 번 정하면 저장해 두고 다음에도 쓴다. 자율도·한도는 매번 새로 고른다.
+  const [saved] = useState(loadSizes);
+  const [sizes, setSizes] = useState<SizeProfile>(saved ?? DEFAULT_SIZES);
+  const [editSizes, setEditSizes] = useState(!saved);
   const [phase, setPhase] = useState<MarkPhase>('idle');
   const [leaving, setLeaving] = useState(false);
   const timers = useRef<number[]>([]);
@@ -40,6 +43,7 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
     const at = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
     at(() => setPhase('busy'), 260);
     at(() => setPhase('done'), 1200);
+    saveSizes(sizes);
     at(() => onConfirm({ dial, limit, sizes }), 1900);
   };
 
@@ -81,8 +85,17 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
 
         <section className="setup-block">
           <p className="label">{t(SZ.title, lang)}</p>
-          <SizeProfileEditor lang={lang} value={sizes} onChange={setSizes} disabled={leaving} />
-          <p className="setup-desc">{t(SZ.note, lang)}</p>
+          {editSizes ? (
+            <>
+              <SizeProfileEditor lang={lang} value={sizes} onChange={setSizes} disabled={leaving} />
+              <p className="setup-desc">{t(SZ.note, lang)} {t(SZ.saveNote, lang)}</p>
+            </>
+          ) : (
+            <div className="sizes-saved">
+              <span>{sizeSummary(sizes, lang)}</span>
+              <button className="link-btn" onClick={() => setEditSizes(true)} disabled={leaving}>{t(SZ.change, lang)}</button>
+            </div>
+          )}
         </section>
 
         <div className="setup-actions">

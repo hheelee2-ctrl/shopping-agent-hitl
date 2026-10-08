@@ -154,6 +154,8 @@ export const SZ = {
   pick: { ko: '사이즈', en: 'Size' },
   choose: { ko: '사이즈 선택', en: 'Select size' },
   other: { ko: '다른 사이즈', en: 'Other size' },
+  saveNote: { ko: '이 기기에 저장해 두고 다음에도 씁니다.', en: 'Saved on this device for next time.' },
+  change: { ko: '변경', en: 'Change' },
 } as const;
 
 export const C = {

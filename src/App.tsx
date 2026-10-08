@@ -20,6 +20,7 @@ import { Wordmark } from './ui/Wordmark';
 import { OfferSheet, Shop } from './ui/Shop';
 import type { Config } from './ui/Setup';
 import { ThemeButton } from './ui/ThemeButton';
+import { saveSizes } from './ui/SizeProfile';
 import { useStore } from './ui/useStore';
 
 interface AppProps {
@@ -66,6 +67,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const [dial, setDial] = useState(initial.dial);
   const [limit, setLimit] = useState(initial.limit);
   const [sizes, setSizes] = useState(initial.sizes);
+  useEffect(() => { saveSizes(sizes); }, [sizes]);
   const [cmpClosed, setCmpClosed] = useState(false);
   const toasts = useToasts();
   const pushToast = toasts.push;
