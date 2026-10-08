@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseMulti, parseRequest } from './parser';
+import { describeCriteria, parseMulti, parseRequest } from './parser';
 import { isEligible, searchProducts } from './search';
 import { createStore } from './store';
 
@@ -26,6 +26,52 @@ describe('parseRequest', () => {
   });
   it('종류가 없으면 category가 비어 있다', () => {
     expect(parseRequest('검정색 20만원 이하').category).toBeUndefined();
+  });
+});
+
+describe('묶음·동의어 해석', () => {
+  it('아우터·외투·겉옷은 코트와 자켓을 모두 후보로 본다', () => {
+    for (const w of ['아우터', '외투', '겉옷', 'outerwear']) {
+      const c = parseRequest(`가을 가죽 ${w}`);
+      expect(c).toMatchObject({ categories: ['coat', 'jacket'], seasons: ['autumn'], materials: ['leather'], unknown: [] });
+      expect(c.category).toBeUndefined();
+    }
+  });
+  it('상의·신발은 여러 종류, 하의·가방은 한 종류로 잡는다', () => {
+    expect(parseRequest('흰 상의').categories).toEqual(['knit', 'shirt']);
+    expect(parseRequest('검정 신발').categories).toEqual(['sneakers', 'loafers']);
+    expect(parseRequest('하의 30사이즈')).toMatchObject({ category: 'pants', size: '30', unknown: [] });
+    expect(parseRequest('가방')).toMatchObject({ category: 'bag', unknown: [] });
+  });
+  it('구체적인 종류가 함께 오면 그쪽을 따른다', () => {
+    const c = parseRequest('아우터 중에 코트');
+    expect(c.category).toBe('coat');
+    expect(c.categories).toBeUndefined();
+    expect(c.unknown).toEqual([]);
+  });
+  it('흔한 동의어는 가장 가까운 종류로 잇는다', () => {
+    const cases: [string, string][] = [
+      ['점퍼', 'jacket'], ['블루종', 'jacket'], ['패딩', 'jacket'], ['트렌치', 'coat'], ['롱패딩', 'coat'],
+      ['맨투맨', 'knit'], ['슬랙스', 'pants'], ['청바지', 'pants'], ['운동화', 'sneakers'], ['구두', 'loafers'],
+    ];
+    for (const [w, cat] of cases) expect(parseRequest(`검정 ${w}`), w).toMatchObject({ category: cat, unknown: [] });
+  });
+  it('묶음 칩은 묶음 이름과 포함 종류를 보여준다', () => {
+    const chips = describeCriteria(parseRequest('가을 아우터'));
+    expect(chips[0].value.ko).toBe('아우터 (코트·자켓)');
+  });
+  it('묶음 검색은 포함 종류만 후보로 낸다', () => {
+    const all = Object.values(createStore().getState().products);
+    const r = searchProducts(all, parseRequest('가을 가죽 아우터'));
+    expect(r.length).toBeGreaterThan(0);
+    expect(r.every((s) => s.product.category === 'coat' || s.product.category === 'jacket')).toBe(true);
+    expect(new Set(r.map((s) => s.product.category)).size).toBe(2);
+  });
+  it('여러 상품 요청에서도 묶음 표현을 종류로 인정한다', () => {
+    const r = parseMulti('검정 아우터랑 흰 운동화');
+    expect(r.items).toHaveLength(2);
+    expect(r.items[0].categories).toEqual(['coat', 'jacket']);
+    expect(r.items[1].category).toBe('sneakers');
   });
 });
 

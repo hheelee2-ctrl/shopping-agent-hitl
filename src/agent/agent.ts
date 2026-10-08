@@ -18,6 +18,11 @@ const TIE_GAP = 0.1;
 const CAT_KEYS = Object.keys(CATEGORY_L) as Category[];
 const name = (s: Scored) => s.product.name;
 const won = (n: number): L => ({ ko: `${n.toLocaleString('ko-KR')}원`, en: `KRW ${n.toLocaleString('en-US')}` });
+/** 마지막 글자 받침에 맞춘 은/는. 한글이 아니면 '은(는)'. */
+const josa = (w: string) => {
+  const c = w.charCodeAt(w.length - 1) - 0xac00;
+  return c < 0 || c > 11171 ? '은(는)' : c % 28 ? '은' : '는';
+};
 
 const priced = (s: Scored): L => ({ ko: `${s.product.name.ko}, ${won(s.product.price).ko}부터`, en: `${s.product.name.en}, from ${won(s.product.price).en}` });
 
@@ -124,8 +129,10 @@ export class RuleAgent implements AgentAdapter {
   /** 요청에 사이즈가 없으면 내 사이즈(프로필, 이번 요청에서 알려준 값)를 쓴다. */
   private wantedSize(c: Criteria): string | undefined {
     if (c.size) return c.size;
-    if (!c.category) return undefined;
-    const kind = sizeKindOf(c.category);
+    // 묶음(아우터 등)은 사이즈 체계가 하나로 모일 때만 내 사이즈를 쓴다
+    const kinds = new Set((c.category ? [c.category] : c.categories ?? []).map(sizeKindOf));
+    if (kinds.size !== 1) return undefined;
+    const [kind] = kinds;
     if (kind === 'free') return undefined;
     return this.sizeMemo[kind] ?? this.opts.sizes?.[kind];
   }
@@ -167,23 +174,24 @@ export class RuleAgent implements AgentAdapter {
       let criteria = items[i];
       let changed = false;
       const sfx = i === 0 ? '' : `-i${i + 1}`;
-      // 1) 해석하지 못한 표현이 있으면 멈춘다
+      // 1) 조건으로 못 쓰는 표현이 있으면, 빼고 찾아도 되는지 확인한다
       if (criteria.unknown.length > 0) {
+        const words = criteria.unknown.map((w) => `'${w}'`).join(', ');
         this.emit({
           type: 'needs_input', id: `q-unknown${sfx}`,
-          question: { ko: `"${criteria.unknown.join(', ')}"은(는) 해석하지 못했어요. 이 표현을 빼고 진행할까요?`, en: `I couldn't interpret "${criteria.unknown.join(', ')}". Continue without it?` },
+          question: { ko: `${words}${josa(criteria.unknown[criteria.unknown.length - 1])} 조건에서 빼고 찾을게요.`, en: `I'll search without ${words}.` },
           options: [
-            { id: 'go', label: { ko: '빼고 진행', en: 'Continue without it' } },
-            { id: 'stop', label: { ko: '중단', en: 'Stop' } },
+            { id: 'go', label: { ko: '그대로 진행', en: 'Go ahead' } },
+            { id: 'rephrase', label: { ko: '다시 말하기', en: 'Rephrase' } },
           ],
         });
         const a = await this.wait();
         if (!ok()) return;
-        if (a !== 'go') return this.finish('cancelled', { ko: '요청을 해석하지 못해 중단했어요.', en: "Stopped — couldn't interpret the request." });
+        if (a !== 'go') return this.finish('cancelled', { ko: '요청을 입력창에 돌려놨어요. 고쳐서 다시 보내 주세요.', en: 'Your request is back in the box. Edit it and send again.' });
         criteria = { ...criteria, unknown: [] };
       }
-      // 2) 종류를 모르면 묻는다
-      if (!criteria.category) {
+      // 2) 종류를 모르면 묻는다 (묶음 표현이면 그 안의 종류를 모두 후보로 본다)
+      if (!criteria.category && !criteria.categories?.length) {
         this.emit({
           type: 'needs_input', id: `q-category${sfx}`,
           question: { ko: '어떤 종류를 찾을까요?', en: 'What kind of item are you looking for?' },
@@ -351,8 +359,9 @@ export class RuleAgent implements AgentAdapter {
     const ok = () => this.alive(id);
     const { dial } = this.opts;
     const base = idx === 0 ? '' : `-i${idx + 1}`;
-    const tag = (l: L): L => (ctx.multi && start.category
-      ? { ko: `${l.ko} (${CATEGORY_L[start.category].ko})`, en: `${l.en} (${CATEGORY_L[start.category].en})` }
+    const kindL = start.category ? CATEGORY_L[start.category] : start.group;
+    const tag = (l: L): L => (ctx.multi && kindL
+      ? { ko: `${l.ko} (${kindL.ko})`, en: `${l.en} (${kindL.en})` }
       : l);
     // 여러 항목일 때 "못 찾음/품절"은 그 항목만 건너뛰고 계속한다. 한 항목이면 기존처럼 거기서 끝낸다.
     const give = (status: 'failed' | 'cancelled', summary: L): ShopResult => {

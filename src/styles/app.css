@@ -65,6 +65,8 @@ fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .chip { display: inline-flex; align-items: baseline; gap: 8px; font-size: var(--t-sm); font-weight: 600; padding: 4px 12px; border-radius: var(--r-pill); background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
 .chip i { font-style: normal; font-weight: 500; font-size: var(--t-xs); color: var(--ink-3); }
 .chip.bad { box-shadow: 0 0 0 1px var(--danger); color: var(--danger); }
+.chip.skip { color: var(--ink-3); box-shadow: 0 0 0 1px var(--line); background: transparent; }
+.chip.skip s { text-decoration-thickness: 1px; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 40px 20px; }
 .prod { display: grid; align-content: start; transition: opacity var(--dur) var(--ease); }

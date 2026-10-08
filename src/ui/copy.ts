@@ -103,6 +103,7 @@ export const SV = {
 /** 에이전트 스레드 문구 */
 export const TH = {
   title: { ko: '에이전트', en: 'Agent' },
+  skipped: { ko: '제외', en: 'Skipped' },
   settings: { ko: '맡기는 방식', en: 'How I work' },
   done: { ko: '접기', en: 'Done' },
   suggest: { ko: '이렇게 맡겨보세요', en: 'Try asking' },

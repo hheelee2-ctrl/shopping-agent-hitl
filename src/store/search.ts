@@ -22,6 +22,7 @@ const WEIGHT: Record<Exclude<Dim, 'category'>, number> = {
 
 export function scoreProduct(p: Product, c: Criteria): Scored | null {
   if (c.category && p.category !== c.category) return null;
+  if (!c.category && c.categories && !c.categories.includes(p.category)) return null;
 
   const matched: Dim[] = [];
   const partial: Dim[] = [];

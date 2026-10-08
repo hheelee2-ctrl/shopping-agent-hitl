@@ -160,7 +160,7 @@ export function AgentPanel(p: Props) {
         {understood && (understood.chips.length > 0 || phase === 'needs-input') && (
           <div className="interp">
             {understood.chips.map((c, i) => <span key={i} className="chip"><i>{t(c.label, lang)}</i>{t(c.value, lang)}</span>)}
-            {phase === 'needs-input' && understood.unknown.map((u) => <span key={u} className="chip bad"><i>?</i>{u}</span>)}
+            {phase === 'needs-input' && understood.unknown.map((u) => <span key={u} className="chip skip"><i>{t(TH.skipped, lang)}</i><s>{u}</s></span>)}
           </div>
         )}
 
@@ -241,7 +241,7 @@ export function AgentPanel(p: Props) {
               <h2 className="q">{t(question.question, lang)}</h2>
               <div className="opts">
                 {question.options.map((o, i) => (
-                  <button key={o.id} className={`btn ${i === 0 ? 'primary' : ''}`} onClick={() => p.onAnswer(o.id)}>{t(o.label, lang)}</button>
+                  <button key={o.id} className={`btn ${i === 0 ? 'primary' : ''}`} onClick={() => { p.onAnswer(o.id); if (o.id === 'rephrase' && p.asked) pick(p.asked); }}>{t(o.label, lang)}</button>
                 ))}
                 {question.id.startsWith('q-pick') && <button className="btn ghost cmp-open" onClick={p.onCompare}>{t(C.compare, lang)}</button>}
               </div>

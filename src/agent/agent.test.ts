@@ -72,10 +72,30 @@ describe('Escalation은 계산된 조건에서 나온다', () => {
     await until((e) => e.type === 'needs_input');
     expect(last(events, 'needs_input')?.id).toBe('q-category');
   });
-  it('해석하지 못한 표현이 있으면 멈추고 묻는다', async () => {
+  it('해석하지 못한 표현이 있으면 빼고 찾을지 확인한다', async () => {
     const { events, until } = setup('코트 힙한 느낌');
     await until((e) => e.type === 'needs_input');
-    expect(last(events, 'needs_input')?.id).toBe('q-unknown');
+    const q = last(events, 'needs_input')!;
+    expect(q.id).toBe('q-unknown');
+    expect(q.question.ko).toBe("'힙한'은 조건에서 빼고 찾을게요.");
+    expect(q.options.map((o) => o.id)).toEqual(['go', 'rephrase']);
+  });
+  it('다시 말하기를 고르면 아무것도 담지 않고 끝낸다', async () => {
+    const { store, agent, events, until } = setup('코트 힙한 느낌');
+    await until((e) => e.type === 'needs_input');
+    agent.answer('rephrase');
+    await until((e) => e.type === 'result');
+    expect(last(events, 'result')?.status).toBe('cancelled');
+    expect(store.getState().cart).toHaveLength(0);
+  });
+  it('아우터는 종류를 묻지 않고 코트·자켓 중에서 찾는다', async () => {
+    const { store, events, until } = setup('가을 가죽 아우터');
+    await until((e) => e.type === 'payment_gate' || e.type === 'needs_input' || e.type === 'result');
+    expect(events.some((e) => e.type === 'needs_input' && (e.id === 'q-unknown' || e.id === 'q-category'))).toBe(false);
+    const found = events.find((e) => e.type === 'tool_call' && e.tool === 'search' && e.status === 'done');
+    const ids = found?.type === 'tool_call' ? found.itemIds ?? [] : [];
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids.every((id) => ['coat', 'jacket'].includes(store.getProduct(id)!.category))).toBe(true);
   });
   it('조건에 맞는 상품이 없으면 예산 완화를 묻고, 그래도 없으면 실패', async () => {
     const { agent, events, until } = setup('검정 울 코트 10만원 이하');

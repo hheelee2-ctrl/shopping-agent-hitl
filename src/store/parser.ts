@@ -5,16 +5,39 @@ import type { Category, Color, Criteria, Material, Season, Style } from './types
 
 type Dict<T extends string> = [T, string[]][];
 
+// 카탈로그에 없는 종류(패딩, 맨투맨, 구두 등)는 가장 가까운 종류로 잇는다
 const CATEGORIES: Dict<Category> = [
-  ['coat', ['코트', 'coat']],
-  ['jacket', ['자켓', '재킷', '점퍼', '바람막이', '블루종', '블레이저', 'jacket', 'blazer', 'windbreaker']],
-  ['sneakers', ['스니커즈', '스니커', '운동화', 'sneaker']],
-  ['loafers', ['로퍼', 'loafer']],
-  ['knit', ['니트', '스웨터', '터틀넥', '가디건', 'knit', 'sweater', 'turtleneck']],
-  ['shirt', ['셔츠', 'shirt']],
-  ['pants', ['바지', '팬츠', '슬랙스', '청바지', '치노', 'pants', 'trousers', 'slacks', 'jeans', 'chinos']],
+  ['coat', ['코트', '트렌치', '롱패딩', '파카', 'coat', 'trench', 'parka']],
+  ['jacket', ['자켓', '재킷', '점퍼', '잠바', '바람막이', '블루종', '블레이저', '패딩', '야상', 'jacket', 'blazer', 'windbreaker', 'puffer', 'padding']],
+  ['sneakers', ['스니커즈', '스니커', '운동화', 'sneaker', 'trainers']],
+  ['loafers', ['로퍼', '구두', 'loafer', 'dress shoes']],
+  ['knit', ['니트', '스웨터', '터틀넥', '가디건', '맨투맨', '후드', 'knit', 'sweater', 'turtleneck', 'cardigan', 'sweatshirt', 'hoodie']],
+  ['shirt', ['셔츠', '블라우스', '남방', 'shirt', 'blouse']],
+  ['pants', ['바지', '팬츠', '슬랙스', '청바지', '치노', 'pants', 'trousers', 'slacks', 'jeans', 'chinos', 'shorts']],
   ['bag', ['가방', '백팩', '토트', 'bag', 'backpack', 'tote']],
 ];
+
+/** 묶음 표현. 구체적인 종류가 함께 오면 그쪽을 따른다("아우터 코트" → 코트). */
+const GROUPS: { cats: Category[]; label: L; words: string[] }[] = [
+  { cats: ['coat', 'jacket'], label: { ko: '아우터', en: 'Outerwear' }, words: ['아우터', '외투', '겉옷', 'outerwear', 'outer'] },
+  { cats: ['knit', 'shirt'], label: { ko: '상의', en: 'Tops' }, words: ['상의', 'tops'] },
+  { cats: ['pants'], label: { ko: '하의', en: 'Bottoms' }, words: ['하의', 'bottoms'] },
+  { cats: ['sneakers', 'loafers'], label: { ko: '신발', en: 'Shoes' }, words: ['신발', 'shoes', 'footwear'] },
+];
+
+function takeGroup(text: string): { cats: Category[]; labels: L[]; rest: string } {
+  const cats: Category[] = [];
+  const labels: L[] = [];
+  let rest = text;
+  for (const g of GROUPS) {
+    const hit = g.words.filter((w) => rest.includes(w));
+    if (!hit.length) continue;
+    for (const w of hit) rest = rest.split(w).join(' ');
+    labels.push(g.label);
+    for (const c of g.cats) if (!cats.includes(c)) cats.push(c);
+  }
+  return { cats, labels, rest };
+}
 const COLORS: Dict<Color> = [
   ['black', ['블랙', '검정', '검은', '까만', 'black']],
   ['white', ['화이트', '하얀', '흰', 'white']],
@@ -51,7 +74,7 @@ const STYLES: Dict<Style> = [
 const STOP = new Set([
   '추천', '해줘', '해주세요', '찾아줘', '찾아', '사줘', '좀', '한', '켤레', '개', '입기', '좋은', '있는', '같은',
   '정도', '이하', '이상', '원', '만', '에서', '으로', '하고', '그리고', '주세요', '싶어', '싶은', '어울리는',
-  '요즘', '오늘', '와이드', '룩', '코디', '입을', '신을', '들', '같이', '둘다', '모두', '각각', '합쳐서', '합쳐', '합계', '해서', '총', 'and', 'a', 'an', 'the', 'for', 'me', 'find', 'under', 'good',
+  '요즘', '오늘', '와이드', '룩', '코디', '느낌', '중에', '중에서', '입을', '신을', '들', '같이', '둘다', '모두', '각각', '합쳐서', '합쳐', '합계', '해서', '총', 'and', 'a', 'an', 'the', 'for', 'me', 'find', 'under', 'good',
 ]);
 
 function take<T extends string>(text: string, dict: Dict<T>): { found: T[]; rest: string } {
@@ -142,7 +165,10 @@ export function parseRequest(input: string): Criteria {
   take$(/under\s*(\d[\d,]*)/, (m) => (maxPrice = num(m[1])));
 
   const cat = take(text, CATEGORIES);
-  const color = take(cat.rest, COLORS);
+  const grp = takeGroup(cat.rest);
+  const category = cat.found[0] ?? (grp.cats.length === 1 ? grp.cats[0] : undefined);
+  const many = !cat.found.length && grp.cats.length > 1;
+  const color = take(grp.rest, COLORS);
   const mat = take(color.rest, MATERIALS);
   const season = take(mat.rest, SEASONS);
   const style = take(season.rest, STYLES);
@@ -153,7 +179,8 @@ export function parseRequest(input: string): Criteria {
     .filter((t) => t.length >= 2 && !STOP.has(t) && !/^\d+$/.test(t));
 
   return {
-    category: cat.found[0],
+    category,
+    ...(many ? { categories: grp.cats, group: join(grp.labels) } : {}),
     colors: color.found,
     materials: mat.found,
     seasons: season.found,
@@ -178,6 +205,11 @@ const won = (n: number): L => ({ ko: `${n.toLocaleString('ko-KR')}원`, en: `KRW
 export function describeCriteria(c: Criteria): Chip[] {
   const chips: Chip[] = [];
   if (c.category) chips.push({ label: DIM_L.category, value: CATEGORY_L[c.category] });
+  else if (c.categories?.length) {
+    const kinds = c.categories.map((x) => CATEGORY_L[x]);
+    const g = c.group ?? join(kinds);
+    chips.push({ label: DIM_L.category, value: { ko: `${g.ko} (${kinds.map((k) => k.ko).join('·')})`, en: `${g.en} (${kinds.map((k) => k.en).join('/')})` } });
+  }
   if (c.colors.length) chips.push({ label: DIM_L.color, value: join(c.colors.map((x) => COLOR_L[x])) });
   if (c.materials.length) chips.push({ label: DIM_L.material, value: join(c.materials.map((x) => MATERIAL_L[x])) });
   if (c.seasons.length) chips.push({ label: DIM_L.season, value: join(c.seasons.map((x) => SEASON_L[x])) });
@@ -236,7 +268,7 @@ export function parseMulti(input: string): Parsed {
   const parts = text.split(SPLIT_RE).map((x) => x.trim()).filter(Boolean);
   if (parts.length >= 2 && parts.length <= MAX_ITEMS) {
     const items = parts.map(parseRequest);
-    if (items.every((c) => c.category)) return { items: items.map(withDl), budget };
+    if (items.every((c) => c.category || c.categories)) return { items: items.map(withDl), budget };
   }
   const single = parseRequest(text);
   // 상품이 하나뿐이면 합계 예산은 그 상품의 가격 상한과 같다

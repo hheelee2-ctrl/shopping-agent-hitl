@@ -86,6 +86,10 @@ export interface StoreState {
 /** 요청에서 해석한 조건. 사람의 검색창과 에이전트가 같은 구조를 쓴다. */
 export interface Criteria {
   category?: Category;
+  /** "아우터", "신발" 같은 묶음 표현. 여러 종류를 모두 후보로 본다. category가 있으면 쓰지 않는다. */
+  categories?: Category[];
+  /** 묶음 표현의 이름 (칩 표시용) */
+  group?: L;
   colors: Color[];
   materials: Material[];
   seasons: Season[];
