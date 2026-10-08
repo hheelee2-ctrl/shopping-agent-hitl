@@ -108,7 +108,7 @@ export function AgentPanel(p: Props) {
         </button>
         <div className="agent-title" onClick={() => setOpen(true)}>
           <h1>{t(TH.title, lang)}</h1>
-          <span className={`phase ${dotClass(phase)}`}><Mark size={9} tone="on-brand" phase={dotClass(phase) === 'live' ? 'busy' : 'idle'} />{t(PHASE[phase], lang)}</span>
+          <span className={`phase ${dotClass(phase)}`}><Mark size={10} phase={dotClass(phase) === "live" ? "busy" : dotClass(phase) === "ok" ? "done" : "idle"} />{t(PHASE[phase], lang)}</span>
         </div>
         <button className="settings-sum" aria-expanded={openSet} onClick={() => setOpenSet((o) => !o)} disabled={p.running}>
           <span>{t(DIAL[p.dial], lang)}</span>

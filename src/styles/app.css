@@ -1060,3 +1060,44 @@ details.why-box p { margin-top: var(--sp-2); }
 .msg-av.ok .nd-ck { stroke: var(--brand); }
 .msg-b > p, .msg.working > p { padding-top: 3px; }
 .msg.quiet .msg-av { opacity: .5; }
+
+/* ── 그라데이션 걷어내기: 패널 머리는 단색, 초록은 원·버튼에만 ── */
+.agent-head { background: var(--surface); color: var(--ink); border-bottom: 1px solid var(--line); }
+.agent-head h1 { color: var(--ink); }
+.agent-head .phase { color: var(--ink-2); }
+.agent-head .phase .nd { width: 10px; height: 10px; }
+.agent-head .phase.wait .nd-c { fill: var(--wait); }
+.agent-head .phase.bad .nd-c { fill: var(--danger); }
+.agent-head .phase.wait, .agent-head .phase.bad { color: var(--ink); }
+.agent-head .settings-sum span { background: var(--bg-2); color: var(--ink-2); }
+.agent-head .settings-sum:hover span { background: var(--hover); color: var(--ink); }
+.agent-head .settings-sum[aria-expanded='true'] span { background: var(--ink); color: var(--on-ink); }
+@media (max-width: 860px) { .sheet-handle span { background: var(--line-strong); } }
+
+/* ── 히어로: 어두운 무대 + 3D 장면 ── */
+.hero-field, .end-field { background: var(--stage); }
+.hero-field::before, .end-field::before, .hero-field .hero-stage::before { display: none; }
+.hero-field::after { background-image: linear-gradient(var(--stage-line) 1px, transparent 1px), linear-gradient(90deg, var(--stage-line) 1px, transparent 1px); background-size: 64px 64px; opacity: .55; -webkit-mask-image: radial-gradient(ellipse 70% 70% at 70% 50%, black, transparent); mask-image: radial-gradient(ellipse 70% 70% at 70% 50%, black, transparent); }
+.hero-field .hero-title, .hero-field .hero-title em, .end-title { color: var(--stage-ink); }
+.hero-field .hero-title em { color: var(--brand); }
+.hero-field .hero-sub { color: var(--stage-ink-2); }
+.hero-field .btn.primary, .end-field .btn.primary { background: var(--brand); color: var(--on-brand); }
+.hero-field .btn.primary:hover:not(:disabled), .end-field .btn.primary:hover:not(:disabled) { background: var(--brand-deep); }
+.hero-field .link { color: var(--stage-ink); border-bottom-color: var(--stage-line); }
+.end-field .land-foot, .end-field .land-foot a { color: var(--stage-ink-2); }
+.hero-stage { align-self: stretch; min-height: 560px; }
+.hero3d { position: absolute; inset: -4% -2% -4% -18%; }
+@media (max-width: 900px) { .hero3d { inset: 0 -6%; } }
+.hero3d canvas { display: block; width: 100%; height: 100%; opacity: 0; animation: stageIn 1.2s var(--ease) .15s forwards; }
+@keyframes stageIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+.hero-orb { position: absolute; left: 50%; top: 50%; width: 180px; height: 180px; margin: -90px 0 0 -90px; border-radius: 50%; background: var(--brand); }
+.hero-stage:has(.hero3d.live) .hero-orb { display: none; }
+
+/* ── 직접 눌러보기 섹션 ── */
+.try-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.try-sub { color: var(--ink-2); font-size: 17px; line-height: 1.6; margin-top: 16px; word-break: keep-all; max-width: 40ch; }
+@media (max-width: 900px) {
+  .try-in { grid-template-columns: 1fr; gap: 28px; }
+  .hero-stage { min-height: 420px; }
+}
+@media (prefers-reduced-motion: reduce) { .hero3d canvas { animation: none; opacity: 1; } }

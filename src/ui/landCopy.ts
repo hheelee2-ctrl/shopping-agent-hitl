@@ -22,6 +22,8 @@ export const LAND = {
   demoBusy: { ko: '담는 중', en: 'Adding' },
   demoDone: { ko: '담았습니다', en: 'Added' },
   demoDoneLine: { ko: '담았습니다. 결제는 직접 합니다.', en: 'Added. You still pay yourself.' },
+  tryTitle: { ko: '담기 전에, 한 번 묻습니다', en: 'It asks once, before it adds' },
+  trySub: { ko: '에이전트가 고른 상품을 승인하면 원 안에 체크가 들어가요. 직접 눌러보세요.', en: 'Approve the pick and a check lands in the circle. Try it.' },
   demoHint: { ko: '직접 눌러보세요.', en: 'Try it.' },
 
   whyTitle: { ko: '비교는 맡기고, 결정은 직접', en: 'Hand off the comparing. Keep the deciding' },

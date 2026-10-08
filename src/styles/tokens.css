@@ -27,6 +27,12 @@
   /* 면 위 흰 글씨 대비를 위해 글이 놓이는 왼쪽이 가장 깊다 */
   --brand-field: linear-gradient(235deg, var(--brand) -25%, var(--brand-deep) 52%, #046547 118%);
   --r-card: 28px;
+  /* 히어로 3D 무대: 테마와 관계없이 어두운 면. 초록은 구(원) 하나에만. */
+  --stage: #0b0e0d;
+  --stage-2: #141917;
+  --stage-ink: #f1f4f2;
+  --stage-ink-2: #7d8782;
+  --stage-line: #262d2a;
 
   /* type scale (앱 UI). 12·13은 보조, 14는 본문, 15는 강조 본문, 18 이상은 제목·금액 */
   --t-xs: 12px;
