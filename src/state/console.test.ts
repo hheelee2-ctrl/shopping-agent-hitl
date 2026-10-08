@@ -71,4 +71,11 @@ describe('대화 기록(feed)', () => {
     s = reduce(s, { type: 'user_ack', choice: 'reject' });
     expect(s.feed.map((f) => (f.k === 'decided' ? `${f.kind}:${f.ok}` : f.k))).toEqual(['found', 'cart:true', 'added', 'pay:false']);
   });
+  it('담기 승인을 두 번 눌러도 기록은 한 번만 남는다', () => {
+    const ask: AgentEvent = { type: 'tool_call', id: 't3', tool: 'cart_add', label: L('c'), status: 'awaiting-approval', itemIds: ['a'] };
+    let s = run([plan(false), ask]);
+    s = reduce(s, { type: 'user_ack', choice: 'approve' });
+    s = reduce(s, { type: 'user_ack', choice: 'approve' });
+    expect(s.feed.filter((f) => f.k === 'decided')).toHaveLength(1);
+  });
 });

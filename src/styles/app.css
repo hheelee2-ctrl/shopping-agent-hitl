@@ -1101,3 +1101,51 @@ details.why-box p { margin-top: var(--sp-2); }
   .hero-stage { min-height: 420px; }
 }
 @media (prefers-reduced-motion: reduce) { .hero3d canvas { animation: none; opacity: 1; } }
+
+/* ── 사이즈: 자주 쓰는 값 + 다른 사이즈 드롭다운 ── */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.sizes-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }
+
+.size-more { position: relative; display: inline-flex; flex: none; }
+.size-more select { appearance: none; -webkit-appearance: none; font: inherit; font-size: var(--t-sm); font-weight: 600; color: var(--ink-2); background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); height: 40px; padding: 0 30px 0 12px; cursor: pointer; }
+.size-more::after { content: ''; position: absolute; right: 12px; top: 50%; width: 6px; height: 6px; margin-top: -5px; border-right: 1.5px solid var(--ink-3); border-bottom: 1.5px solid var(--ink-3); transform: rotate(45deg); pointer-events: none; }
+.size-more select:hover:not(:disabled) { color: var(--ink); border-color: var(--line-strong); }
+.size-more select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.size-more.on select { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.size-more.on::after { border-color: var(--on-ink); }
+.size-more select:disabled { opacity: .5; cursor: default; }
+
+.sizes-ctl .seg2 { flex: 1 1 260px; }
+.size-more select { height: 44px; }
+
+/* ── 결제 진행 · 영수증 ── */
+.card.paying { box-shadow: 0 0 0 1px var(--line); background: var(--surface); }
+.pay-steps { list-style: none; margin: var(--sp-2) 0 var(--sp-3); padding: 0; display: grid; gap: 10px; }
+.pay-steps li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: var(--t-sm); animation: enter var(--dur) var(--ease) both; }
+.ps-ic { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--bg-2); }
+.pay-steps li.done .ps-ic { background: var(--brand); color: var(--on-brand); }
+.ps-ic .nd { width: 12px; height: 12px; }
+.ps-l { font-weight: 600; color: var(--ink); }
+.pay-steps li.now .ps-l { color: var(--ink-2); }
+.ps-n { font-size: var(--t-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.card.paying .note { font-size: var(--t-xs); color: var(--ink-3); }
+
+.rcpt { display: grid; gap: var(--sp-2); padding: var(--sp-3) 0; border-top: 1px solid var(--line); }
+.rcpt header { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--t-sm); }
+.rcpt header b { flex: 1; min-width: 0; }
+.rcpt-no { font-size: var(--t-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.result .rcpt-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: var(--t-xs); color: var(--ink-3); }
+.rcpt-meta svg { color: var(--brand); }
+.rcpt-sum { display: grid; gap: 6px; margin: 0; padding-top: var(--sp-3); border-top: 1px solid var(--line); }
+.rcpt-sum div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); font-size: var(--t-sm); }
+.rcpt-sum dt { color: var(--ink-3); }
+.rcpt-sum dd { margin: 0; color: var(--ink-2); }
+.rcpt-sum .grand dd { font-size: var(--t-xl); font-weight: 800; color: var(--ink); letter-spacing: -0.03em; }
+.rcpt-tl { list-style: none; margin: var(--sp-1) 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); position: relative; }
+.rcpt-tl::before { content: ''; position: absolute; left: 6px; right: 33%; top: 5px; height: 1px; background: var(--line-strong); }
+.rcpt-tl li { position: relative; display: grid; gap: 2px; padding-top: 18px; font-size: var(--t-xs); }
+.rcpt-tl i { position: absolute; left: 0; top: 0; width: 11px; height: 11px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.rcpt-tl li.done i { background: var(--brand); box-shadow: none; }
+.rcpt-tl b { font-weight: 700; color: var(--ink); }
+.rcpt-tl span { color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { .pay-steps li { animation: none; } }

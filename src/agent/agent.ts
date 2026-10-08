@@ -314,10 +314,29 @@ export class RuleAgent implements AgentAdapter {
         note: { ko: `합계 ${won(before).ko}에서 ${won(this.store.cartTotal()).ko}로`, en: `Total ${won(before).en} to ${won(this.store.cartTotal()).en}` },
       });
     }
+    // 결제는 한 번에 끝내지 않고 단계마다 보여준다: 결제 승인 → 판매처별 주문 접수 → 주문 확인
+    const amount = this.store.cartTotal();
+    const emitPay = (pid: string, status: 'running' | 'done', label: L, note?: L) =>
+      this.emit({ type: 'tool_call', id: pid, tool: 'pay', status, label, note });
+    const authL: L = { ko: '결제 승인 요청', en: 'Requesting payment approval' };
+    // 승인한 순간의 조건으로 바로 주문을 확정한다(기다리는 사이 시세가 바뀌어도 금액은 그대로)
     this.paid = true;
     const orders = this.store.checkout('agent') ?? [];
+    emitPay('t-pay-auth', 'running', authL, won(amount));
+    await d(1100);
+    if (!ok()) return;
+    emitPay('t-pay-auth', 'done', { ko: '결제 승인됨', en: 'Payment approved' }, won(amount));
+    for (const [i, o] of orders.entries()) {
+      const s = sellerOf(o.sellerId).name;
+      emitPay(`t-pay-order${i}`, 'running', { ko: `${s.ko}에 주문 전달`, en: `Sending order to ${s.en}` });
+      await d(750);
+      if (!ok()) return;
+      emitPay(`t-pay-order${i}`, 'done', { ko: `${s.ko} 주문 접수`, en: `${s.en} accepted the order` }, { ko: `주문번호 ${o.id}`, en: `Order no. ${o.id}` });
+    }
+    emitPay('t-pay-confirm', 'running', { ko: '주문 확인', en: 'Confirming orders' });
     await d(600);
     if (!ok()) return;
+    emitPay('t-pay-confirm', 'done', { ko: '주문 확인 완료', en: 'Orders confirmed' }, { ko: `주문 ${orders.length}건`, en: `${orders.length} order${orders.length > 1 ? 's' : ''}` });
     const now = this.store.now();
     const lines = orders.map((o) => ({ s: sellerOf(o.sellerId).name, w: arrivalLabel(o.arriveAt, now) }));
     this.finish('done', {

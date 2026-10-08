@@ -58,13 +58,26 @@ const ROWS: Row[] = [
 ];
 
 /** 가운데 사이즈부터 한 개씩 나눠 담는다. 재고가 적은 상품은 일부 사이즈만 남는다. */
-const ORDER: Record<string, number[]> = { top: [1, 2, 0, 3], shoe: [2, 1, 3, 0], bottom: [2, 1, 3, 0], free: [0] };
+/** 주력 4사이즈(가운데부터)에 재고를 나눠 담는다. 그 밖의 사이즈는 재고가 넉넉한 상품만 한두 개씩 둔다. */
+const CORE: Record<string, string[]> = {
+  top: ['M', 'L', 'S', 'XL'],
+  shoe: ['270', '260', '280', '250'],
+  bottom: ['32', '30', '34', '28'],
+  free: ['FREE'],
+};
 export function allocate(category: Category, total: number): Record<string, number> {
   const kind = sizeKindOf(category);
   const set = SIZE_SETS[kind];
   const out = Object.fromEntries(set.map((s) => [s, 0])) as Record<string, number>;
-  const order = ORDER[kind];
-  for (let i = 0; i < total; i++) out[set[order[i % order.length]]]++;
+  const core = CORE[kind];
+  for (let i = 0; i < total; i++) out[core[i % core.length]]++;
+  // 재고 8개 이상인 상품만 주변 사이즈를 1개씩 더 둔다(가운데에 가까운 순)
+  if (total >= 8) {
+    const extra = set.filter((z) => !core.includes(z));
+    const mid = set.indexOf(core[0]);
+    extra.sort((a, b) => Math.abs(set.indexOf(a) - mid) - Math.abs(set.indexOf(b) - mid));
+    extra.slice(0, Math.min(extra.length, Math.floor(total / 4))).forEach((z) => { out[z] = 1; });
+  }
   return out;
 }
 

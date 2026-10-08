@@ -73,7 +73,9 @@ export function reduce(state: ConsoleState, action: Action): ConsoleState {
       return { ...initialState, phase: 'planning' };
     case 'user_ack': {
       const d = decided(state, action.choice);
-      return { ...state, phase: 'executing', question: null, feed: d ? [...state.feed, d] : state.feed };
+      // 답한 승인 카드는 바로 닫는다(엔진 응답 전 두 번 눌리지 않게)
+      const log = state.log.map((l) => (l.status === 'awaiting-approval' ? { ...l, status: 'running' as const } : l));
+      return { ...state, phase: 'executing', question: null, log, feed: d ? [...state.feed, d] : state.feed };
     }
     case 'event':
       return applyEvent(state, action.event);

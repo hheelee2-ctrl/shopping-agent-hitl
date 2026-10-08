@@ -128,6 +128,15 @@ export const TH = {
   stopTitle: { ko: '여기서 멈췄어요', en: 'Stopped here' },
   next: { ko: '이어서 맡겨보세요', en: 'Keep going' },
   arrive: { ko: '도착', en: 'Arrives' },
+  paying: { ko: '결제를 진행하고 있어요', en: 'Processing your payment' },
+  payingNote: { ko: '승인한 금액 그대로 결제해요. 판매처가 주문을 받으면 주문번호가 생겨요.', en: 'Charging exactly what you approved. Each seller issues an order number when it accepts.' },
+  orderNo: { ko: '주문번호', en: 'Order no.' },
+  paidWith: { ko: '결제 수단', en: 'Paid with' },
+  demoPay: { ko: '데모 결제 · 실제 청구 없음', en: 'Demo payment · nothing charged' },
+  tlPlaced: { ko: '주문 접수', en: 'Placed' },
+  tlShip: { ko: '발송 예정', en: 'Ships' },
+  tlArrive: { ko: '도착 예정', en: 'Arrives' },
+  now: { ko: '지금', en: 'Now' },
   less: { ko: '접기', en: 'Less' },
   history: { ko: '기록', en: 'History' },
   whyHere: { ko: '왜 여기서?', en: 'Why here?' },
@@ -143,6 +152,7 @@ export const SZ = {
   kind: { top: { ko: '상의·아우터', en: 'Tops' }, shoe: { ko: '신발', en: 'Shoes' }, bottom: { ko: '하의', en: 'Bottoms' } },
   pick: { ko: '사이즈', en: 'Size' },
   choose: { ko: '사이즈 선택', en: 'Select size' },
+  other: { ko: '다른 사이즈', en: 'Other size' },
 } as const;
 
 export const C = {

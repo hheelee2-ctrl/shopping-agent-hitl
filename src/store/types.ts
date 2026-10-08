@@ -9,10 +9,17 @@ export type Style = 'formal' | 'casual' | 'light' | 'warm' | 'minimal';
 /** 사이즈 체계. 같은 체계의 사이즈는 한 번 알려주면 다른 상품에도 쓴다. */
 export type SizeKind = 'top' | 'shoe' | 'bottom' | 'free';
 export const SIZE_SETS: Record<SizeKind, string[]> = {
-  top: ['S', 'M', 'L', 'XL'],
-  shoe: ['250', '260', '270', '280'],
-  bottom: ['28', '30', '32', '34'],
+  top: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+  shoe: ['230', '235', '240', '245', '250', '255', '260', '265', '270', '275', '280', '285', '290'],
+  bottom: ['25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '36'],
   free: ['FREE'],
+};
+
+/** 많이 고르는 사이즈. 설정 화면에서 바로 누를 수 있게 앞에 둔다. 나머지는 드롭다운으로. */
+export const SIZE_COMMON: Record<'top' | 'shoe' | 'bottom', string[]> = {
+  top: ['S', 'M', 'L', 'XL'],
+  shoe: ['240', '250', '260', '270', '280'],
+  bottom: ['28', '30', '32', '34'],
 };
 export const sizeKindOf = (c: Category): SizeKind =>
   c === 'sneakers' || c === 'loafers' ? 'shoe' : c === 'pants' ? 'bottom' : c === 'bag' ? 'free' : 'top';

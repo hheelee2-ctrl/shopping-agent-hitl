@@ -129,7 +129,7 @@ describe('Action Audit / 되돌리기', () => {
   it('사람이 장바구니에서 직접 빼도 게이트가 갱신된다', async () => {
     const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하');
     await until((e) => e.type === 'payment_gate');
-    store.addToCart('sh1', 'user', store.availableSizes('sh1')[0]);
+    store.addToCart('sh1', 'user', store.availableSizes('sh1').find((z) => ['S', 'M', 'L', 'XL'].includes(z))!);
     await tick();
     // 셔츠는 표시가 최저(선반 68,000원 + 배송비)보다 배송비 포함 총액이 낮은 대로몰(69,900원 무료배송)에 담긴다
     expect(last(events, 'payment_gate')?.total).toBe(178000 + 69900);

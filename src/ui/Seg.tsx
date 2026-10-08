@@ -19,7 +19,8 @@ export function Seg<T extends string | number>({ options, value, onChange, label
   const ind = useRef<HTMLSpanElement>(null);
   const btns = useRef<(HTMLButtonElement | null)[]>([]);
   const st = useRef<{ l: Spring; r: Spring; loop: ReturnType<typeof makeLoop>; init: boolean } | null>(null);
-  const i = Math.max(0, options.findIndex((o) => o.value === value));
+  const found = options.findIndex((o) => o.value === value);
+  const i = Math.max(0, found);
 
   useLayoutEffect(() => {
     const el = ind.current;
@@ -54,7 +55,7 @@ export function Seg<T extends string | number>({ options, value, onChange, label
 
   return (
     <div className="seg2" role="group" aria-label={label} ref={host}>
-      <span className="seg2-ind" ref={ind} aria-hidden />
+      <span className="seg2-ind" ref={ind} aria-hidden style={found === -1 ? { opacity: 0 } : undefined} />
       {options.map((o, n) => (
         <button key={String(o.value)} ref={(el) => { btns.current[n] = el; }} aria-pressed={o.value === value} disabled={disabled} onClick={() => onChange(o.value)}>
           {o.label}

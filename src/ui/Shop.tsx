@@ -14,6 +14,8 @@ import type { Store } from '../store/store';
 import { MarketTicker } from './MarketTicker';
 import { PriceBars, SellerBadge, Terms } from './Sellers';
 import { C, LEVEL, SV, SZ, money, t } from './copy';
+import { SIZE_COMMON } from '../store/types';
+const COMMON = new Set(Object.values(SIZE_COMMON).flat());
 import { Mark } from './Mark';
 
 interface Props {
@@ -222,7 +224,8 @@ export function OfferSheet({ id, lang, store, cart, onAdd, onClose }: {
           </header>
           {keys.length > 1 && (
             <div className="szs" role="group" aria-label={t(SZ.pick, lang)}>
-              {keys.map((z) => (
+              {/* 재고 있는 사이즈와 주력 사이즈만. 주변 사이즈까지 다 늘어놓으면 품절 칸만 많아진다. */}
+              {keys.filter((z) => avail.includes(z) || line?.size === z || COMMON.has(z)).map((z) => (
                 <button key={z} className={`sz ${size === z ? 'on' : ''} ${!avail.includes(z) ? 'out' : ''}`} aria-pressed={size === z}
                   disabled={!avail.includes(z) || (!!line && line.size !== z)} onClick={() => setPicked(z)}>{z}</button>
               ))}

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Dial, Lang, SizeProfile } from '../engine/types';
-import type { ConsoleState, FeedItem, LogEntry, Phase } from '../state/console';
+import type { ConsoleState, LogEntry, Phase } from '../state/console';
 import { Icon } from './Icon';
 import { photoUrl } from '../store/photos';
-import { arrivalLabel, sellerOf } from '../store/sellers';
+import { arrivalLabel, dateLabel, returnLabel, sellerOf } from '../store/sellers';
 import type { Store } from '../store/store';
 import { AuditLog } from './AuditLog';
 import { CostMeter } from './CostMeter';
@@ -93,6 +93,7 @@ export function AgentPanel(p: Props) {
     window.requestAnimationFrame(() => { field.current?.focus(); field.current?.setSelectionRange(text.length, text.length); });
   };
 
+  const paying = !result && phase === 'executing' && state.feed.some((f) => f.k === 'decided' && f.kind === 'pay' && f.ok);
   const askPlan = !!plan && phase === 'awaiting-approval' && plan.requiresApproval && !pendingCart;
   const sizeSum = [p.sizes.top, p.sizes.shoe, p.sizes.bottom].map((x) => x ?? '–').join(' / ');
   const whyOf = (e: LogEntry) => {
@@ -250,7 +251,9 @@ export function AgentPanel(p: Props) {
 
         {payment && phase === 'payment-gate' && <Say><PayAsk lang={lang} store={store} payment={payment} onApprove={p.onApprove} onReject={p.onReject} /></Say>}
 
-        {(phase === 'planning' || phase === 'executing') && (() => {
+        {paying && <PayProgress lang={lang} log={log} />}
+
+        {(phase === 'planning' || phase === 'executing') && !paying && (() => {
           const label = plan && !askPlan ? (() => {
             const st = plan.steps.map((x) => stepState(x.tool, log, phase));
             const i = Math.max(0, st.findIndex((x) => x !== 'done'));
@@ -313,42 +316,92 @@ function Say({ children, quiet }: { children: ReactNode; quiet?: boolean }) {
   );
 }
 
-/** 끝났을 때: 무엇이, 어디서, 언제 오는지 한 장으로. 그리고 다음에 맡길 일. */
+/** 결제 진행: 단계마다 진행 중 → 완료로 바뀐다. 판매처가 주문을 받으면 주문번호가 붙는다. */
+function PayProgress({ lang, log }: { lang: Lang; log: LogEntry[] }) {
+  const steps = log.filter((l) => l.id.startsWith('t-pay-'));
+  return (
+    <div className="msg">
+      <span className="msg-av"><Mark size={12} phase="busy" /></span>
+      <div className="msg-b">
+        <div className="card paying" role="status" aria-live="polite">
+          <h2 className="q">{t(TH.paying, lang)}</h2>
+          <ol className="pay-steps">
+            {steps.map((l) => (
+              <li key={l.id} className={l.status === 'done' ? 'done' : 'now'}>
+                <span className="ps-ic" aria-hidden>{l.status === 'done' ? <Icon name="check" size={12} /> : <Mark size={12} phase="busy" />}</span>
+                <span className="ps-l">{t(l.label, lang)}</span>
+                {l.note && <span className="ps-n">{t(l.note, lang)}</span>}
+              </li>
+            ))}
+          </ol>
+          <p className="note">{t(TH.payingNote, lang)}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** 끝났을 때: 영수증. 판매처별 주문번호·상품·도착일, 결제 금액과 수단, 앞으로의 일정. 그리고 다음에 맡길 일. */
 function Result({ lang, store, state, onOrders, onPick }: {
   lang: Lang; store: Store; state: ConsoleState; onOrders: () => void; onPick: (s: string) => void;
 }) {
   const r = state.result!;
   const ok = r.status === 'done';
-  const added = state.feed.filter((f): f is Extract<FeedItem, { k: 'added' }> => f.k === 'added')
-    .filter((f) => !state.log.find((l) => l.id === f.id)?.undone);
-  const paid = [...state.feed].reverse().find((f) => f.k === 'decided' && f.kind === 'pay' && f.ok);
-  const total = paid && paid.k === 'decided' ? paid.total : undefined;
+  const agentOrders = store.getState().orders.filter((o) => o.by === 'agent');
+  const at = agentOrders.length ? Math.max(...agentOrders.map((o) => o.placedAt)) : 0;
+  const orders = ok ? agentOrders.filter((o) => o.placedAt === at) : [];
+  const total = orders.reduce((a, o) => a + o.total, 0);
+  const now = store.now();
   const next = SUGGEST.map((g) => g.items[1] ?? g.items[0]).slice(0, 3);
+  const shipAt = orders.length ? Math.min(...orders.map((o) => o.shipAt)) : 0;
+  const arriveAt = orders.length ? Math.max(...orders.map((o) => o.arriveAt)) : 0;
   return (
     <div className="msg">
       <span className={`msg-av ${ok ? 'ok' : ''}`}><Mark size={12} phase={ok ? 'done' : 'idle'} /></span>
       <div className="msg-b">
         <div className={`card result ${r.status}`}>
           <h2 className="res-t">{t(ok ? TH.doneTitle : TH.stopTitle, lang)}</h2>
-          <p className="res-s">{t(r.summary, lang)}</p>
-          {ok && added.length > 0 && (
-            <ul className="res-items">
-              {added.map((f) => {
-                const prod = store.getProduct(f.pid);
-                if (!prod) return null;
-                const src = photoUrl(f.pid);
-                return (
-                  <li key={f.id}>
-                    <span className={`mini-ph sw sw-${prod.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
-                    <span className="mini-m"><b>{t(prod.name, lang)}</b>{f.offer && <span>{t(sellerOf(f.offer.sellerId).name, lang)}</span>}</span>
-                    {f.offer && <span className="res-when"><Icon name="arrive" size={14} />{t(arrivalLabel(f.offer.arriveAt, store.now()), lang)}</span>}
-                  </li>
-                );
-              })}
-            </ul>
+          {!ok && <p className="res-s">{t(r.summary, lang)}</p>}
+          {orders.map((o) => {
+            const s = sellerOf(o.sellerId);
+            return (
+              <section key={o.id} className="rcpt">
+                <header>
+                  <SellerBadge s={s} lang={lang} size={20} /><b>{t(s.name, lang)}</b>
+                  <span className="rcpt-no">{t(TH.orderNo, lang)} {o.id}</span>
+                </header>
+                <ul className="res-items">
+                  {o.lines.map((l) => {
+                    const prod = store.getProduct(l.productId);
+                    if (!prod) return null;
+                    const src = photoUrl(l.productId);
+                    return (
+                      <li key={l.productId}>
+                        <span className={`mini-ph sw sw-${prod.colors[0]}`}>{src && <img className="ph" src={src} alt="" />}</span>
+                        <span className="mini-m"><b>{t(prod.name, lang)}</b><span>{l.size !== 'FREE' ? `${l.size} · ` : ''}{l.qty}{lang === 'ko' ? '개' : ' pc'}</span></span>
+                        <b className="mini-p">{money(l.priceAtAdd * l.qty, lang)}</b>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="rcpt-meta"><Icon name="arrive" size={14} />{t(arrivalLabel(o.arriveAt, now), lang)}<span>·</span>{o.shipping > 0 ? SV.shipFee[lang](money(o.shipping, lang)) : t(SV.freeShip, lang)}<span>·</span>{t(returnLabel(s), lang)}</p>
+              </section>
+            );
+          })}
+          {ok && orders.length > 0 && (
+            <>
+              <dl className="rcpt-sum">
+                <div><dt>{t(TH.paidWith, lang)}</dt><dd>{t(TH.demoPay, lang)}</dd></div>
+                <div className="grand"><dt>{t(TH.total, lang)}</dt><dd>{money(total, lang)}</dd></div>
+              </dl>
+              <ol className="rcpt-tl" aria-label={t(TH.tlPlaced, lang)}>
+                <li className="done"><i /><b>{t(TH.tlPlaced, lang)}</b><span>{t(TH.now, lang)}</span></li>
+                <li><i /><b>{t(TH.tlShip, lang)}</b><span>{t(dateLabel(shipAt), lang)}</span></li>
+                <li><i /><b>{t(TH.tlArrive, lang)}</b><span>{t(dateLabel(arriveAt), lang)}</span></li>
+              </ol>
+              <button className="btn sm" onClick={onOrders}>{t(TH.seeOrders, lang)}</button>
+            </>
           )}
-          {ok && total !== undefined && <p className="res-total"><span>{t(TH.total, lang)}</span><b>{money(total, lang)}</b></p>}
-          {ok && <button className="btn sm" onClick={onOrders}>{t(TH.seeOrders, lang)}</button>}
         </div>
         <p className="next-t">{t(TH.next, lang)}</p>
         <div className="suggest-row">
