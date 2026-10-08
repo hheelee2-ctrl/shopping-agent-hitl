@@ -109,8 +109,8 @@ fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .btn.block { width: 100%; min-height: 52px; font-size: var(--t-lg); }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 /* 승인 버튼: 브랜드 초록 */
-.btn.nod { background: var(--brand); color: var(--on-brand); }
-.btn.nod:hover:not(:disabled) { background: var(--brand-deep); }
+.btn.nod { background: var(--brand-deep); color: var(--on-brand); }
+.btn.nod:hover:not(:disabled) { background: color-mix(in srgb, var(--brand-deep) 86%, var(--brand-ink)); }
 .link-btn { all: unset; cursor: pointer; font-size: var(--t-xs); color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
 .link-btn:hover { color: var(--ink); }
 .link-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -588,8 +588,8 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 @media (prefers-reduced-motion: reduce) { .tab, .pickcard, .chip-stock, .chip-alt, .chip-ask, .price-old, .price-new, .hero-field::before { animation: none; } .tab { display: none; } .pickcard, .chip-stock.b, .chip-alt, .price-new, .chip-ask { opacity: 1; } .chip-stock.a, .price-old { display: none; } }
 
 /* ── 앱 안의 브랜드: 인트로 면 · 기본 버튼 · 패널 헤더 ── */
-.land-top .btn.primary, .cta.primary { background: var(--brand); color: var(--on-brand); }
-.land-top .btn.primary:hover:not(:disabled), .cta.primary:hover:not(:disabled) { background: var(--brand-deep); }
+.land-top .btn.primary, .cta.primary { background: var(--brand-deep); color: var(--on-brand); }
+.land-top .btn.primary:hover:not(:disabled), .cta.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--brand-deep) 86%, var(--brand-ink)); }
 @keyframes breathe { to { transform: translate3d(-40px, 30px, 0) scale(1.12); } }
 
 /* ── 가이드 투어: 스크롤하거나 단계를 눌러 이동 ── */

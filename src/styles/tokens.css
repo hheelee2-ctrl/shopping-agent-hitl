@@ -1,4 +1,4 @@
-/* Nod tokens. 세이지 종이 바탕 + 초록 잉크. 초록은 승인·완료에만, 앰버는 '내 차례'(승인·답 대기)에만 쓴다. 숫자는 같은 서체의 고정폭 숫자. */
+/* Nod tokens. BEND FORCE 조합: Warm Paper 바탕 + Vermilion 포인트 + Deep Indigo 글자. 버밀리언은 Nod(승인·담기·결제)에만, 초록은 완료에만, 앰버는 '내 차례'에만 쓴다. 숫자는 같은 서체의 고정폭 숫자. */
 :root {
   --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
   /* 별도 모노 서체는 쓰지 않는다. 숫자는 tabular-nums로 맞춘다. */
@@ -12,27 +12,29 @@
   --r-glass: 20px;
   --r-pill: 999px;
 
-  /* brand accent: 승인(Nod) 순간에만 쓴다. 시맨틱 ok와 같은 색이라 의미가 겹친다. */
-  --accent: var(--ok);
+  /* brand accent: 승인(Nod) 순간에 쓴다 */
+  --accent: var(--brand);
 
-  /* Nod 초록: 면(히어로·섹션)과 마크 재질에 쓴다. 승인 순간의 accent(--ok)와 같은 계열. */
-  --brand: #12b87c;
-  --brand-deep: #057a52;
-  --brand-hi: #6ff0b4;
-  --brand-ink: #03261a;
+  /* Vermilion #EF5B36: 면(히어로·섹션)과 마크 재질에 쓴다.
+     흰 글씨와의 대비가 3.4:1이라 작은 글씨가 올라가는 버튼은 --brand-deep(4.9:1)을 쓴다. */
+  --brand: #ef5b36;
+  --brand-deep: #c94324;
+  --brand-hi: #ff8c69;
+  /* Deep Indigo #212A5E: 브랜드 면 위 흰 버튼의 글자, 결제 상태 면 */
+  --brand-ink: #212a5e;
   --on-brand: #ffffff;
-  --brand-wash: #effcf6;
-  --brand-wash-2: #cdf3e0;
+  --brand-wash: #fdeee7;
+  --brand-wash-2: #f9d4c5;
   --brand-grad: linear-gradient(150deg, var(--brand-hi) -20%, var(--brand) 38%, var(--brand-deep) 120%);
   /* 면 위 흰 글씨 대비를 위해 글이 놓이는 왼쪽이 가장 깊다 */
-  --brand-field: linear-gradient(235deg, var(--brand) -25%, var(--brand-deep) 52%, #046547 118%);
+  --brand-field: linear-gradient(235deg, var(--brand) -25%, var(--brand-deep) 52%, #a3341b 118%);
   --r-card: 28px;
-  /* 히어로 3D 무대: 테마와 관계없이 어두운 면. 초록은 구(원) 하나에만. */
-  --stage: #0b0e0d;
-  --stage-2: #141917;
-  --stage-ink: #f1f4f2;
-  --stage-ink-2: #7d8782;
-  --stage-line: #262d2a;
+  /* 히어로 3D 무대: 테마와 관계없이 어두운 인디고 면. 버밀리언은 구(원) 하나에만. */
+  --stage: #141a44;
+  --stage-2: #1b2253;
+  --stage-ink: #f0e8d8;
+  --stage-ink-2: #8a8fb5;
+  --stage-line: #2a3163;
 
   /* type scale (앱 UI). 12·13은 보조, 14는 본문, 15는 강조 본문, 18 이상은 제목·금액 */
   --t-xs: 12px;
@@ -62,42 +64,42 @@
 
 :root, :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #000000;
-  --bg-2: #0a0a0a;
-  --surface: #111111;
-  --surface-2: #171717;
-  --line: #242424;
-  --line-strong: #3d3d3d;
-  --ink: #ededed;
-  --ink-2: #a1a1a1;
-  --ink-3: #6e6e6e;
-  --on-ink: #000000;
+  --bg: #10132a;
+  --bg-2: #151937;
+  --surface: #1a1f40;
+  --surface-2: #20264a;
+  --line: #2b315a;
+  --line-strong: #3e4573;
+  --ink: #f0e8d8;
+  --ink-2: #b9b3c4;
+  --ink-3: #8a87a0;
+  --on-ink: #10132a;
   --white: #ffffff;
   --hover: rgba(255, 255, 255, 0.07);
   --scrim: rgba(0, 0, 0, 0.55);
 
-  --ok: #3ecf8e;
+  --ok: #5cc497;
   --warn: #f5a524;
   --wait: #f0ad45;
   --wait-soft: rgba(240, 173, 69, 0.16);
   --sk-official: #e7ece9; --sk-official-on: #0f1a15;
   --sk-select: #6d9cf0; --sk-select-on: #0b1630;
-  --sk-mall: #f08b55; --sk-mall-on: #2a1206;
+  --sk-mall: #4cc3c3; --sk-mall-on: #0b2626;
   --sk-overseas: #9aa7b4; --sk-overseas-on: #10161c;
-  --danger: #ff5c5c;
+  --danger: #ff6f86;
   --info: #3b9bff;
-  --ok-soft: rgba(62, 207, 142, 0.14);
+  --ok-soft: rgba(92, 196, 151, 0.14);
   --warn-soft: rgba(245, 165, 36, 0.14);
-  --danger-soft: rgba(255, 92, 92, 0.14);
+  --danger-soft: rgba(255, 111, 134, 0.14);
   --info-soft: rgba(59, 155, 255, 0.16);
 
-  --glass: rgba(14, 14, 14, 0.66);
+  --glass: rgba(20, 24, 52, 0.66);
   --glass-edge: rgba(255, 255, 255, 0.14);
   --glass-hi: rgba(255, 255, 255, 0.06);
   --glass-shadow: rgba(0, 0, 0, 0.55);
 
   --grid-line: rgba(255, 255, 255, 0.05);
-  --glow: rgba(18, 184, 124, 0.2);
+  --glow: rgba(239, 91, 54, 0.2);
 
   --sw-black: #1d1d1d; --sw-white: #cfcfcf; --sw-navy: #1f2a48; --sw-beige: #8d8068;
   --sw-gray: #4b4b4b; --sw-brown: #5a4233; --sw-khaki: #5a5a3a; --sw-blue: #35527f;
@@ -105,42 +107,42 @@
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #edf0ea;
-  --bg-2: #e3e8e1;
-  --surface: #ffffff;
-  --surface-2: #f4f6f2;
-  --line: #dde3db;
-  --line-strong: #c3ccc2;
-  --ink: #0f1a15;
-  --ink-2: #4a564f;
-  --ink-3: #7c8781;
+  --bg: #f0e8d8;
+  --bg-2: #e7ddc9;
+  --surface: #fbf7ef;
+  --surface-2: #f5efe3;
+  --line: #e2d8c5;
+  --line-strong: #cdbfa6;
+  --ink: #212a5e;
+  --ink-2: #4f5680;
+  --ink-3: #6e7397;
   --on-ink: #ffffff;
   --white: #ffffff;
   --hover: rgba(0, 0, 0, 0.05);
   --scrim: rgba(0, 0, 0, 0.35);
 
-  --ok: #0f7b4d;
+  --ok: #2e7d5b;
   --warn: #b26a00;
   --wait: #e39a2d;
   --wait-soft: rgba(227, 154, 45, 0.16);
-  --sk-official: #0f1a15; --sk-official-on: #ffffff;
+  --sk-official: #212a5e; --sk-official-on: #ffffff;
   --sk-select: #3a6ccc; --sk-select-on: #ffffff;
-  --sk-mall: #d4602a; --sk-mall-on: #ffffff;
+  --sk-mall: #1f7f7f; --sk-mall-on: #ffffff;
   --sk-overseas: #6f7c8a; --sk-overseas-on: #ffffff;
-  --danger: #d1242f;
+  --danger: #b4233f;
   --info: #0068d6;
-  --ok-soft: rgba(15, 123, 77, 0.1);
+  --ok-soft: rgba(46, 125, 91, 0.12);
   --warn-soft: rgba(163, 90, 0, 0.1);
-  --danger-soft: rgba(209, 36, 47, 0.09);
+  --danger-soft: rgba(180, 35, 63, 0.09);
   --info-soft: rgba(0, 104, 214, 0.1);
 
-  --glass: rgba(255, 255, 255, 0.74);
+  --glass: rgba(251, 247, 239, 0.76);
   --glass-edge: rgba(255, 255, 255, 0.9);
   --glass-hi: rgba(255, 255, 255, 0.7);
-  --glass-shadow: rgba(23, 23, 23, 0.22);
+  --glass-shadow: rgba(33, 42, 94, 0.2);
 
-  --grid-line: rgba(0, 0, 0, 0.045);
-  --glow: rgba(18, 184, 124, 0.16);
+  --grid-line: rgba(33, 42, 94, 0.05);
+  --glow: rgba(239, 91, 54, 0.16);
 
   --sw-black: #cfcfcf; --sw-white: #f1f1f1; --sw-navy: #c4cde4; --sw-beige: #e7dcc7;
   --sw-gray: #dcdcdc; --sw-brown: #dccbbd; --sw-khaki: #dad9be; --sw-blue: #c9d8ee;
