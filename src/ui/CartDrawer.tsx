@@ -8,7 +8,7 @@ import { C, SV, money, t } from './copy';
 import { Icon } from './Icon';
 import { Stepper } from './Shop';
 import { Spinner } from './Spinner';
-import { STAGES, trackOf } from '../store/tracking';
+import { STAGES, clockOf, trackOf } from '../store/tracking';
 
 export type DrawerTab = 'cart' | 'orders';
 type Step = 'cart' | 'review' | 'paying' | 'done';
@@ -233,7 +233,7 @@ function Group({ g, lang, now, state, readOnly, onQty, onRemove }: {
 }
 
 /** 지금 시각. 배송 단계가 시간에 따라 바뀌도록 주기적으로 다시 읽는다. */
-function useNow(every = 30000) {
+function useNow(every = 1000) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), every); return () => window.clearInterval(id); }, [every]);
   return now;
@@ -323,7 +323,8 @@ function Orders({ lang, orders, state, onOpen }: { lang: Lang; orders: Order[]; 
   return (
     <div className="orders">
       {orders.map((o) => {
-        const tr = trackOf(o, now);
+        const at = clockOf(o, now);
+        const tr = trackOf(o, at);
         const src = photoUrl(o.lines[0].productId);
         const p = state.products[o.lines[0].productId];
         return (
@@ -332,7 +333,7 @@ function Orders({ lang, orders, state, onOpen }: { lang: Lang; orders: Order[]; 
             <span className="or-m">
               <span className="or-top"><b className={`st-chip st-${tr.stage}`}>{t(SV.st[tr.stage], lang)}</b><span>{t(dateLabel(o.placedAt), lang)}</span></span>
               <span className="or-name">{itemsLine(o, state, lang)}</span>
-              <span className="or-sub">{t(sellerOf(o.sellerId).name, lang)} · {tr.stage === 'arrived' ? t(arrivalLabel(o.arriveAt, now), lang) : SV.expArrive[lang](t(arrivalLabel(o.arriveAt, now), lang))}</span>
+              <span className="or-sub">{t(sellerOf(o.sellerId).name, lang)} · {tr.stage === 'arrived' ? t(arrivalLabel(o.arriveAt, at), lang) : SV.expArrive[lang](t(arrivalLabel(o.arriveAt, at), lang))}</span>
             </span>
             <strong>{money(o.total, lang)}</strong>
           </button>
@@ -355,9 +356,11 @@ function OrderDetail({ lang, order: o, state }: { lang: Lang; order: Order; stat
     const id = window.setTimeout(() => setLoadedAt(Date.now()), 800 + Math.random() * 500);
     return () => window.clearTimeout(id);
   }, [nonce]);
-  const tr = trackOf(o, loadedAt ?? now);
+  // 배송 이력은 이 주문의 배송 시계로 계속 흐른다
+  const clock = clockOf(o, now);
+  const tr = trackOf(o, clock);
   const at = STAGES.indexOf(tr.stage);
-  const arriving = t(arrivalLabel(o.arriveAt, now), lang);
+  const arriving = t(arrivalLabel(o.arriveAt, clock), lang);
   const copy = () => {
     if (!tr.invoice) return;
     navigator.clipboard?.writeText(tr.invoice.replace(/-/g, '')).catch(() => {});
@@ -406,7 +409,7 @@ function OrderDetail({ lang, order: o, state }: { lang: Lang; order: Order; stat
                 const next = !e.done && (i === all.length - 1 || all[i + 1].done);
                 if (!e.done && !next) return null;
                 return (
-                  <li key={e.at + t(e.label, 'en')} className={e.done ? (i === all.findIndex((x) => x.done) ? 'now' : 'past') : 'next'}>
+                  <li key={`${e.at}-${e.done}`} className={e.done ? (i === all.findIndex((x) => x.done) ? 'now' : 'past') : 'next'}>
                     <i />
                     <div>
                       <b>{t(e.label, lang)}</b>
@@ -417,7 +420,7 @@ function OrderDetail({ lang, order: o, state }: { lang: Lang; order: Order; stat
                 );
               })}
             </ol>
-            <p className="note">{SV.asOf[lang](t(dateLabel(loadedAt), lang))}</p>
+            <p className="note">{SV.asOf[lang](t(dateLabel(clock), lang))}</p>
           </>
         )}
       </section>

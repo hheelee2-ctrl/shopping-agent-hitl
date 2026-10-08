@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { trackOf } from './tracking';
+import { clockOf, trackOf, TRACK_SPAN } from './tracking';
 import type { Order } from './types';
 
 const H = 3600000;
@@ -26,5 +26,13 @@ describe('trackOf', () => {
     expect(trackOf(order, 30 * H).stage).toBe('arrived');
     const at = t.events.map((e) => e.at);
     expect([...at].sort((a, b) => a - b)).toEqual(at);
+  });
+  it('배송 시계는 단계를 고른 간격으로 넘기고, TRACK_SPAN 뒤에 도착한다', () => {
+    expect(clockOf(order, 0)).toBe(0);
+    // 이력 6칸이 같은 간격으로 넘어간다: 한 칸 = TRACK_SPAN / 5
+    const step = TRACK_SPAN / 5;
+    expect(trackOf(order, clockOf(order, step * 2)).stage).toBe('shipped');
+    expect(trackOf(order, clockOf(order, step * 2 - 1)).stage).toBe('ready');
+    expect(trackOf(order, clockOf(order, TRACK_SPAN)).stage).toBe('arrived');
   });
 });

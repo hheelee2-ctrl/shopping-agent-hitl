@@ -64,21 +64,43 @@ function invoiceOf(id: string) {
   return `${n.slice(0, 4)}-${n.slice(4, 8)}-${n.slice(8)}`;
 }
 
+/** 배송은 실제로 하루에서 며칠 걸린다. 화면에서는 주문부터 도착까지를 이 시간(ms) 안에 압축해 보여준다. */
+export const TRACK_SPAN = 150000;
+
+/**
+ * 이 주문의 배송 시계. 이력 한 칸을 지나는 데 같은 시간이 걸리게 구간마다 속도를 달리한다.
+ * 그래서 출고 전 대기가 길어도 화면에서는 단계가 고르게 넘어간다.
+ */
+export function clockOf(o: Order, real: number, span = TRACK_SPAN) {
+  const at = planOf(o).map((e) => e.at);
+  const step = span / (at.length - 1);
+  const k = Math.max(0, real - o.placedAt) / step;
+  const i = Math.floor(k);
+  if (i >= at.length - 1) return at[at.length - 1] + (k - (at.length - 1)) * step;
+  return at[i] + (at[i + 1] - at[i]) * (k - i);
+}
+
 /** 주문 시각·출고·도착 예정으로 배송 이력을 만든다. now까지 지난 일만 done이다. */
-export function trackOf(o: Order, now: number): Tracking {
+function planOf(o: Order): Omit<TrackEvent, 'done'>[] {
   const s = sellerOf(o.sellerId);
   const r = ROUTE[s.kind];
+  // 마감 직전 주문이면 출고까지 10분이 안 남는다. 순서가 뒤집히지 않게 그 사이에 둔다.
+  const readyAt = Math.min(o.placedAt + 10 * M, (o.placedAt + o.shipAt) / 2);
   const hubAt = o.shipAt + 6 * H;
   const outAt = Math.max(hubAt + H, o.arriveAt - 9 * H);
-  const plan: Omit<TrackEvent, 'done'>[] = [
+  return [
     { at: o.placedAt, stage: 'paid', label: { ko: '주문 접수', en: 'Order received' }, place: s.name },
-    { at: o.placedAt + 10 * M, stage: 'ready', label: { ko: '상품 준비 중', en: 'Preparing' }, place: s.name },
+    { at: readyAt, stage: 'ready', label: { ko: '상품 준비 중', en: 'Preparing' }, place: s.name },
     { at: o.shipAt, stage: 'shipped', label: { ko: '집화 처리', en: 'Picked up' }, place: r.from },
     { at: hubAt, stage: 'transit', label: r.hubLabel, place: r.hub },
     { at: outAt, stage: 'transit', label: { ko: '배송 출발', en: 'Out for delivery' }, place: LAST },
     { at: o.arriveAt, stage: 'arrived', label: { ko: '배송 완료', en: 'Delivered' }, place: DOOR },
   ];
-  const events = plan.map((e) => ({ ...e, done: now >= e.at }));
+}
+
+export function trackOf(o: Order, now: number): Tracking {
+  const r = ROUTE[sellerOf(o.sellerId).kind];
+  const events = planOf(o).map((e) => ({ ...e, done: now >= e.at }));
   const last = [...events].reverse().find((e) => e.done);
   return {
     carrier: r.carrier,
