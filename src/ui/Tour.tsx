@@ -53,7 +53,9 @@ function Stage({ step, lang, onNext }: { step: number; lang: Lang; onNext: () =>
           <div className="tp">
             <p className="label">{t(TOUR.planLabel, lang)}</p>
             <ol className="steps tour-plan">
-              {TOUR.plan.map((s, i) => <li key={i} style={{ '--i': i } as React.CSSProperties}>{t(s, lang)}</li>)}
+              {TOUR.plan.map((s, i) => (
+                <li key={i} style={{ '--i': i } as React.CSSProperties}><span className="tp-n">{i + 1}</span><span>{t(s, lang)}</span></li>
+              ))}
             </ol>
             <p className="note">{t(TOUR.planNote, lang)}</p>
           </div>
