@@ -29,12 +29,14 @@
   /* 면 위 흰 글씨 대비를 위해 글이 놓이는 왼쪽이 가장 깊다 */
   --brand-field: linear-gradient(235deg, var(--brand) -25%, var(--brand-deep) 52%, #a3341b 118%);
   --r-card: 28px;
-  /* 히어로 3D 무대: 테마와 관계없이 어두운 인디고 면. 버밀리언은 구(원) 하나에만. */
-  --stage: #141a44;
-  --stage-2: #1b2253;
-  --stage-ink: #f0e8d8;
-  --stage-ink-2: #8a8fb5;
-  --stage-line: #2a3163;
+  /* 히어로 무대: 테마와 관계없이 인디고 기운이 도는 먹색 면. 버밀리언은 CTA와 고른 상품 하나에만. */
+  --stage: #12141c;
+  --stage-2: #1a1d27;
+  --stage-ink: #f2ede4;
+  --stage-ink-2: #8f909c;
+  --stage-line: #262935;
+  --stage-scrim: rgba(18, 20, 28, 0.72);
+  --stage-shadow: rgba(0, 0, 0, 0.8);
 
   /* type scale (앱 UI). 12·13은 보조, 14는 본문, 15는 강조 본문, 18 이상은 제목·금액 */
   --t-xs: 12px;
@@ -64,16 +66,18 @@
 
 :root, :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #10132a;
-  --bg-2: #151937;
-  --surface: #1a1f40;
-  --surface-2: #20264a;
-  --line: #2b315a;
-  --line-strong: #3e4573;
-  --ink: #f0e8d8;
-  --ink-2: #b9b3c4;
-  --ink-3: #8a87a0;
-  --on-ink: #10132a;
+  --bg: #0e1015;
+  --bg-2: #13151c;
+  --surface: #181b23;
+  --surface-2: #1e212b;
+  --line: #272a35;
+  --line-strong: #3a3e4b;
+  --ink: #f2ede4;
+  --ink-2: #aeadb6;
+  --ink-3: #807f8c;
+  --on-ink: #0e1015;
+  --brand-wash: rgba(239, 91, 54, 0.12);
+  --brand-wash-2: rgba(239, 91, 54, 0.22);
   --white: #ffffff;
   --hover: rgba(255, 255, 255, 0.07);
   --scrim: rgba(0, 0, 0, 0.55);
@@ -93,7 +97,7 @@
   --danger-soft: rgba(255, 111, 134, 0.14);
   --info-soft: rgba(59, 155, 255, 0.16);
 
-  --glass: rgba(20, 24, 52, 0.66);
+  --glass: rgba(24, 27, 35, 0.7);
   --glass-edge: rgba(255, 255, 255, 0.14);
   --glass-hi: rgba(255, 255, 255, 0.06);
   --glass-shadow: rgba(0, 0, 0, 0.55);

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Dial, Lang } from '../engine/types';
 import { DIAL, t } from './copy';
 import { HeroDemo } from './HeroDemo';
-import { Hero3D } from './Hero3D';
+import { HeroPicks } from './HeroPicks';
 import { LAND, APPROVES } from './landCopy';
 import { Magnetic } from './Magnetic';
 import { Mark } from './Mark';
@@ -107,8 +107,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
           </div>
         </div>
         <div className="hero-stage">
-          <span className="hero-orb" aria-hidden />
-          <Hero3D />
+          <HeroPicks lang={lang} />
         </div>
        </div>
       </section>
