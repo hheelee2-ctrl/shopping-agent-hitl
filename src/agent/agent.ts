@@ -1,6 +1,7 @@
 import type { AgentAdapter, AgentEvent, L, Level, PlanStep, RunOptions } from '../engine/types';
 import { CATEGORY_L, COLOR_L } from '../store/labels';
-import { deadlineL, describeCriteria, parseMulti } from '../store/parser';
+import { deadlineL, describeCriteria } from '../store/parser';
+import { ruleInterpreter, type InterpretedBy, type Interpreter } from './interpret';
 import { isEligible, reasonOf, searchProducts, type Scored } from '../store/search';
 import { arrivalLabel, deadlineOf, DUTY_OVER, SELLERS, sellerOf } from '../store/sellers';
 import type { Ranked, Store } from '../store/store';
@@ -49,7 +50,9 @@ export class RuleAgent implements AgentAdapter {
   private sizeMemo: Partial<Record<SizeKind, string>> = {}; // 이번 요청에서 알려준 사이즈
   private unsub: (() => void) | null = null;
 
-  constructor(private store: Store, private delay: Delay = realDelay) {}
+  /** 이번 요청을 누가 해석했는지. 해석 칩과 함께 화면에 보여준다. */
+  private by: InterpretedBy = 'rule';
+  constructor(private store: Store, private delay: Delay = realDelay, private interpret: Interpreter = ruleInterpreter) {}
 
   start(opts: RunOptions, onEvent: (e: AgentEvent) => void) {
     this.stop();
@@ -148,7 +151,7 @@ export class RuleAgent implements AgentAdapter {
 
   /** 항목별 조건을 사람이 확인할 칩으로 보여준다. 한 개면 기존 칩 그대로, 여러 개면 항목 단위로 묶는다. */
   private announce(items: Criteria[], budget?: number) {
-    if (items.length === 1) return this.emit({ type: 'understood', chips: this.chipsOf(items[0]), unknown: items[0].unknown });
+    if (items.length === 1) return this.emit({ type: 'understood', chips: this.chipsOf(items[0]), unknown: items[0].unknown, by: this.by });
     const chips = items.map((c, i) => {
       const ds = this.chipsOf(c);
       return {
@@ -157,7 +160,7 @@ export class RuleAgent implements AgentAdapter {
       };
     });
     if (budget !== undefined) chips.push({ label: { ko: '합계 예산', en: 'Total budget' }, value: { ko: `${won(budget).ko} 이하`, en: `up to ${won(budget).en}` } });
-    this.emit({ type: 'understood', chips, unknown: items.flatMap((c) => c.unknown) });
+    this.emit({ type: 'understood', chips, unknown: items.flatMap((c) => c.unknown), by: this.by });
   }
 
   private async run(id: number): Promise<void> {
@@ -165,10 +168,13 @@ export class RuleAgent implements AgentAdapter {
     const ok = () => this.alive(id);
     const { dial } = this.opts;
 
-    const parsed = parseMulti(this.opts.request);
+    // 해석: Claude가 있으면 Claude, 없거나 실패하면 규칙 파서. 어느 쪽이든 같은 구조가 나온다.
+    const { parsed, by } = await this.interpret(this.opts.request);
+    this.by = by;
+    if (!ok()) return;
     const items = parsed.items;
     const ctx: Ctx = { multi: items.length > 1, budget: parsed.budget };
-    await d(300);
+    if (by === 'rule') await d(300);
     if (!ok()) return;
     this.announce(items, ctx.budget);
 
@@ -688,7 +694,7 @@ export class RuleAgent implements AgentAdapter {
               ...(excluded.brands.size ? [{ label: { ko: '제외 브랜드', en: 'Excluded brand' }, value: { ko: [...excluded.brands].join(' · '), en: [...excluded.brands].join(' · ') } }] : []),
               ...(excluded.colors.size ? [{ label: { ko: '제외 색상', en: 'Excluded color' }, value: { ko: [...excluded.colors].map((c) => COLOR_L[c].ko).join(' · '), en: [...excluded.colors].map((c) => COLOR_L[c].en).join(' · ') } }] : []),
             ];
-            this.emit({ type: 'understood', chips: [...this.chipsOf(criteria), ...extra], unknown: [] });
+            this.emit({ type: 'understood', chips: [...this.chipsOf(criteria), ...extra], unknown: [], by: this.by });
           }
           continue redo;
         }

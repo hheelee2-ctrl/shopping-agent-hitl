@@ -2,11 +2,11 @@
 
 에이전트가 쇼핑을 대행할 때 **사람은 어디서 개입해야 하는가**를 다루는 프로토타입.
 목데이터 쇼핑몰(상품 34개) 위에서 사람과 에이전트가 같은 장바구니·재고 state를 조작한다.
-실제 결제와 LLM 호출은 없다.
+실제 결제는 없다. 요청 해석은 API 키가 있으면 Claude가, 없으면 규칙 파서가 한다.
 
 Prototype exploring where a human should step in when an agent shops on their behalf.
 A mock shop (34 products) whose cart and stock are operated by both the person and the agent.
-No real payment, no LLM calls.
+No real payment. Request interpretation uses Claude when an API key is set, rule-based otherwise.
 
 **Live:** https://shopping-agent-hitl.vercel.app (`main`에 푸시하면 Vercel이 자동 배포)
 
@@ -49,11 +49,23 @@ npm run check    # typecheck + token gate + tests + build
 
 ```
 src/store/    쇼핑몰 도메인: 카탈로그, state(store), 요청 파서, 점수화 검색
-src/agent/    RuleAgent: store 위에서 일하는 에이전트
+src/agent/    RuleAgent: store 위에서 일하는 에이전트. 요청 해석기(interpret.ts)는 주입한다
+api/          Vercel Function: Claude 요청 해석 (/api/parse)
 src/engine/   에이전트 ↔ UI 경계 (AgentEvent, AgentAdapter)
 src/state/    이벤트 → 화면 State 머신 (순수 reducer)
 src/ui/       랜딩(히어로 진열대 HeroPicks), 쇼핑몰 화면, 에이전트 패널, 장바구니·주문 상세, 모션 엔진(motion.ts)
 ```
+
+## 요청 해석: Claude ↔ 규칙 파서
+
+요청 해석만 LLM으로 바꿨다. 검색·비교·담기·결제 승인 흐름은 그대로라, 해석이 틀려도 사람은 담기·결제 전에 본다.
+
+- `api/parse.ts` (Vercel Function): 요청을 Claude(`claude-opus-5-5`, effort `low`)에 보내고, 구조화 출력(JSON Schema)으로 규칙 파서와 같은 `Parsed` 구조를 받는다. 거절 시 서버 측 폴백(`fallbacks: "default"`)을 쓴다.
+- `src/agent/llmParse.ts`: 시스템 프롬프트, 스키마, `sanitize`. 서버와 클라이언트가 같이 쓰고, 클라이언트는 받은 값을 다시 어휘 안으로 거른다.
+- `src/agent/interpret.ts`: `/api/parse`를 먼저 부르고, 키 없음(503)·실패·9초 초과면 규칙 파서(`parseMulti`)로 해석한다. 에이전트 패널의 해석 칩 끝에 `Claude가 해석` / `규칙으로 해석`이 붙는다.
+
+설정: Vercel 프로젝트 환경변수에 `ANTHROPIC_API_KEY`를 넣고 다시 배포한다. 공개 URL이라 누구나 호출할 수 있으므로 Anthropic 콘솔에서 월 사용 한도를 걸어 두는 것을 권장한다. 요청은 200자까지만 받는다.
+로컬 `npm run dev`(Vite)에는 `/api`가 없어 규칙 파서로 동작한다. 로컬에서 Claude 해석까지 보려면 `vercel dev`를 쓴다.
 
 ## 에이전트 교체 지점
 
@@ -63,7 +75,7 @@ LLM 에이전트는 store의 검색·담기 기능을 tool로 노출하고, 결�
 
 ## 한계
 
-- 요청 해석은 규칙 기반이라 카테고리·색상·소재·계절·스타일·가격만 인식한다. 그 밖의 표현은 해석하지 못했다고 알리고 묻는다.
+- 키가 없을 때의 요청 해석은 규칙 기반이라 카테고리·색상·소재·계절·스타일·가격만 인식한다. 그 밖의 표현은 해석하지 못했다고 알리고 묻는다. Claude 해석도 같은 어휘 안으로만 바꾼다(쇼핑몰에 없는 조건은 `unknown`으로 남아 질문이 된다).
 - 상품 상세 페이지는 없다. 사진은 Unsplash 제품컷이며 가상 상품과 실제 관계가 없어, 색·디테일이 상품명과 다를 수 있다. 카드에 상품 정보를 텍스트로 함께 보여준다.
 - 모든 상품·브랜드·판매처·가격·재고·별점·리뷰 수는 가상이다. 별점·리뷰 수는 상품 id에서 고정 난수로 만든 값이다.
 - 배송 이력은 실제 배송사 연동이 아니라 출고·도착 예정 시각으로 계산한 값이고, 화면 속도는 압축되어 있다.

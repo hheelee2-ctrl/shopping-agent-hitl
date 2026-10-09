@@ -15,6 +15,9 @@ export const SIZE_SETS: Record<SizeKind, string[]> = {
   free: ['FREE'],
 };
 
+/** 한 요청에서 나누는 상품 수 상한 (규칙 파서와 LLM 해석이 같이 쓴다) */
+export const MAX_ITEMS = 3;
+
 /** 많이 고르는 사이즈. 설정 화면에서 바로 누를 수 있게 앞에 둔다. 나머지는 드롭다운으로. */
 export const SIZE_COMMON: Record<'top' | 'shoe' | 'bottom', string[]> = {
   top: ['S', 'M', 'L', 'XL'],

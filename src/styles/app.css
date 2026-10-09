@@ -980,3 +980,7 @@ button.pb-row:focus-visible { outline: 2px solid var(--brand); }
 /* 카드 담기 버튼: 사진이 먼저 보이도록 선만 */
 .buy .btn.primary { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .buy .btn.primary:hover:not(:disabled) { background: var(--ink); color: var(--on-ink); box-shadow: none; }
+
+/* 요청을 누가 해석했는지 */
+.interp .by { align-self: center; margin-left: auto; padding: 2px var(--sp-2); border-radius: var(--r-xs); font-size: var(--t-2xs); font-weight: var(--w-semi); letter-spacing: var(--tr-caps); text-transform: uppercase; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line); }
+.interp .by-llm { color: var(--brand-deep); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent); }

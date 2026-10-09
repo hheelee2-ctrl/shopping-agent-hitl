@@ -2,6 +2,8 @@ import type { L } from '../engine/types';
 import { CATEGORY_L, COLOR_L, DIM_L, MATERIAL_L, SEASON_L, STYLE_L } from './labels';
 import { weekdayL } from './sellers';
 import type { Category, Color, Criteria, Material, Season, Style } from './types';
+import { MAX_ITEMS } from './types';
+export { MAX_ITEMS };
 
 type Dict<T extends string> = [T, string[]][];
 
@@ -245,7 +247,6 @@ export interface Parsed {
 const BUDGET_RE = /(?:합쳐서|합쳐|합계|총|다 합쳐서|전부 해서|모두 해서)\s*(\d+(?:\.\d+)?)\s*만\s*원?\s*(?:이하|미만|까지|안쪽|이내|아래|으로|에)?/;
 const EN_BUDGET_RE = /\b(?:in total|total|combined|altogether)\s*(?:of\s*)?(?:under|up to|max|within)?\s*(\d[\d,]{3,})/i;
 const SPLIT_RE = /(?:이랑|랑|하고|과|와|,|그리고|및)\s+|\s+and\s+/;
-export const MAX_ITEMS = 3;
 
 /**
  * 한 요청에 여러 상품이 있으면 항목으로 나눈다("검정 울 코트랑 가죽 로퍼, 합쳐서 35만원").

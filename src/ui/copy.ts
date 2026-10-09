@@ -140,6 +140,10 @@ export const SV = {
 
 /** 에이전트 스레드 문구 */
 export const TH = {
+  byLlm: { ko: 'Claude가 해석', en: 'Read by Claude' },
+  byRule: { ko: '규칙으로 해석', en: 'Read by rules' },
+  byLlmNote: { ko: '요청을 Claude가 읽고, 쇼핑몰 조건으로 바꿨어요. 담기·결제 전에는 그대로 물어봐요.', en: 'Claude read the request and turned it into shop criteria. It still asks before adding and paying.' },
+  byRuleNote: { ko: '정해 둔 규칙으로 요청을 읽었어요. 모르는 표현은 물어봐요.', en: 'The request was read with fixed rules. Unknown words are asked about.' },
   title: { ko: '에이전트', en: 'Agent' },
   skipped: { ko: '제외', en: 'Skipped' },
   settings: { ko: '맡기는 방식', en: 'How I work' },

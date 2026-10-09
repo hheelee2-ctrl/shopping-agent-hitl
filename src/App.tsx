@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { RuleAgent } from './agent/agent';
+import { llmInterpreter } from './agent/interpret';
 import type { L, Lang } from './engine/types';
 import { initialState, reduce } from './state/console';
 import type { Action, Choice } from './state/console';
@@ -33,7 +34,8 @@ interface AppProps {
 
 export default function App({ lang, onLang, theme, onTheme, initial }: AppProps) {
   const store = useMemo(() => createStore(), []);
-  const agent = useMemo(() => new RuleAgent(store), [store]);
+  // 요청 해석은 서버의 Claude를 먼저 쓰고, 키가 없거나 실패하면 규칙 파서로 한다
+  const agent = useMemo(() => new RuleAgent(store, undefined, llmInterpreter()), [store]);
   const market = useMemo(() => createMarket(store), [store]);
   const shop = useStore(store);
   const [state, dispatch] = useReducer(reduce, initialState);

@@ -161,6 +161,7 @@ export function AgentPanel(p: Props) {
           <div className="interp">
             {understood.chips.map((c, i) => <span key={i} className="chip"><i>{t(c.label, lang)}</i>{t(c.value, lang)}</span>)}
             {phase === 'needs-input' && understood.unknown.map((u) => <span key={u} className="chip skip"><i>{t(TH.skipped, lang)}</i><s>{u}</s></span>)}
+            {understood.by && <span className={`by by-${understood.by}`} title={t(understood.by === 'llm' ? TH.byLlmNote : TH.byRuleNote, lang)}>{t(understood.by === 'llm' ? TH.byLlm : TH.byRule, lang)}</span>}
           </div>
         )}
 
