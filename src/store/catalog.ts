@@ -154,6 +154,29 @@ export function buildCatalog(): { products: Record<string, Product>; offers: Rec
   };
 }
 
+/** 국내 쇼핑몰 카드에 붙는 정보: 정가(할인율 계산용), 별점, 리뷰 수, 좋아요 수, 배지. 상품마다 고정이다. */
+export interface Social { listPrice: number; rating: number; reviews: number; likes: number; best: boolean }
+const DISCOUNTS = [0, 0, 0, 10, 15, 20, 25, 30];
+export const SOCIAL: Record<string, Social> = (() => {
+  const out: Record<string, Social> = {};
+  for (const [id, , , , , price, stock] of ROWS) {
+    const rng = seeded(`social:${id}`);
+    const d = DISCOUNTS[Math.floor(rng() * DISCOUNTS.length)];
+    // 재고가 많은(잘 나가는) 상품일수록 리뷰가 많다
+    const reviews = Math.round((20 + rng() * 120) * Math.max(1, stock) ** 1.25);
+    out[id] = {
+      listPrice: d ? r1k(price / (1 - d / 100)) : price,
+      rating: Math.round((4.3 + rng() * 0.6) * 10) / 10,
+      reviews,
+      likes: Math.round(reviews * (2.5 + rng() * 5)),
+      best: false,
+    };
+  }
+  // 리뷰가 가장 많은 6개에 BEST
+  Object.values(out).sort((a, b) => b.reviews - a.reviews).slice(0, 6).forEach((x) => { x.best = true; });
+  return out;
+})();
+
 /** 처음 시작할 때 채워 두는 내 사이즈. 재고가 가장 많이 배분되는 사이즈다. */
 export const DEFAULT_PROFILE: SizeProfile = { top: 'M', shoe: '270', bottom: '32' };
 export const DEFAULT_LIMIT = 300000;

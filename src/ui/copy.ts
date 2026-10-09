@@ -97,6 +97,10 @@ export const SV = {
   underBy: { ko: (s: string) => `한도까지 ${s} 남아요`, en: (s: string) => `${s} left before your limit` },
   approvePayN: { ko: (s: string) => `${s} 결제`, en: (s: string) => `Pay ${s}` },
   approveOver: { ko: (s: string) => `한도를 넘지만 ${s} 결제`, en: (s: string) => `Pay ${s} over limit` },
+  // 카드 정보
+  reviewsN: { ko: (n: number) => `리뷰 ${n.toLocaleString('ko-KR')}`, en: (n: number) => `${n.toLocaleString('en-US')} reviews` },
+  ratingL: { ko: (r: number) => `별점 ${r.toFixed(1)}`, en: (r: number) => `Rated ${r.toFixed(1)}` },
+  likesL: { ko: (n: number) => `좋아요 ${n.toLocaleString('ko-KR')}`, en: (n: number) => `${n.toLocaleString('en-US')} likes` },
   // 처리 중
   holding: { ko: (s: string) => `${s} 재고 확인 중`, en: (s: string) => `Checking stock at ${s}` },
   checking: { ko: '재고와 가격을 확인하는 중', en: 'Checking stock and prices' },

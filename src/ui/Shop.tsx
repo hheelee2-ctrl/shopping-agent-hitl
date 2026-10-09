@@ -7,6 +7,7 @@ import type { Scored } from '../store/search';
 import { DUTY_OVER, arrivalLabel, sellerOf } from '../store/sellers';
 import type { Category, CartLine, Criteria, Product } from '../store/types';
 import { photoCredit, photoUrl } from '../store/photos';
+import { SOCIAL } from '../store/catalog';
 import { useFlip } from './useFlip';
 import { useFlight } from './useFlight';
 import type { Market } from '../store/market';
@@ -102,6 +103,12 @@ interface CardProps {
   onOpen: (id: string) => void; readOnly: boolean;
 }
 
+/** 1,234 → 1.2천 / 1.2k */
+const compact = (n: number, lang: Lang) => {
+  if (lang === 'ko') return n >= 10000 ? `${(n / 10000).toFixed(1).replace(/\.0$/, '')}만` : n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}천` : String(n);
+  return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n);
+};
+
 const Minus = () => <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden><path d="M2.5 6h7" /></svg>;
 const Plus = () => <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden><path d="M2.5 6h7M6 2.5v7" /></svg>;
 
@@ -137,6 +144,10 @@ function Card({ i, eye, p, lang, cart, agent, store, adding, onAdd, onQty, onOpe
   const src = photoUrl(p.id);
   const credit = photoCredit(p.id);
   const level: Level | undefined = agent.candidates.includes(p.id) ? conf?.level : undefined;
+  const so = SOCIAL[p.id];
+  // 5% 미만 차이는 할인으로 보이지 않게 둔다
+  const pct = so ? Math.round((1 - shown / so.listPrice) * 100) : 0;
+  const off = pct >= 5 ? pct : 0;
   const ship = lead ? `${lead.shipping <= 0 ? t(SV.freeShip, lang) : money(lead.shipping, lang)} · ${t(arrivalLabel(lead.arriveAt, now), lang)}` : '';
 
   return (
@@ -148,13 +159,17 @@ function Card({ i, eye, p, lang, cart, agent, store, adding, onAdd, onQty, onOpe
         )}
         {level && <span className={`pill ${level}`}>{t(LEVEL[level], lang)}</span>}
         {eye && <span className="eye-tag"><Mark size={10} phase="busy" tone="on-brand" />{t(SV.looking, lang)}</span>}
+        {so?.best && <span className="best">BEST</span>}
         {line && <span className="incart" key={line.qty}>{line.addedBy === 'agent' ? t(C.byAgent, lang) : t(C.cart, lang)} {line.qty}</span>}
       </button>
       <div className="meta">
         <div className="brand">{p.brand}</div>
         <h3 className="name">{t(p.name, lang)}</h3>
         <div className="price-row">
-          <span className={`price ${repriced ? 'repriced' : ''}`}>{p.stock === 0 ? t(C.soldOut, lang) : money(shown, lang)}</span>
+          <span className={`price ${repriced ? 'repriced' : ''}`}>
+            {p.stock > 0 && off > 0 && <b className="off">{off}%</b>}
+            {p.stock === 0 ? t(C.soldOut, lang) : money(shown, lang)}
+          </span>
           {sellers > 1 && p.stock > 0 && (
             <button className="cmp-chip" onClick={() => onOpen(p.id)}>{SV.nCompare[lang](sellers)}</button>
           )}
@@ -162,6 +177,13 @@ function Card({ i, eye, p, lang, cart, agent, store, adding, onAdd, onQty, onOpe
         {line && linePrice !== undefined && linePrice !== line.priceAtAdd
           ? <p className="ship-line moved">{money(line.priceAtAdd, lang)} → {money(linePrice, lang)}</p>
           : ship && <p className="ship-line">{ship}</p>}
+        {so && (
+          <p className="social">
+            <span className="star" aria-label={SV.ratingL[lang](so.rating)}>★ {so.rating.toFixed(1)}</span>
+            <span>{SV.reviewsN[lang](so.reviews)}</span>
+            <span aria-label={SV.likesL[lang](so.likes)}>♡ {compact(so.likes, lang)}</span>
+          </p>
+        )}
         {level && conf?.reason && <p className="reason">{t(conf.reason, lang)}</p>}
         <div className="buy">
           {line ? (

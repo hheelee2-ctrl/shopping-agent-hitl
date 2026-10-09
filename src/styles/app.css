@@ -1221,3 +1221,9 @@ details.why-box p { margin-top: var(--sp-2); }
 .tl.skel li:nth-child(2) span { width: 80%; } .tl.skel li:nth-child(3) span { width: 60%; }
 @keyframes skel { from { opacity: 0.45; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .tl li, .od, .paying { animation: none; } .tl.skel i, .tl.skel span { animation: none; } }
+
+/* ── 상품 카드: 할인율·별점·리뷰·좋아요·BEST ── */
+.price .off { margin-right: 6px; color: var(--brand-deep); font-weight: 800; }
+.social { margin-top: 4px; display: flex; gap: 8px; font-size: var(--t-xs); color: var(--ink-3); white-space: nowrap; overflow: hidden; }
+.social .star { color: var(--ink-2); font-weight: 700; }
+.best { position: absolute; left: 8px; bottom: 8px; padding: 3px 7px; border-radius: var(--r-xs); background: var(--brand-ink); color: var(--on-brand); font-size: 10px; font-weight: 800; letter-spacing: 0.04em; }
