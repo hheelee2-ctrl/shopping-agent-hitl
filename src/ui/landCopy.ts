@@ -16,15 +16,19 @@ export const LAND = {
   start: { ko: '쇼핑 에이전트 시작하기', en: 'Start the shopping agent' },
   startShort: { ko: '시작하기', en: 'Start' },
   how: { ko: '작동 방식', en: 'How it works' },
-  demoTag: { ko: '판매처 3곳 비교 끝', en: 'Compared 3 sellers' },
-  demoLine: { ko: '이대로 담을까요?', en: 'Add this?' },
-  demoBtn: { ko: '담기', en: 'Add' },
-  demoBusy: { ko: '담는 중', en: 'Adding' },
-  demoDone: { ko: '담았습니다', en: 'Added' },
-  demoDoneLine: { ko: '담았습니다. 결제는 직접 합니다.', en: 'Added. You still pay yourself.' },
-  tryTitle: { ko: '담기 전에, 한 번 묻습니다', en: 'It asks once, before it adds' },
-  trySub: { ko: '에이전트가 고른 상품을 승인하면 원 안에 체크가 들어가요. 직접 눌러보세요.', en: 'Approve the pick and a check lands in the circle. Try it.' },
-  demoHint: { ko: '직접 눌러보세요.', en: 'Try it.' },
+  eyebrow: { ko: 'AI 쇼핑 에이전트 · 사람이 승인하는 구조', en: 'AI shopping agent · human-approved' },
+  pickTag: { ko: '판매처 3곳 비교 끝', en: 'Compared 3 sellers' },
+  pickAsk: { ko: '이대로 담을까요?', en: 'Add this?' },
+  agentLabel: { ko: '에이전트가 일하는 방식', en: 'How the agent works' },
+  agentTitle: { ko: '요청 하나로 진열대를 훑고, 담기 전에 묻습니다', en: 'One request scans the shelf. It asks before it adds' },
+  agentSub: {
+    ko: '조건에 안 맞는 상품은 흐려지고, 예산을 넘는 후보는 빠집니다. 고른 상품도 승인하기 전에는 담지 않습니다.',
+    en: 'What does not match fades. What goes over budget drops out. Even the pick waits for your approval.',
+  },
+  statement: {
+    ko: 'Nod는 요청을 읽고 판매처를 배송비까지 합쳐 비교합니다. 재고와 가격은 담는 순간 다시 확인하고, 담기 전에는 묻습니다. 결제는 언제나 당신이 합니다.',
+    en: 'Nod reads the request and compares sellers with shipping included. Stock and price are checked again at the moment of adding, and it asks first. Payment is always yours.',
+  },
 
   whyTitle: { ko: '비교는 맡기고, 결정은 직접', en: 'Hand off the comparing. Keep the deciding' },
   scenes: [

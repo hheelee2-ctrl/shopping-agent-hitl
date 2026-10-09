@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Lang } from '../engine/types';
+import { photoUrl } from '../store/photos';
 import { ConfRing } from './ConfRing';
 import { LAND, TOUR } from './landCopy';
 import { Wordmark } from './Wordmark';
@@ -64,7 +65,7 @@ function Stage({ step, lang, onNext }: { step: number; lang: Lang; onNext: () =>
           <div className="tp">
             <p className="label">{t(TOUR.addLabel, lang)}</p>
             <div className="tour-prod">
-              <div className="tour-swatch" aria-hidden />
+              <div className="tour-swatch" aria-hidden>{photoUrl('c1', 160) && <img src={photoUrl('c1', 160)!} alt="" />}</div>
               <div>
                 <b>{t(TOUR.product, lang)}</b>
                 <p className="note">{money(TOUR.price, lang)}, {t(SELLERS[officialId('NOIR LAB')].name, lang)}, {t(SV.freeShip, lang)}</p>

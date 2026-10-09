@@ -4,12 +4,13 @@
   /* 별도 모노 서체는 쓰지 않는다. 숫자는 tabular-nums로 맞춘다. */
   --font-mono: var(--font-sans);
 
-  /* shape */
+  /* shape: 사진·칩은 작게(4~8), 카드는 12~16, 큰 면만 24. 에디토리얼 톤이라 둥글기를 아낀다. */
   --r-xs: 4px;
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-glass: 20px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-glass: var(--r-lg);
   --r-pill: 999px;
 
   /* brand accent: 승인(Nod) 순간에 쓴다 */
@@ -28,7 +29,7 @@
   --brand-grad: linear-gradient(150deg, var(--brand-hi) -20%, var(--brand) 38%, var(--brand-deep) 120%);
   /* 면 위 흰 글씨 대비를 위해 글이 놓이는 왼쪽이 가장 깊다 */
   --brand-field: linear-gradient(235deg, var(--brand) -25%, var(--brand-deep) 52%, #a3341b 118%);
-  --r-card: 28px;
+  --r-card: var(--r-xl);
   /* 히어로 무대: 테마와 관계없이 인디고 기운이 도는 먹색 면. 버밀리언은 CTA와 고른 상품 하나에만. */
   --stage: #12141c;
   --stage-2: #1a1d27;
@@ -38,15 +39,35 @@
   --stage-scrim: rgba(18, 20, 28, 0.72);
   --stage-shadow: rgba(0, 0, 0, 0.8);
 
-  /* type scale (앱 UI). 12·13은 보조, 14는 본문, 15는 강조 본문, 18 이상은 제목·금액 */
+  /* type scale. UI는 11~22, 제목은 28 이상, 랜딩 디스플레이는 d-1~d-3(화면 폭에 따라).
+     11은 배지·가격표 같은 사진 위 라벨에만 쓴다. */
+  --t-2xs: 11px;
   --t-xs: 12px;
   --t-sm: 13px;
   --t-base: 14px;
-  --t-md: 15px;
+  --t-md: 16px;
   --t-lg: 18px;
   --t-xl: 22px;
   --t-2xl: 28px;
   --t-3xl: 36px;
+  --t-4xl: 48px;
+  --d-1: clamp(48px, 7.4vw, 112px);
+  --d-2: clamp(34px, 4.6vw, 64px);
+  --d-3: clamp(24px, 2.6vw, 36px);
+  /* weight: 4단계만 */
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-semi: 600;
+  --w-bold: 700;
+  /* tracking: 큰 글자일수록 좁게, 대문자 라벨은 넓게 */
+  --tr-display: -0.045em;
+  --tr-title: -0.03em;
+  --tr-ui: -0.01em;
+  --tr-caps: 0.08em;
+  /* line height */
+  --lh-tight: 1.08;
+  --lh-snug: 1.3;
+  --lh-body: 1.6;
   /* spacing: 4의 배수 */
   --sp-1: 4px;
   --sp-2: 8px;
@@ -55,6 +76,12 @@
   --sp-5: 20px;
   --sp-6: 24px;
   --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+  --sp-24: 96px;
+  --sp-32: 128px;
 
   /* motion: critically damped feel (expo-out), no overshoot */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
