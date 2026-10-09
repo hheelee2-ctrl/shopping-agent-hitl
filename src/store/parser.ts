@@ -15,7 +15,7 @@ const CATEGORIES: Dict<Category> = [
   ['loafers', ['로퍼', '구두', 'loafer', 'dress shoes']],
   ['knit', ['니트', '스웨터', '터틀넥', '가디건', '맨투맨', '후드', 'knit', 'sweater', 'turtleneck', 'cardigan', 'sweatshirt', 'hoodie']],
   ['shirt', ['셔츠', '블라우스', '남방', 'shirt', 'blouse']],
-  ['pants', ['바지', '팬츠', '슬랙스', '청바지', '치노', 'pants', 'trousers', 'slacks', 'jeans', 'chinos', 'shorts']],
+  ['pants', ['카고바지', '바지', '팬츠', '슬랙스', '청바지', '치노', '카고', 'pants', 'trousers', 'slacks', 'jeans', 'chinos', 'shorts', 'cargo']],
   ['bag', ['가방', '백팩', '토트', 'bag', 'backpack', 'tote']],
 ];
 
@@ -41,20 +41,21 @@ function takeGroup(text: string): { cats: Category[]; labels: L[]; rest: string 
   return { cats, labels, rest };
 }
 const COLORS: Dict<Color> = [
-  ['black', ['블랙', '검정', '검은', '까만', 'black']],
-  ['white', ['화이트', '하얀', '흰', 'white']],
-  ['navy', ['네이비', '남색', 'navy']],
-  ['beige', ['베이지', 'beige']],
-  ['gray', ['그레이', '회색', 'gray', 'grey']],
-  ['brown', ['브라운', '갈색', 'brown']],
-  ['khaki', ['카키', 'khaki']],
-  ['blue', ['블루', '파란', 'blue']],
+  // 카탈로그 8색에 가장 가까운 쪽으로 잇는다 (아이보리·크림 → 화이트, 차콜 → 그레이, 진청 → 네이비)
+  ['black', ['블랙', '검정', '검은', '까만', '깜장', '먹색', 'black']],
+  ['white', ['화이트', '하얀', '흰', '아이보리', '크림', '오프화이트', 'white', 'ivory', 'cream']],
+  ['navy', ['네이비', '남색', '곤색', '진청', 'navy']],
+  ['beige', ['베이지', '샌드', 'beige']],
+  ['gray', ['그레이', '회색', '차콜', '챠콜', 'gray', 'grey', 'charcoal']],
+  ['brown', ['브라운', '갈색', '카멜', '모카', 'brown', 'camel']],
+  ['khaki', ['카키', '올리브', 'khaki', 'olive']],
+  ['blue', ['블루', '파란', '하늘색', '하늘', '연청', 'blue', 'sky']],
 ];
 const MATERIALS: Dict<Material> = [
   ['cashmere', ['캐시미어', 'cashmere']],
   ['wool', ['울', 'wool']],
-  ['cotton', ['코튼', '순면', 'cotton']],
-  ['leather', ['레더', '가죽', 'leather']],
+  ['cotton', ['코튼', '순면', '면 소재', '면소재', '린넨', '리넨', 'cotton', 'linen']],
+  ['leather', ['레더', '가죽', '스웨이드', 'leather', 'suede']],
   ['denim', ['데님', 'denim']],
   ['nylon', ['나일론', 'nylon']],
   ['canvas', ['캔버스', 'canvas']],
@@ -67,9 +68,9 @@ const SEASONS: Dict<Season> = [
 ];
 const STYLES: Dict<Style> = [
   ['formal', ['단정', '포멀', '격식', '깔끔', '출근용', '출근', '하객', 'formal', 'office', 'work']],
-  ['casual', ['캐주얼', '편한', '데일리', '주말', 'casual']],
-  ['light', ['가벼운', '가볍', 'light']],
-  ['warm', ['따뜻', '보온', '두툼', 'warm']],
+  ['casual', ['캐주얼', '편한', '편하게', '데일리', '주말', '오버핏', '루즈핏', 'casual', 'oversized']],
+  ['light', ['가벼운', '가볍', '시원한', '시원', '얇은', 'light']],
+  ['warm', ['따뜻', '따숩', '따스', '포근', '보온', '두툼', '도톰', 'warm']],
   ['minimal', ['미니멀', '심플', 'minimal']],
 ];
 
@@ -77,6 +78,7 @@ const STOP = new Set([
   '추천', '해줘', '해주세요', '찾아줘', '찾아', '사줘', '좀', '한', '켤레', '개', '입기', '좋은', '있는', '같은',
   '정도', '이하', '이상', '원', '만', '에서', '으로', '하고', '그리고', '주세요', '싶어', '싶은', '어울리는',
   '요즘', '오늘', '와이드', '룩', '코디', '느낌', '중에', '중에서', '입을', '신을', '들', '같이', '둘다', '모두', '각각', '합쳐서', '합쳐', '합계', '해서', '총', 'and', 'a', 'an', 'the', 'for', 'me', 'find', 'under', 'good',
+  '추천해줘', '추천해주세요', '보여줘', '골라줘', '찾아주세요', '오는', '받을', '수', '사이', '사이즈', '소재', '색', '은', '는', '로', '에', 'with', 'size',
 ]);
 
 function take<T extends string>(text: string, dict: Dict<T>): { found: T[]; rest: string } {
@@ -159,7 +161,11 @@ export function parseRequest(input: string): Criteria {
       text = text.replace(re, ' ');
     }
   };
-  take$(/(\d+(?:\.\d+)?)\s*만\s*원?\s*(이하|미만|까지|안쪽|이내|아래)/, (m) => (maxPrice = num(m[1]) * 10000));
+  // 범위: '10만원~20만원', '10~20만원', '10만원에서 20만원'
+  take$(/(\d+(?:\.\d+)?)\s*(?:만\s*원?)?\s*(?:~|-|에서|부터)\s*(\d+(?:\.\d+)?)\s*만\s*원?\s*(?:사이|까지|이하|정도)?/, (m) => { minPrice = num(m[1]) * 10000; maxPrice = num(m[2]) * 10000; });
+  // 가격대: '10만원대' → 10만~20만, '5만원대' → 5만~6만
+  take$(/(\d+)\s*만\s*원?\s*대/, (m) => { const n = num(m[1]); minPrice = n * 10000; maxPrice = (n + 10 ** (String(n).length - 1)) * 10000; });
+  take$(/(\d+(?:\.\d+)?)\s*만\s*원?\s*(이하|미만|까지|안쪽|이내|아래|안으로|내로|밑으로|정도|쯤|선에서|내외)/, (m) => (maxPrice = num(m[1]) * 10000));
   take$(/(\d+(?:\.\d+)?)\s*만\s*원?\s*(이상|넘는|부터)/, (m) => (minPrice = num(m[1]) * 10000));
   take$(/예산\s*(\d+(?:\.\d+)?)\s*만\s*원?/, (m) => (maxPrice = num(m[1]) * 10000));
   take$(/(\d[\d,]{3,})\s*원\s*(이하|미만|까지|이내)/, (m) => (maxPrice = num(m[1])));
@@ -171,11 +177,22 @@ export function parseRequest(input: string): Criteria {
   const category = cat.found[0] ?? (grp.cats.length === 1 ? grp.cats[0] : undefined);
   const many = !cat.found.length && grp.cats.length > 1;
   const color = take(grp.rest, COLORS);
-  const mat = take(color.rest, MATERIALS);
-  const season = take(mat.rest, SEASONS);
-  const style = take(season.rest, STYLES);
+  // 계절을 소재보다 먼저 지운다: '겨울'의 '울'이 울 소재로 잡히지 않게
+  const season = take(color.rest, SEASONS);
+  const mat = take(season.rest, MATERIALS);
+  const style = take(mat.rest, STYLES);
 
-  const unknown = style.rest
+  // 청바지·진청은 종류와 함께 데님 소재를 뜻한다
+  if (/청바지|진청|연청|jeans/.test(input) && !mat.found.includes('denim')) mat.found.push('denim');
+  // 바지면 단독 숫자도 허리 사이즈로 본다 ('청바지 32')
+  let size = sz.size;
+  let rest = style.rest;
+  if (!size && category === 'pants') {
+    const w = rest.match(/(?:^|[\s,])(2[5-9]|3[0-6])(?=$|[\s,.])/);
+    if (w) { size = w[1]; rest = rest.replace(w[0], ' '); }
+  }
+
+  const unknown = rest
     .split(/[\s,./·!?]+/)
     .map((t) => t.trim())
     .filter((t) => t.length >= 2 && !STOP.has(t) && !/^\d+$/.test(t));
@@ -189,7 +206,7 @@ export function parseRequest(input: string): Criteria {
     styles: style.found,
     maxPrice,
     minPrice,
-    size: sz.size,
+    size,
     deliverBy: dl.deliverBy,
     unknown,
   };
@@ -227,6 +244,71 @@ export function describeCriteria(c: Criteria): Chip[] {
   if (c.size) chips.push({ label: DIM_L.size, value: { ko: c.size, en: c.size } });
   if (c.deliverBy) chips.push({ label: { ko: '도착', en: 'Arrive' }, value: deadlineL(c.deliverBy) });
   return chips;
+}
+
+/** 받침이 있으면 true. 한글이 아니면 숫자·영문 끝소리로 대충 고른다. */
+function batchim(word: string): boolean {
+  const ch = word.trim().slice(-1);
+  const code = ch.charCodeAt(0);
+  if (code >= 0xac00 && code <= 0xd7a3) return (code - 0xac00) % 28 !== 0;
+  return /[013678lmn]$/i.test(ch);
+}
+const STYLE_ADJ: Record<Style, L> = {
+  formal: { ko: '단정한', en: 'formal' }, casual: { ko: '캐주얼한', en: 'casual' }, light: { ko: '가벼운', en: 'light' },
+  warm: { ko: '따뜻한', en: 'warm' }, minimal: { ko: '미니멀한', en: 'minimal' },
+};
+const man = (n: number): L => (n % 10000 === 0 ? { ko: `${n / 10000}만원`, en: `KRW ${n.toLocaleString('en-US')}` } : won(n));
+
+/** 항목 하나를 명사구로: '가을용 단정한 블랙 울 코트' */
+function phraseOf(c: Criteria): L {
+  const noun: L = c.category ? CATEGORY_L[c.category] : c.categories?.length ? (c.group ?? join(c.categories.map((x) => CATEGORY_L[x]))) : { ko: '상품', en: 'items' };
+  const pre = [
+    ...c.seasons.map((x) => ({ ko: `${SEASON_L[x].ko}용`, en: SEASON_L[x].en.toLowerCase() })),
+    ...c.styles.map((x) => STYLE_ADJ[x]),
+    ...c.colors.map((x) => COLOR_L[x]),
+    ...c.materials.map((x) => MATERIAL_L[x]),
+  ];
+  return {
+    ko: [...pre.map((x) => x.ko), noun.ko].join(' '),
+    en: [...pre.map((x) => x.en.toLowerCase()), noun.en.toLowerCase()].join(' '),
+  };
+}
+function priceOf(c: { maxPrice?: number; minPrice?: number }): L | null {
+  if (c.minPrice !== undefined && c.maxPrice !== undefined) return { ko: `${man(c.minPrice).ko}~${man(c.maxPrice).ko} 사이로`, en: `between ${man(c.minPrice).en} and ${man(c.maxPrice).en}` };
+  if (c.maxPrice !== undefined) return { ko: `${man(c.maxPrice).ko} 이하로`, en: `under ${man(c.maxPrice).en}` };
+  if (c.minPrice !== undefined) return { ko: `${man(c.minPrice).ko} 이상으로`, en: `from ${man(c.minPrice).en}` };
+  return null;
+}
+
+/**
+ * 해석한 조건을 한 문장으로 되말한다. 칩보다 먼저 보여줘서, 사람이 '제대로 알아들었나'를 문장으로 확인하게 한다.
+ * size: 요청에 없으면 내 사이즈(mine=true)를 넣어 말한다.
+ */
+export function restate(p: Parsed, sizeOf: (c: Criteria) => { size?: string; mine: boolean }): L {
+  const unknown = [...new Set(p.items.flatMap((c) => c.unknown))];
+  const tail: L = unknown.length
+    ? { ko: ` ${unknown.map((u) => `'${u}'`).join(', ')}${batchim(unknown[unknown.length - 1]) ? '은' : '는'} 아직 모르는 표현이라 확인할게요.`, en: ` I don't know ${unknown.map((u) => `"${u}"`).join(', ')} yet, so I'll check with you.` }
+    : { ko: '', en: '' };
+  if (p.items.length > 1) {
+    const ps = p.items.map(phraseOf);
+    const total = p.budget !== undefined ? { ko: ` 합계 ${man(p.budget).ko} 이하로`, en: ` for ${man(p.budget).en} in total` } : { ko: '', en: '' };
+    return {
+      ko: `${ps.map((x) => x.ko).join(', ')}, ${p.items.length}가지를${total.ko} 찾아볼게요.${tail.ko}`,
+      en: `Looking for ${ps.map((x) => x.en).join(' and ')}${total.en}.${tail.en}`,
+    };
+  }
+  const c = p.items[0];
+  const ph = phraseOf(c);
+  const sz = sizeOf(c);
+  const by = c.deliverBy ? deadlineL(c.deliverBy) : null;
+  const conds: L[] = [
+    ...(priceOf(c) ? [priceOf(c)!] : []),
+    ...(sz.size ? [sz.mine ? { ko: `내 사이즈(${sz.size})로`, en: `in your size (${sz.size})` } : { ko: `${sz.size} 사이즈로`, en: `in size ${sz.size}` }] : []),
+  ];
+  return {
+    ko: `${by ? `${by.ko} 받을 수 있는 ` : ''}${ph.ko}${batchim(ph.ko) ? '을' : '를'} ${conds.length ? `${conds.map((x) => x.ko).join(', ')} ` : ''}찾아볼게요.${tail.ko}`,
+    en: `Looking for ${ph.en}${conds.length ? ` ${conds.map((x) => x.en).join(', ')}` : ''}${by ? `, arriving ${by.en}` : ''}.${tail.en}`,
+  };
 }
 
 export function deadlineL(d: { weekday?: number; days?: number }): L {

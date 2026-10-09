@@ -157,11 +157,12 @@ export function AgentPanel(p: Props) {
 
         {p.asked && phase !== 'idle' && <p className="bubble">{p.asked}</p>}
 
+        {understood?.say && <Say><p>{t(understood.say, lang)}</p></Say>}
         {understood && (understood.chips.length > 0 || phase === 'needs-input') && (
           <div className="interp">
             {understood.chips.map((c, i) => <span key={i} className="chip"><i>{t(c.label, lang)}</i>{t(c.value, lang)}</span>)}
             {phase === 'needs-input' && understood.unknown.map((u) => <span key={u} className="chip skip"><i>{t(TH.skipped, lang)}</i><s>{u}</s></span>)}
-            {understood.by && <span className={`by by-${understood.by}`} title={t(understood.by === 'llm' ? TH.byLlmNote : TH.byRuleNote, lang)}>{t(understood.by === 'llm' ? TH.byLlm : TH.byRule, lang)}</span>}
+            {understood.by === 'llm' && <span className="by by-llm" title={t(TH.byLlmNote, lang)}>{t(TH.byLlm, lang)}</span>}
           </div>
         )}
 
@@ -263,7 +264,7 @@ export function AgentPanel(p: Props) {
           return (
             <div className="msg working" aria-live="polite">
               <span className="msg-av"><Mark size={12} phase="busy" /></span>
-              <p>{label ? <><b>{TH.step[lang](label.i + 1, label.n)}</b> {label.text}</> : t(PHASE.planning, lang)}<span className="dots" aria-hidden><i /><i /><i /></span></p>
+              <p>{label ? <><b>{TH.step[lang](label.i + 1, label.n)}</b> {label.text}</> : !understood ? <Reading lang={lang} /> : t(PHASE.planning, lang)}<span className="dots" aria-hidden><i /><i /><i /></span></p>
             </div>
           );
         })()}
@@ -308,6 +309,16 @@ export function AgentPanel(p: Props) {
 }
 
 /** 에이전트의 한 마디. 왼쪽에 Nod 표식, 오른쪽에 내용. */
+/** 요청을 해석하는 동안: 읽기 → 조건 정리 → 쇼핑몰 조건으로 바꾸기. 마지막 단계에서 멈춘다. */
+function Reading({ lang }: { lang: Lang }) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setI((n) => Math.min(n + 1, TH.reading.length - 1)), 700);
+    return () => window.clearInterval(id);
+  }, []);
+  return <span key={i} className="swap">{t(TH.reading[i], lang)}</span>;
+}
+
 function Say({ children, quiet }: { children: ReactNode; quiet?: boolean }) {
   return (
     <div className={`msg ${quiet ? 'quiet' : ''}`}>

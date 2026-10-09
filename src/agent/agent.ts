@@ -1,6 +1,6 @@
 import type { AgentAdapter, AgentEvent, L, Level, PlanStep, RunOptions } from '../engine/types';
 import { CATEGORY_L, COLOR_L } from '../store/labels';
-import { deadlineL, describeCriteria } from '../store/parser';
+import { deadlineL, describeCriteria, restate } from '../store/parser';
 import { ruleInterpreter, type InterpretedBy, type Interpreter } from './interpret';
 import { isEligible, reasonOf, searchProducts, type Scored } from '../store/search';
 import { arrivalLabel, deadlineOf, DUTY_OVER, SELLERS, sellerOf } from '../store/sellers';
@@ -151,7 +151,8 @@ export class RuleAgent implements AgentAdapter {
 
   /** 항목별 조건을 사람이 확인할 칩으로 보여준다. 한 개면 기존 칩 그대로, 여러 개면 항목 단위로 묶는다. */
   private announce(items: Criteria[], budget?: number) {
-    if (items.length === 1) return this.emit({ type: 'understood', chips: this.chipsOf(items[0]), unknown: items[0].unknown, by: this.by });
+    const say = restate({ items, budget }, (c) => ({ size: this.wantedSize(c), mine: !c.size }));
+    if (items.length === 1) return this.emit({ type: 'understood', chips: this.chipsOf(items[0]), unknown: items[0].unknown, by: this.by, say });
     const chips = items.map((c, i) => {
       const ds = this.chipsOf(c);
       return {
@@ -160,7 +161,7 @@ export class RuleAgent implements AgentAdapter {
       };
     });
     if (budget !== undefined) chips.push({ label: { ko: '합계 예산', en: 'Total budget' }, value: { ko: `${won(budget).ko} 이하`, en: `up to ${won(budget).en}` } });
-    this.emit({ type: 'understood', chips, unknown: items.flatMap((c) => c.unknown), by: this.by });
+    this.emit({ type: 'understood', chips, unknown: items.flatMap((c) => c.unknown), by: this.by, say });
   }
 
   private async run(id: number): Promise<void> {
@@ -174,7 +175,8 @@ export class RuleAgent implements AgentAdapter {
     if (!ok()) return;
     const items = parsed.items;
     const ctx: Ctx = { multi: items.length > 1, budget: parsed.budget };
-    if (by === 'rule') await d(300);
+    // 해석 단계(읽기 → 조건 정리 → 쇼핑몰 조건으로)가 화면에 보일 만큼 기다린다
+    if (by === 'rule') await d(1100);
     if (!ok()) return;
     this.announce(items, ctx.budget);
 

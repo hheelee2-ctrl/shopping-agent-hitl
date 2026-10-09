@@ -16,7 +16,8 @@ export type ToolStatus = 'running' | 'awaiting-approval' | 'done' | 'failed';
 /** 에이전트 ↔ UI 경계. UI는 이 이벤트만 구독한다. */
 export type AgentEvent =
   /** by: 요청을 누가 해석했는지 (Claude 또는 규칙 파서) */
-  | { type: 'understood'; chips: { label: L; value: L }[]; unknown: string[]; by?: 'llm' | 'rule' }
+  /** say: 해석을 되말하는 한 문장 */
+  | { type: 'understood'; chips: { label: L; value: L }[]; unknown: string[]; by?: 'llm' | 'rule'; say?: L }
   | { type: 'plan'; steps: PlanStep[]; requiresApproval: boolean }
   | {
       type: 'tool_call';
