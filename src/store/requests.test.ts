@@ -40,7 +40,7 @@ describe('요청 해석 확인용 세트 (규칙을 맞추지 않은 문장)', (
   });
 });
 
-describe('restate: 해석을 한 문장으로 되말한다', () => {
+describe('[R6] restate: 해석을 한 문장으로 되말한다', () => {
   const mine = (size?: string) => () => ({ size, mine: true });
   const say = (text: string, sizeOf = mine()) => restate(parseMulti(text), sizeOf).ko;
   it('조건과 받침에 맞는 조사로 말한다', () => {

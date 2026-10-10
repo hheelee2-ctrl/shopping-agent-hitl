@@ -15,7 +15,7 @@ No real payment. Request interpretation uses Claude when an API key is set, rule
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm run check    # typecheck + token gate + tests + build
+npm run check    # rule gate + typecheck + token gate + tests + build
 ```
 
 ## 무엇이 실제로 동작하나
@@ -32,18 +32,30 @@ npm run check    # typecheck + token gate + tests + build
 - **처리 시간 표현**: 담기, 주문 확인 전 재고·가격 재확인, 결제, 에이전트의 각 단계에 짧은 진행 상태를 둔다. 즉시 끝나는 동작이 오히려 신뢰를 떨어뜨린다는 판단에서다.
 - **상품 카드**: 국내 쇼핑몰처럼 제품컷(옷걸이·플랫레이·누끼·디테일) 위주 사진, 할인율, 별점·리뷰 수·좋아요, BEST 배지를 보여준다.
 
-## 설계 원칙 → 구현
+## 승인 설계 원칙 (R1–R9)
 
-| 원칙 | 구현 |
-|---|---|
-| Intent Preview | 요청 해석 칩 + 행동 전 계획 카드 (승인/취소) |
-| Confidence Signal | 후보별 확신도 + 근거. 쇼핑몰 그리드 카드에도 표시 |
-| Autonomy Dial | 매번 확인 / 담기만 확인 / 알아서 |
-| Escalation Pathway | 해석 불가 표현, 종류 불명, 후보 점수 근접, 결과 없음, 사이즈 불명·품절, 중복 담기, 품절·가격 변동 시 멈추고 질문 |
-| Action Audit | 행동 기록 + 되돌리기 (결제 승인 후에는 차단) |
-| 결제 한도 | 한도 초과 시 Dial과 무관하게 직접 확인 |
+사람이 어디서 개입하는지는 `src/rules.ts`의 규칙 9개로 정한다. 테스트 이름에 `[R4]`처럼 규칙을 붙이고, `scripts/rules.mjs`가 규칙마다 테스트 수를 센다. 테스트가 없는 규칙이 생기면 `npm run check`가 실패한다.
 
-결제는 어떤 자율도에서도 사람이 승인한다.
+| | 규칙 | 테스트 |
+|---|---|---|
+| R1 | 결제는 사람만 한다 | 4 |
+| R2 | 승인 강도는 되돌릴 수 있느냐로 정한다 (자율도 3단계) | 3 |
+| R3 | 한도는 자율도와 따로 움직인다 | 6 |
+| R4 | 낡은 승인은 쓰지 않는다 (담기 직전·결제 직전 재확인) | 11 |
+| R5 | 모호하면 멈추고 묻는다 (계산된 조건에서만) | 19 |
+| R6 | 무엇을 할지, 얼마나 확신하는지 보여준다 | 5 |
+| R7 | 한 일은 남기고 되돌릴 수 있다 | 12 |
+| R8 | 판매처를 고른 이유를 남긴다 | 10 |
+| R9 | 요청이 취향보다 먼저다 | 10 |
+
+숫자는 `src/rules.counts.json`에서 온다(한 테스트가 여러 규칙에 걸릴 수 있다).
+
+- **설계 보기**: 앱 상단 '설계 보기'를 켜거나 `#/app?review=1`로 열면, 각 카드 위에 그 자리가 지키는 규칙과 테스트 수가 붙는다(`src/ui/Review.tsx`).
+- **플레이북**: 랜딩 04 섹션(`#/playbook`)이 같은 목록을 보여준다.
+
+## 사용성 테스트 모드
+
+`#/app?study=P01`로 열면 과제 3개를 자율도를 바꿔 가며 수행하고, 과제마다 설문을 받는다. 자율도 순서는 참가자 번호로 돌린다(라틴 방격). 결제 승인 카드가 뜨면 담긴 상품 하나의 가격을 10% 올려 결제 직전 재확인(R4)에 대한 반응을 본다. 개입·거절·되돌리기·재확인 반응은 감사 타임라인에서 계산하고(`src/study/study.ts`), 끝나면 JSON·CSV로 내려받는다. 진행 방법은 [docs/usability-test.md](docs/usability-test.md).
 
 ## 구조
 
@@ -53,6 +65,8 @@ src/agent/    RuleAgent: store 위에서 일하는 에이전트. 요청 해석�
 api/          Vercel Function: Claude 요청 해석 (/api/parse)
 src/engine/   에이전트 ↔ UI 경계 (AgentEvent, AgentAdapter)
 src/state/    이벤트 → 화면 State 머신 (순수 reducer)
+src/study/    사용성 테스트 모드: 과제, 자율도 순서, 타임라인 → 지표, CSV
+src/rules.ts  승인 설계 규칙 R1–R9 (리뷰 모드·플레이북이 읽는다)
 src/ui/       랜딩(히어로 진열대 HeroPicks), 쇼핑몰 화면, 에이전트 패널, 장바구니·주문 상세, 모션 엔진(motion.ts)
 ```
 
@@ -96,6 +110,7 @@ LLM 에이전트는 store의 검색·담기 기능을 tool로 노출하고, 결�
 ## 검사 게이트
 
 `npm run check`가 통과해야 머지한다.
+`check:rules`는 승인 설계 규칙 중 테스트가 하나도 없는 규칙이 있으면 실패한다.
 `check:tokens`는 `src/styles/tokens.css` 밖에서 색상 리터럴을 쓰면 실패한다 (AI가 만든 UI 코드의 토큰 이탈 방지).
 
 ## Credits

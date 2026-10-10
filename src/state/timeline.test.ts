@@ -37,7 +37,7 @@ async function drive() {
   return r;
 }
 
-describe('timeline replay', () => {
+describe('[R7] timeline replay', () => {
   it('마지막 프레임의 복원 결과는 라이브 상태와 같다', async () => {
     const r = await drive();
     const f = r.frames();

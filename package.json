@@ -9,7 +9,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.api.json --noEmit",
     "check:tokens": "node scripts/check-tokens.mjs",
-    "check": "npm run typecheck && npm run check:tokens && npm test && npm run build"
+    "check": "npm run check:rules && npm run typecheck && npm run check:tokens && npm test && npm run build",
+    "check:rules": "node scripts/rules.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.132.1",

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { RuleAgent } from './agent/agent';
 import { llmInterpreter } from './agent/interpret';
-import type { L, Lang } from './engine/types';
+import type { Dial, L, Lang } from './engine/types';
 import { initialState, reduce } from './state/console';
 import type { Action, Choice } from './state/console';
 import { appendFrame, baseline, viewAt } from './state/timeline';
@@ -24,6 +24,9 @@ import { ThemeButton } from './ui/ThemeButton';
 import { saveSizes } from './ui/SizeProfile';
 import { saveStyle } from './ui/StyleProfile';
 import { useStore } from './ui/useStore';
+import { ReviewCtx, ReviewToggle } from './ui/Review';
+import { StudyBar } from './ui/Study';
+import { bumped, studyId } from './study/study';
 
 interface AppProps {
   lang: Lang;
@@ -74,6 +77,9 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const [style, setStyle] = useState(initial.style);
   useEffect(() => { saveStyle(style); }, [style]);
   const [cmpClosed, setCmpClosed] = useState(false);
+  // 설계 보기(리뷰 모드)와 사용성 테스트 모드는 주소로 켤 수 있다: #/app?review=1, #/app?study=P01
+  const [review, setReview] = useState(() => /[?&]review=1/.test(location.hash));
+  const [pid] = useState(() => studyId(location.hash));
   const toasts = useToasts();
   const pushToast = toasts.push;
   const openCart = useCallback(() => { setDrawerTab('cart'); setCartOpen(true); }, []);
@@ -92,7 +98,8 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
 
   // 같은 쇼핑몰에서 다른 구매자·판매처가 움직인다. 보고 있는 상품(후보·장바구니)에 더 몰린다.
   useEffect(() => { window.scrollTo(0, 0); }, []);
-  useEffect(() => { market.start(); return () => market.stop(); }, [market]);
+  // 사용성 테스트 중에는 우연한 시장 변화가 과제마다 달라지지 않도록 시장을 멈춘다 (가격 변경은 정해진 지점에서 한 번만)
+  useEffect(() => { if (pid) return; market.start(); return () => market.stop(); }, [market, pid]);
   useEffect(() => { market.setBusy(running); }, [market, running]);
   useEffect(() => {
     market.setInterest([...new Set([...state.candidates, ...shop.cart.map((l) => l.productId)])]);
@@ -136,6 +143,15 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     emit({ type: 'reset' }, 'user');
     setAsked(null);
   }, [agent, store, market, emit]);
+
+  const beginTask = useCallback((d: Dial) => { reset(); setDial(d); setCartOpen(false); setSheet(null); }, [reset]);
+  const inject = useCallback(() => {
+    const line = store.getState().cart[0];
+    const o = line && store.getOffer(line.productId, line.sellerId);
+    if (!line || !o) return false;
+    store.setPrice(line.productId, bumped(o.price), line.sellerId);
+    return true;
+  }, [store]);
 
   const closeDrawer = useCallback(() => setCartOpen(false), []);
   const closeSheet = useCallback(() => setSheet(null), []);
@@ -202,7 +218,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   }), [market, store, pushToast, lang, openCart]);
 
   return (
-    <>
+    <ReviewCtx.Provider value={review}>
       <header className={`top ${replaying ? 'replay' : ''}`}>
         <a className="logo" href="#/" aria-label={t(C.brand, lang)}><Wordmark size={26} phase={phase === 'planning' || phase === 'executing' ? 'busy' : phase === 'done' ? 'done' : 'idle'} /></a>
         <input
@@ -212,6 +228,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         <div className="top-r">
           <button className="top-btn" onClick={() => { setDrawerTab('orders'); setCartOpen(true); }}>{t(SV.ordersTab, lang)}{shop.orders.length > 0 && <span className="cnt">{shop.orders.length}</span>}</button>
           <button className="top-btn" data-cart-btn onClick={() => { setDrawerTab('cart'); setCartOpen(true); }}>{t(C.cart, lang)}{cartCount > 0 && <span className="cnt">{cartCount}</span>}</button>
+          <ReviewToggle on={review} onToggle={() => setReview((v) => !v)} lang={lang} />
           <ThemeButton theme={theme} onToggle={onTheme} lang={lang} />
           <div className="lang" role="group" aria-label="language">
             <button aria-pressed={lang === 'ko'} onClick={() => onLang('ko')}>KO</button>
@@ -219,6 +236,8 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           </div>
         </div>
       </header>
+
+      {pid && <StudyBar pid={pid} lang={lang} frames={frames} phase={state.phase} onBegin={beginTask} onInject={inject} />}
 
       <main className="layout">
         <Shop
@@ -259,6 +278,6 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           onAdd={(id, size, sid) => userAdd(id, size, sid)} onClose={closeSheet}
         />
       )}
-    </>
+    </ReviewCtx.Provider>
   );
 }

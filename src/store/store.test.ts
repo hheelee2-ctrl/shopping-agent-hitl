@@ -174,7 +174,7 @@ describe('size', () => {
   });
 });
 
-describe('판매처·배송비', () => {
+describe('[R8] 판매처·배송비', () => {
   const TUE = new Date(2026, 9, 6, 10, 0).getTime();
   it('합계에는 판매처별 배송비가 들어가고, 무료배송 기준은 판매처마다 따로 본다', () => {
     const s = createStore({ now: () => TUE });
@@ -211,7 +211,7 @@ describe('도착 마감 해석', () => {
   });
 });
 
-describe('장바구니 변경 감지', () => {
+describe('[R4] 장바구니 변경 감지', () => {
   it('담은 뒤 가격이 바뀌면 이슈로 잡히고, refreshCart로 지금 가격이 된다', () => {
     const s = createStore();
     s.addToCart('c1', 'user', 'M', 'off-noirlab');

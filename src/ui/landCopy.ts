@@ -5,7 +5,7 @@ export const LAND = {
     { id: 'why', l: { ko: '왜 Nod', en: 'Why Nod' } },
     { id: 'how', l: { ko: '작동 방식', en: 'How it works' } },
     { id: 'approval', l: { ko: '승인 구조', en: 'Approval' } },
-    { id: 'trust', l: { ko: '한도와 기록', en: 'Limits & log' } },
+    { id: 'playbook', l: { ko: '설계 원칙', en: 'Playbook' } },
   ] satisfies { id: string; l: L }[],
   heroA: { ko: '말하면 찾고,', en: 'Say it.' },
   heroB: { ko: '승인하면 담아요', en: 'Approve, then it’s in.' },
@@ -65,12 +65,17 @@ export const LAND = {
   pay: { ko: '직접 결제', en: 'You pay' },
   payNote: { ko: '결제는 어느 단계에서도 직접 합니다.', en: 'Payment is yours at every level.' },
 
-  trustTitle: { ko: '한도와 기록', en: 'Limits and log' },
-  trust: [
-    { t: { ko: '한도를 넘으면 직접 확인합니다', en: 'Over the limit, you review it' }, d: { ko: '자율도와 상관없이, 결제 직전 합계가 한도를 넘으면 경고를 띄웁니다.', en: 'At any autonomy level, a total above your limit raises a warning before payment.' } },
-    { t: { ko: '확신이 낮으면 묻습니다', en: 'Low confidence, it asks' }, d: { ko: '후보가 비슷하거나 조건이 모호하면 직접 고르게 합니다.', en: 'When candidates tie or the request is vague, you choose.' } },
-    { t: { ko: '한 일은 전부 기록됩니다', en: 'Every action is logged' }, d: { ko: '결제 전 행동은 되돌릴 수 있고, 타임라인으로 그 시점을 다시 볼 수 있습니다.', en: 'Actions before payment can be undone, and the timeline replays any moment.' } },
-  ] satisfies { t: L; d: L }[],
+  playTitle: { ko: '승인 설계 원칙 9가지', en: 'Nine rules for approval design' },
+  playSub: {
+    ko: '사람이 어디서 개입하는지를 화면 감각이 아니라 규칙으로 정했습니다. 규칙마다 그 규칙을 지키는 테스트가 묶여 있고, 테스트가 없는 규칙이 생기면 빌드가 실패합니다.',
+    en: 'Where a person steps in is set by rules, not by feel. Each rule is bound to the tests that guard it, and a rule without tests fails the build.',
+  },
+  playWithout: { ko: '없으면', en: 'Without it' },
+  playWhere: { ko: '화면', en: 'Where' },
+  playTests: { ko: (n: number) => `테스트 ${n}개`, en: (n: number) => `${n} tests` },
+  playLink: { ko: '설계 원칙 9가지', en: 'The nine rules' },
+  playOpen: { ko: '앱에서 규칙 위치 보기', en: 'See the rules in the app' },
+  playNote: { ko: '앱 상단의 "설계 보기"를 켜면 각 카드 위에 그 자리가 지키는 규칙이 붙습니다.', en: 'Turn on "Design notes" in the app header to see which rule each card follows.' },
 
   endTitle: { ko: '한 번 맡겨보세요', en: 'Hand one off' },
   foot: {

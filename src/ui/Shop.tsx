@@ -16,6 +16,7 @@ import { MarketTicker } from './MarketTicker';
 import { PriceBars, SellerBadge, Terms } from './Sellers';
 import { C, LEVEL, SV, SZ, money, t } from './copy';
 import { SIZE_COMMON } from '../store/types';
+import { RuleMark } from './Review';
 const COMMON = new Set(Object.values(SIZE_COMMON).flat());
 import { Mark } from './Mark';
 import { Spinner } from './Spinner';
@@ -259,6 +260,7 @@ export function OfferSheet({ id, lang, store, cart, adding, onAdd, onClose }: {
           {size ? (
             <>
               <div className="pb-legend"><span><i className="lg-price" />{t(SV.price, lang)}</span><span><i className="lg-ship" />{t(SV.shipping, lang)}</span></div>
+              <RuleMark ids={['R8']} lang={lang} />
               <PriceBars rows={ranked} lang={lang} chosen={focus} onPick={setFocus} />
               {gone.length > 0 && <p className="note">{t(SV.noStock, lang)}: {gone.map((o) => t(sellerOf(o.sellerId).name, lang)).join(', ')}</p>}
               {sel && (

@@ -16,6 +16,7 @@ import { LimitSlider } from './LimitSlider';
 import { savePrefs } from './prefs';
 import { StyleProfileEditor } from './StyleProfile';
 import type { Frame } from '../state/timeline';
+import { RuleMark } from './Review';
 import { C, DIAL, PHASE, SUGGEST, SV, SZ, TH, money, t } from './copy';
 
 interface Props {
@@ -140,10 +141,12 @@ export function AgentPanel(p: Props) {
             <div className="settings-body">
               <div>
                 <p className="label">{t(C.dial, lang)}</p>
+                <RuleMark ids={['R2', 'R1']} lang={lang} />
                 <Seg options={(Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }))} value={draft.dial} onChange={(dial) => edit({ dial })} label={t(C.dial, lang)} />
               </div>
               <div>
                 <p className="label">{t(C.limit, lang)}</p>
+                <RuleMark ids={['R3']} lang={lang} />
                 <LimitSlider value={draft.limit} onChange={(limit) => edit({ limit })} lang={lang} label={t(C.limit, lang)} />
                 <p className="note">{t(TH.limitNote, lang)} {t(C.dialNote, lang)}</p>
               </div>
@@ -186,6 +189,7 @@ export function AgentPanel(p: Props) {
         {p.asked && phase !== 'idle' && <p className="bubble">{p.asked}</p>}
 
         {understood?.say && <Say><p>{t(understood.say, lang)}</p></Say>}
+        {understood && (understood.chips.length > 0 || phase === 'needs-input') && <RuleMark ids={['R6', 'R9']} lang={lang} />}
         {understood && (understood.chips.length > 0 || phase === 'needs-input') && (
           <div className="interp">
             {understood.chips.map((c, i) => <span key={i} className="chip"><i>{t(c.label, lang)}</i>{t(c.value, lang)}</span>)}
@@ -198,6 +202,7 @@ export function AgentPanel(p: Props) {
           if (f.k === 'found') return (
             <Say key={f.id}>
               <p>{TH.found[lang](f.ids.length)}</p>
+              <RuleMark ids={['R6']} lang={lang} />
               <ul className="cand" aria-label={t(C.candidates, lang)}>
                 {f.ids.map((id) => {
                   const prod = store.getProduct(id);
@@ -250,6 +255,7 @@ export function AgentPanel(p: Props) {
 
         {plan && askPlan && (
           <Say>
+            <RuleMark ids={['R2']} lang={lang} />
             <div className="card plan ask-me" data-action="">
               <h2>{t(C.planTitle, lang)}</h2>
               <ol className="steps">
@@ -263,10 +269,11 @@ export function AgentPanel(p: Props) {
           </Say>
         )}
 
-        {pendingCart && <Say><CartAsk lang={lang} store={store} entry={pendingCart} why={whyOf(pendingCart)} onApprove={p.onApprove} onReject={p.onReject} /></Say>}
+        {pendingCart && <Say><RuleMark ids={['R2', 'R4', 'R8']} lang={lang} /><CartAsk lang={lang} store={store} entry={pendingCart} why={whyOf(pendingCart)} onApprove={p.onApprove} onReject={p.onReject} /></Say>}
 
         {question && phase === 'needs-input' && (
           <Say>
+            <RuleMark ids={question.id.startsWith('q-stale') || question.id.startsWith('q-payfix') ? ['R4', 'R5'] : ['R5']} lang={lang} />
             <div className="card ask-me" data-action="">
               <h2 className="q">{t(question.question, lang)}</h2>
               <div className="opts">
@@ -279,7 +286,7 @@ export function AgentPanel(p: Props) {
           </Say>
         )}
 
-        {payment && phase === 'payment-gate' && <Say><PayAsk lang={lang} store={store} payment={payment} onApprove={p.onApprove} onReject={p.onReject} /></Say>}
+        {payment && phase === 'payment-gate' && <Say><RuleMark ids={['R1', 'R3', 'R4']} lang={lang} /><PayAsk lang={lang} store={store} payment={payment} onApprove={p.onApprove} onReject={p.onReject} /></Say>}
 
         {paying && <PayProgress lang={lang} log={log} />}
 
@@ -302,6 +309,7 @@ export function AgentPanel(p: Props) {
       {log.length > 0 && (
         <details className="history">
           <summary>{t(TH.history, lang)}<span>{log.length}</span></summary>
+          <RuleMark ids={['R7']} lang={lang} />
           {result && (
             <CostMeter
               lang={lang} request={p.asked ?? ''} limit={p.limit} sizes={p.sizes}

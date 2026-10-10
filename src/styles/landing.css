@@ -182,11 +182,20 @@
 .approval-foot { display: flex; align-items: center; gap: var(--sp-3); }
 
 /* 04 한도와 기록 */
-.trust { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-8); }
-.trust li { display: grid; gap: var(--sp-3); align-content: start; padding-top: var(--sp-5); border-top: 1px solid var(--line-strong); }
-.trust .num { font-size: var(--t-xs); color: var(--ink-3); }
-.trust h3 { font-size: var(--t-xl); font-weight: var(--w-semi); letter-spacing: var(--tr-title); word-break: keep-all; }
-.trust p { font-size: var(--t-base); line-height: var(--lh-body); color: var(--ink-2); word-break: keep-all; }
+.play { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-10) var(--sp-8); counter-reset: none; }
+.play li { display: grid; gap: var(--sp-3); align-content: start; padding-top: var(--sp-5); border-top: 1px solid var(--line-strong); }
+.play-id { display: flex; justify-content: space-between; align-items: baseline; margin: 0; }
+.play-id .num { font-size: var(--t-sm); font-weight: var(--w-bold); color: var(--brand-deep); }
+:root[data-theme="dark"] .play-id .num { color: var(--brand-hi); }
+.play-tests { font-family: var(--font-mono); font-size: var(--t-2xs); letter-spacing: var(--tr-caps); color: var(--ink-3); }
+.play h3 { font-size: var(--t-xl); font-weight: var(--w-semi); letter-spacing: var(--tr-title); line-height: var(--lh-snug); word-break: keep-all; }
+.play-rule { font-size: var(--t-base); line-height: var(--lh-body); color: var(--ink-2); word-break: keep-all; }
+.play dl { display: grid; gap: var(--sp-2); margin: var(--sp-2) 0 0; }
+.play dl div { display: grid; grid-template-columns: 56px 1fr; gap: var(--sp-3); font-size: var(--t-sm); line-height: var(--lh-snug); }
+.play dt { color: var(--ink-3); }
+.play dd { margin: 0; color: var(--ink-2); word-break: keep-all; }
+.play-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4); margin-top: var(--sp-12); }
+.play-foot .note { margin: 0; }
 
 /* ── 마무리: 어두운 면, 큰 워드마크 ── */
 .end { padding: var(--sp-16) var(--gutter) var(--sp-8); }
@@ -210,10 +219,12 @@
   .tour { min-height: 0; }
   .tour-sents { display: none; }
   .tour-sticky { position: static; }
-  .bento, .trust { grid-template-columns: 1fr; gap: var(--sp-12); }
+  .bento { grid-template-columns: 1fr; gap: var(--sp-12); }
+  .play { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .land-nav { display: none; }
+  .play { grid-template-columns: 1fr; gap: var(--sp-8); }
   .setup .land-top > span { display: none; }
   .land-top { grid-template-columns: 1fr auto; }
   .hero { padding-top: var(--sp-24); padding-bottom: var(--sp-16); }

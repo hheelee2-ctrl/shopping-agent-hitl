@@ -153,7 +153,7 @@ export function describeMarket(e: MarketEvent, name: L, fmt: (n: number) => L, s
   if (e.kind === 'restock') return { ko: `${at.ko}${name.ko}${sz(e.size).ko} 재입고`, en: `${name.en}${sz(e.size).en} restocked${at.en}` };
   const up = e.to > e.from;
   return {
-    ko: `${at.ko}${name.ko} ${fmt(e.from).ko}에서 ${fmt(e.to).ko}로 ${up ? '인상' : '인하'}`,
+    ko: `${at.ko}${name.ko} ${fmt(e.from).ko}에서 ${fmt(e.to).ko}으로 ${up ? '인상' : '인하'}`,
     en: `${name.en} ${up ? 'up' : 'down'} ${fmt(e.from).en} to ${fmt(e.to).en}${at.en}`,
   };
 }

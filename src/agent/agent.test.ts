@@ -25,7 +25,7 @@ const last = <T extends AgentEvent['type']>(events: AgentEvent[], type: T) =>
   [...events].reverse().find((e) => e.type === type) as Extract<AgentEvent, { type: T }> | undefined;
 
 describe('S1 명확한 요청', () => {
-  it('질문 없이 담고 결제 직전에서만 멈춘다. 장바구니는 실제 store에 담긴다', async () => {
+  it('[R1] 질문 없이 담고 결제 직전에서만 멈춘다. 장바구니는 실제 store에 담긴다', async () => {
     const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하');
     await until((e) => e.type === 'payment_gate');
     expect(events.some((e) => e.type === 'needs_input')).toBe(false);
@@ -37,7 +37,7 @@ describe('S1 명확한 요청', () => {
     expect(store.getState().orders).toHaveLength(1);
     expect(store.getState().cart).toHaveLength(0);
   });
-  it('확신도: 1순위 high, 울 혼방 medium, 예산 초과 low', async () => {
+  it('[R6] 확신도: 1순위 high, 울 혼방 medium, 예산 초과 low', async () => {
     const { events, until } = setup('검정 울 코트, 20만원 이하');
     await until((e) => e.type === 'payment_gate');
     const lv = (id: string) => events.find((e) => e.type === 'confidence' && e.itemId === id);
@@ -45,7 +45,7 @@ describe('S1 명확한 요청', () => {
     expect(lv('c3')).toMatchObject({ level: 'medium' });
     expect(lv('c5')).toMatchObject({ level: 'low' });
   });
-  it('Dial=always: 계획 승인 전에는 tool_call이 없다 (Intent Preview)', async () => {
+  it('[R2] Dial=always: 계획 승인 전에는 tool_call이 없다 (Intent Preview)', async () => {
     const { agent, events, until } = setup('검정 울 코트, 20만원 이하', 'always');
     await until((e) => e.type === 'plan');
     await tick();
@@ -55,7 +55,7 @@ describe('S1 명확한 요청', () => {
   });
 });
 
-describe('Escalation은 계산된 조건에서 나온다', () => {
+describe('[R5] Escalation은 계산된 조건에서 나온다', () => {
   it('후보 점수가 비슷하면(가을 자켓) 사람에게 고르게 한다', async () => {
     const { store, agent, events, until } = setup('가을에 입기 좋은 자켓');
     await until((e) => e.type === 'needs_input');
@@ -116,7 +116,7 @@ describe('S3 재고 변동·한도 (시장이 store를 실제로 바꾼다)', ()
     h.store.setStock('s1', 0);
     h.agent.approve();
   };
-  it('담기 직전 다른 구매자가 재고를 가져가면 실패 후 대안을 제시한다', async () => {
+  it('[R4] 담기 직전 다른 구매자가 재고를 가져가면 실패 후 대안을 제시한다', async () => {
     const h = setup('화이트 스니커즈 한 켤레', 'cart-only');
     await sellOut(h);
     await h.until((e) => e.type === 'tool_call' && e.status === 'failed');
@@ -124,7 +124,7 @@ describe('S3 재고 변동·한도 (시장이 store를 실제로 바꾼다)', ()
     await h.until((e) => e.type === 'needs_input' && e.id === 'q-alt1');
     expect(h.store.getState().cart).toHaveLength(0);
   });
-  it('대안이 한도를 넘으면 exceeded', async () => {
+  it('[R3] 대안이 한도를 넘으면 exceeded', async () => {
     // 새로 들어온 화이트 스니커즈(s6·s7)를 빼서, 한도를 넘는 s3가 대안 후보에 남게 한다
     const h = setup('화이트 스니커즈 한 켤레', 'cart-only', { before: (s) => { s.setStock('s6', 0); s.setStock('s7', 0); } });
     await sellOut(h);
@@ -137,7 +137,7 @@ describe('S3 재고 변동·한도 (시장이 store를 실제로 바꾼다)', ()
   });
 });
 
-describe('Action Audit / 되돌리기', () => {
+describe('[R7] Action Audit / 되돌리기', () => {
   it('결제 전 되돌리면 store에서 빠지고, 비면 게이트가 종료된다', async () => {
     const { store, agent, events, until } = setup('검정 울 코트, 20만원 이하');
     await until((e) => e.type === 'payment_gate');
@@ -174,7 +174,7 @@ describe('Action Audit / 되돌리기', () => {
   });
 });
 
-describe('낡은 승인 방지 (Stale Approval)', () => {
+describe('[R4] 낡은 승인 방지 (Stale Approval)', () => {
   it('승인받는 화면에 가격이 보인다', async () => {
     const { events, until } = setup('검정 울 코트, 20만원 이하', 'cart-only');
     await until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
@@ -206,7 +206,7 @@ describe('낡은 승인 방지 (Stale Approval)', () => {
     expect(last(events, 'result')?.status).toBe('cancelled');
     expect(store.getState().cart).toHaveLength(0);
   });
-  it('승인 단계가 없는 Dial=auto에서는 낡을 승인이 없으므로 묻지 않고, 담는 순간의 가격을 기록한다', async () => {
+  it('[R2] 승인 단계가 없는 Dial=auto에서는 낡을 승인이 없으므로 묻지 않고, 담는 순간의 가격을 기록한다', async () => {
     const { store, events, until } = setup('검정 울 코트, 20만원 이하', 'auto', { before: (s) => s.setPrice('c1', 199000) });
     await until((e) => e.type === 'payment_gate');
     expect(events.some((e) => e.type === 'needs_input')).toBe(false);
@@ -214,7 +214,7 @@ describe('낡은 승인 방지 (Stale Approval)', () => {
   });
 });
 
-describe('다중 상품 + 합계 예산', () => {
+describe('[R3] 다중 상품 + 합계 예산', () => {
   const REQ = '검정 울 코트 20만원 이하랑 검정 가죽 로퍼, 합쳐서 35만원';
   const answerUntilBudget = async (h: ReturnType<typeof setup>) => {
     await h.until((e) => e.type === 'needs_input' && e.id === 'q-pick-i2');
@@ -258,7 +258,7 @@ describe('다중 상품 + 합계 예산', () => {
   });
 });
 
-describe('거절 사유 되먹임', () => {
+describe('[R5] 거절 사유 되먹임', () => {
   const rejectAtCart = async () => {
     const h = setup('검정 울 코트, 20만원 이하', 'cart-only');
     await h.until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
@@ -311,7 +311,7 @@ describe('거절 사유 되먹임', () => {
   });
 });
 
-describe('사이즈', () => {
+describe('[R5] 사이즈', () => {
   const noSizes = (request: string, dial: Dial = 'auto', before?: (s: ReturnType<typeof createStore>) => void) => {
     const store = createStore();
     before?.(store);
@@ -365,7 +365,7 @@ describe('사이즈', () => {
     expect(cart.every((l) => l.size === '260')).toBe(true);
   });
 
-  it('승인 대기 중에 그 사이즈만 팔려도 다른 사이즈를 다시 묻는다', async () => {
+  it('[R4] 승인 대기 중에 그 사이즈만 팔려도 다른 사이즈를 다시 묻는다', async () => {
     const h = setup('검정 울 코트, 20만원 이하', 'cart-only');
     await h.until((e) => e.type === 'tool_call' && e.status === 'awaiting-approval');
     h.store.setSizeStock('c1', 'M', 0);
@@ -403,7 +403,7 @@ describe('사이즈', () => {
   });
 });
 
-describe('판매처·배송', () => {
+describe('[R8] 판매처·배송', () => {
   // 2026-10-06(화) 10:00 — 공식몰은 목요일, 선반·대로몰은 내일(수) 도착
   const TUE = new Date(2026, 9, 6, 10, 0).getTime();
 
@@ -486,7 +486,7 @@ describe('판매처·배송', () => {
     expect(new Set(h.store.getState().cart.map((l) => l.sellerId)).size).toBe(1);
   });
 
-  it('결제를 승인하면 판매처마다 주문이 하나씩 생긴다', async () => {
+  it('[R1] 결제를 승인하면 판매처마다 주문이 하나씩 생긴다', async () => {
     const h = setup('검정 울 코트랑 셔츠', 'auto', { now: TUE });
     let lastQ = '';
     for (let i = 0; i < 400 && !h.events.some((e) => e.type === 'payment_gate'); i++) {
@@ -504,7 +504,7 @@ describe('판매처·배송', () => {
   });
 });
 
-describe('결제 직전 재확인', () => {
+describe('[R4] 결제 직전 재확인', () => {
   it('결제 게이트에서 판매처 가격이 바뀌면 결제하지 않고 다시 묻고, 새 금액으로 다시 승인받는다', async () => {
     const h = setup('검정 울 코트, 20만원 이하');
     await h.until((e) => e.type === 'payment_gate');
@@ -520,7 +520,7 @@ describe('결제 직전 재확인', () => {
     expect(last(h.events, 'result')!.status).toBe('done');
     expect(h.store.getState().orders[0].total).toBe(199000);
   });
-  it('중단을 고르면 아무것도 결제되지 않는다', async () => {
+  it('[R1] 중단을 고르면 아무것도 결제되지 않는다', async () => {
     const h = setup('검정 울 코트, 20만원 이하');
     await h.until((e) => e.type === 'payment_gate');
     h.store.setPrice('c1', 199000);

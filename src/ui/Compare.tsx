@@ -8,6 +8,7 @@ import { C, LEVEL, SV, SZ, money, t } from './copy';
 import { arrivalLabel } from '../store/sellers';
 import { ConfRing } from './ConfRing';
 import { Mark } from './Mark';
+import { RuleMark } from './Review';
 
 const X = {
   title: { ko: '후보 비교', en: 'Compare' } satisfies L,
@@ -59,6 +60,7 @@ export function Compare({ lang, store, state, onPick, onClose }: Props) {
           <div>
             <h2>{t(X.title, lang)}</h2>
             <p>{t(X.sub, lang)}</p>
+            <RuleMark ids={['R5', 'R6']} lang={lang} />
           </div>
           <button className="btn sm" onClick={onClose} disabled={!!chosen}>{t(C.close, lang)}</button>
         </header>

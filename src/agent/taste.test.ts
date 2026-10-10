@@ -24,7 +24,7 @@ function run(request: string, style?: StyleProfile) {
 }
 const searched = (e: AgentEvent) => e.type === 'tool_call' && e.tool === 'search' && e.status === 'done';
 
-describe('내 스타일: 필터가 아니라 가산점', () => {
+describe('[R9] 내 스타일: 필터가 아니라 가산점', () => {
   it('같은 요청이라도 무드가 맞는 상품이 앞으로 온다', async () => {
     const plain = run('셔츠');
     await plain.until(searched);
@@ -44,7 +44,7 @@ describe('내 스타일: 필터가 아니라 가산점', () => {
     expect(h.reason('sh1')).toContain('피하는 색(화이트)');
   });
 
-  it('취향은 확신도를 올리지 않는다 (확신도는 요청 일치도로만)', async () => {
+  it('[R6] 취향은 확신도를 올리지 않는다 (확신도는 요청 일치도로만)', async () => {
     const a = run('블랙 셔츠');
     const b = run('블랙 셔츠', profile({ moods: ['formal'], likeColors: ['black'] }));
     await a.until(searched); await b.until(searched);
@@ -53,7 +53,7 @@ describe('내 스타일: 필터가 아니라 가산점', () => {
   });
 });
 
-describe('요청이 프로필보다 우선한다', () => {
+describe('[R9] 요청이 프로필보다 우선한다', () => {
   it('요청에 스타일이 있으면 무드 가산점을 끄고 칩에 "요청 우선"', async () => {
     const h = run('캐주얼 셔츠', profile({ moods: ['minimal'] }));
     await h.until(searched);
@@ -84,7 +84,7 @@ describe('요청이 프로필보다 우선한다', () => {
   });
 });
 
-describe('피하는 소재는 후보에서 빼고 기록한다', () => {
+describe('[R9] 피하는 소재는 후보에서 빼고 기록한다', () => {
   it('울을 피하면 울 혼방도 빼고, 몇 개 뺐는지 남긴다', async () => {
     const h = run('코트', profile({ avoidMaterials: ['wool'] }));
     await h.until(searched);

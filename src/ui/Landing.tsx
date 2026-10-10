@@ -1,7 +1,8 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { Dial, Lang } from '../engine/types';
 import { buildCatalog } from '../store/catalog';
 import { photoUrl } from '../store/photos';
+import { RULES, RULE_TESTS } from '../rules';
 import { DIAL, money, t } from './copy';
 import { HeroPicks } from './HeroPicks';
 import { LAND, APPROVES } from './landCopy';
@@ -90,6 +91,17 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
   const r2 = useReveal<HTMLDivElement>();
   const r3 = useReveal<HTMLDivElement>();
   const r4 = useReveal<HTMLDivElement>();
+  // 앱의 규칙 칩에서 #/playbook으로 오면 플레이북으로 바로 내려간다
+  useEffect(() => {
+    let id = 0;
+    const go = () => {
+      if (location.hash !== '#/playbook') return;
+      id = window.setTimeout(() => document.getElementById('playbook')?.scrollIntoView({ behavior: 'auto' }), 60);
+    };
+    go();
+    window.addEventListener('hashchange', go);
+    return () => { window.clearTimeout(id); window.removeEventListener('hashchange', go); };
+  }, []);
   const nav = (id: string) => t(LAND.nav.find((n) => n.id === id)!.l, lang);
 
   return (
@@ -124,6 +136,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
             <div className="hero-actions">
               <Cta lang={lang} />
               <a className="link" href="#agent" onClick={goTo('agent')}>{t(LAND.how, lang)}</a>
+              <a className="link" href="#playbook" onClick={goTo('playbook')}>{t(LAND.playLink, lang)}</a>
             </div>
           </div>
           <ol className="look">
@@ -204,18 +217,26 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
         </div>
       </section>
 
-      <section className="sec" id="trust">
+      <section className="sec" id="playbook">
         <div className="sec-in" ref={r3}>
-          <Head n="04" label={nav('trust')} title={t(LAND.trustTitle, lang)} />
-          <ol className="trust rv">
-            {LAND.trust.map((x, i) => (
-              <li key={i}>
-                <span className="num">{String(i + 1).padStart(2, '0')}</span>
-                <h3>{t(x.t, lang)}</h3>
-                <p>{t(x.d, lang)}</p>
+          <Head n="04" label={nav('playbook')} title={t(LAND.playTitle, lang)} sub={t(LAND.playSub, lang)} />
+          <ol className="play rv">
+            {RULES.map((r) => (
+              <li key={r.id}>
+                <p className="play-id"><span className="num">{r.id}</span><span className="play-tests">{LAND.playTests[lang](RULE_TESTS[r.id])}</span></p>
+                <h3>{t(r.name, lang)}</h3>
+                <p className="play-rule">{t(r.rule, lang)}</p>
+                <dl>
+                  <div><dt>{t(LAND.playWithout, lang)}</dt><dd>{t(r.problem, lang)}</dd></div>
+                  <div><dt>{t(LAND.playWhere, lang)}</dt><dd>{t(r.where, lang)}</dd></div>
+                </dl>
               </li>
             ))}
           </ol>
+          <div className="play-foot rv">
+            <a className="btn" href="#/app?review=1">{t(LAND.playOpen, lang)}</a>
+            <p className="note">{t(LAND.playNote, lang)}</p>
+          </div>
         </div>
       </section>
 

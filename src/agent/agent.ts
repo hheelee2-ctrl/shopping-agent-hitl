@@ -313,7 +313,7 @@ export class RuleAgent implements AgentAdapter {
       const said = issues.map((x) => {
         const n = this.store.getProduct(x.productId)!.name;
         return x.kind === 'price'
-          ? { ko: `${n.ko} ${won(x.from).ko}에서 ${won(x.to).ko}로`, en: `${n.en} ${won(x.from).en} to ${won(x.to).en}` }
+          ? { ko: `${n.ko} ${won(x.from).ko}에서 ${won(x.to).ko}으로`, en: `${n.en} ${won(x.from).en} to ${won(x.to).en}` }
           : x.left === 0
             ? { ko: `${n.ko} 품절`, en: `${n.en} sold out` }
             : { ko: `${n.ko} ${x.left}개만 남음`, en: `${n.en}: only ${x.left} left` };
@@ -337,7 +337,7 @@ export class RuleAgent implements AgentAdapter {
       this.emit({
         type: 'tool_call', id: `t-refresh${round}`, tool: 'pay', status: 'done',
         label: { ko: '장바구니를 지금 조건으로 고침', en: 'Cart updated to current terms' },
-        note: { ko: `합계 ${won(before).ko}에서 ${won(this.store.cartTotal()).ko}로`, en: `Total ${won(before).en} to ${won(this.store.cartTotal()).en}` },
+        note: { ko: `합계 ${won(before).ko}에서 ${won(this.store.cartTotal()).ko}으로`, en: `Total ${won(before).en} to ${won(this.store.cartTotal()).en}` },
       });
     }
     // 결제는 한 번에 끝내지 않고 단계마다 보여준다: 결제 승인 → 판매처별 주문 접수 → 주문 확인
@@ -555,7 +555,7 @@ export class RuleAgent implements AgentAdapter {
           this.emit({
             type: 'needs_input', id: `q-budget${attempt}${sfx}`,
             question: {
-              ko: `${name(pick).ko}을(를) 담으면 합계가 ${won(have + price).ko}로 예산 ${won(ctx.budget).ko}보다 ${won(over).ko} 넘어요.`,
+              ko: `${name(pick).ko}을(를) 담으면 합계가 ${won(have + price).ko}으로 예산 ${won(ctx.budget).ko}보다 ${won(over).ko} 넘어요.`,
               en: `Adding ${name(pick).en} brings the total to ${won(have + price).en}, ${won(over).en} over your ${won(ctx.budget).en} budget.`,
             },
             options: [
@@ -754,7 +754,7 @@ export class RuleAgent implements AgentAdapter {
       if (gated && now !== seen) {
         this.emit({
           type: 'tool_call', id: tid, tool: 'cart_add', label: clabel, status: 'failed', itemIds: [pick.product.id],
-          note: { ko: `승인하신 ${won(seen).ko}에서 ${won(now).ko}로 바뀌어 담지 않았어요`, en: `Price changed from ${won(seen).en} to ${won(now).en} after your approval — not added` },
+          note: { ko: `승인하신 ${won(seen).ko}에서 ${won(now).ko}으로 바뀌어 담지 않았어요`, en: `Price changed from ${won(seen).en} to ${won(now).en} after your approval — not added` },
         });
         this.emit({
           type: 'needs_input', id: `q-stale${attempt}${sfx}`,
@@ -835,7 +835,7 @@ export class RuleAgent implements AgentAdapter {
     const sticker = [...domestic].sort((a, b) => a.offer.price - b.offer.price)[0];
     if (sticker && sticker.offer.sellerId !== chosen.offer.sellerId && sticker.offer.price < chosen.offer.price && sticker.landed > chosen.landed) {
       parts.push({
-        ko: `표시가는 ${sticker.seller.name.ko}가 ${won(sticker.offer.price).ko}로 가장 낮지만, 배송비를 더하면 ${chosen.seller.name.ko}가 ${won(sticker.landed - chosen.landed).ko} 덜 들어요`,
+        ko: `표시가는 ${sticker.seller.name.ko}가 ${won(sticker.offer.price).ko}으로 가장 낮지만, 배송비를 더하면 ${chosen.seller.name.ko}가 ${won(sticker.landed - chosen.landed).ko} 덜 들어요`,
         en: `${sticker.seller.name.en} lists the lowest price (${won(sticker.offer.price).en}), but with shipping ${chosen.seller.name.en} costs ${won(sticker.landed - chosen.landed).en} less`,
       });
     } else if (c.deliverBy && domestic[0] && domestic[0].offer.sellerId !== chosen.offer.sellerId) {

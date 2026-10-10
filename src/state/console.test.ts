@@ -33,7 +33,7 @@ describe('phase 전이', () => {
   });
 });
 
-describe('log / undo', () => {
+describe('[R7] log / undo', () => {
   const cart: AgentEvent = { type: 'tool_call', id: 't3', tool: 'cart_add', label: L('c'), status: 'done', itemIds: ['c1'], undoable: true };
   it('같은 id의 tool_call은 같은 로그 항목을 갱신한다', () => {
     const s = run([
