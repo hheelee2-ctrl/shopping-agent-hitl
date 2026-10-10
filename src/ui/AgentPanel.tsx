@@ -12,6 +12,8 @@ import { Seg } from './Seg';
 import { Mark } from './Mark';
 import { PriceBars, SellerBadge } from './Sellers';
 import { SizeProfileEditor } from './SizeProfile';
+import { LimitSlider } from './LimitSlider';
+import { savePrefs } from './prefs';
 import { StyleProfileEditor } from './StyleProfile';
 import type { Frame } from '../state/timeline';
 import { C, DIAL, PHASE, SUGGEST, SV, SZ, TH, money, t } from './copy';
@@ -49,7 +51,6 @@ interface Props {
   onCursor: (i: number | null) => void;
 }
 
-const LIMITS = [200000, 300000, 500000];
 
 /** 계획 단계가 지금 어디까지 왔는지: 끝남 / 진행 중 / 아직 */
 function stepState(tool: string, log: LogEntry[], phase: Phase): 'done' | 'now' | '' {
@@ -76,7 +77,22 @@ export function AgentPanel(p: Props) {
   const pendingCart = log.find((l) => l.tool === 'cart_add' && l.status === 'awaiting-approval');
   const panel = useRef<HTMLElement>(null);
   const field = useRef<HTMLTextAreaElement>(null);
-  const [openSet, setOpenSet] = useState(false);
+  // 설정은 초안으로 고치고 '설정 저장'에서 한 번에 반영한다. 닫거나 취소하면 초안은 버린다.
+  type Draft = { dial: Dial; limit: number; sizes: SizeProfile; style: StyleProfile };
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
+  const openSet = draft !== null;
+  const current: Draft = { dial: p.dial, limit: p.limit, sizes: p.sizes, style: p.style };
+  const dirty = !!draft && JSON.stringify(draft) !== JSON.stringify(current);
+  const toggleSet = () => { setJustSaved(false); setDraft((d) => (d ? null : current)); };
+  const edit = (patch: Partial<Draft>) => { setJustSaved(false); setDraft((d) => (d ? { ...d, ...patch } : d)); };
+  const saveSet = () => {
+    if (!draft) return;
+    p.onDial(draft.dial); p.onLimit(draft.limit); p.onSizes(draft.sizes); p.onStyle(draft.style);
+    savePrefs({ dial: draft.dial, limit: draft.limit });
+    setJustSaved(true);
+    window.setTimeout(() => { setDraft(null); setJustSaved(false); }, 900);
+  };
   const [moreSg, setMoreSg] = useState(false);
   // 모바일에서는 바텀 시트. 접힌 상태에서도 입력창과 현재 상태는 항상 보인다.
   const [open, setOpen] = useState(false);
@@ -114,32 +130,38 @@ export function AgentPanel(p: Props) {
           <h1>{t(TH.title, lang)}</h1>
           <span className={`phase ${dotClass(phase)}`}><Mark size={10} phase={dotClass(phase) === "live" ? "busy" : dotClass(phase) === "ok" ? "done" : "idle"} />{t(PHASE[phase], lang)}</span>
         </div>
-        <button className="settings-sum" aria-expanded={openSet} onClick={() => setOpenSet((o) => !o)} disabled={p.running}>
+        <button className="settings-sum" aria-expanded={openSet} onClick={toggleSet} disabled={p.running}>
           <span>{t(DIAL[p.dial], lang)}</span>
           <span>{TH.limitOf[lang](money(p.limit, lang))}</span>
           <span>{sizeSum}</span>
         </button>
-        {openSet && !p.running && (
+        {draft && !p.running && (
           <div className="settings">
-            <div>
-              <p className="label">{t(C.dial, lang)}</p>
-              <Seg options={(Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }))} value={p.dial} onChange={p.onDial} label={t(C.dial, lang)} />
+            <div className="settings-body">
+              <div>
+                <p className="label">{t(C.dial, lang)}</p>
+                <Seg options={(Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }))} value={draft.dial} onChange={(dial) => edit({ dial })} label={t(C.dial, lang)} />
+              </div>
+              <div>
+                <p className="label">{t(C.limit, lang)}</p>
+                <LimitSlider value={draft.limit} onChange={(limit) => edit({ limit })} lang={lang} label={t(C.limit, lang)} />
+                <p className="note">{t(TH.limitNote, lang)} {t(C.dialNote, lang)}</p>
+              </div>
+              <div>
+                <p className="label">{t(SZ.title, lang)}</p>
+                <SizeProfileEditor lang={lang} value={draft.sizes} onChange={(sizes) => edit({ sizes })} />
+              </div>
+              <div>
+                <StyleProfileEditor lang={lang} value={draft.style} onChange={(style) => edit({ style })} />
+              </div>
             </div>
-            <div>
-              <p className="label">{t(C.limit, lang)}</p>
-              <Seg options={LIMITS.map((n) => ({ value: n, label: money(n, lang).replace('KRW ', '') }))} value={p.limit} onChange={p.onLimit} label={t(C.limit, lang)} />
-              <p className="note">{t(C.dialNote, lang)}</p>
-            </div>
-            <div>
-              <p className="label">{t(SZ.title, lang)}</p>
-              <SizeProfileEditor lang={lang} value={p.sizes} onChange={p.onSizes} />
-            </div>
-            <div>
-              <StyleProfileEditor lang={lang} value={p.style} onChange={p.onStyle} />
-            </div>
-            <div className="row">
-              <button className="btn sm" onClick={() => setOpenSet(false)}>{t(TH.done, lang)}</button>
-              <button className="btn sm ghost" onClick={p.onReset} title={t(C.resetNote, lang)}>{t(C.reset, lang)}</button>
+            <div className="settings-foot">
+              <p className="note" aria-live="polite">{justSaved ? t(TH.saved, lang) : dirty ? t(TH.unsaved, lang) : t(TH.saveHint, lang)}</p>
+              <div className="row">
+                <button className="btn sm ghost" onClick={p.onReset} title={t(C.resetNote, lang)}>{t(C.reset, lang)}</button>
+                <button className="btn sm" onClick={toggleSet}>{t(dirty ? TH.cancel : TH.done, lang)}</button>
+                <button className={`btn sm primary ${justSaved ? 'ok' : ''}`} onClick={saveSet} disabled={!dirty || justSaved}>{t(justSaved ? TH.savedShort : TH.save, lang)}</button>
+              </div>
             </div>
           </div>
         )}

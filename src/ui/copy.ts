@@ -140,6 +140,13 @@ export const SV = {
 
 /** 에이전트 스레드 문구 */
 export const TH = {
+  save: { ko: '설정 저장', en: 'Save settings' },
+  savedShort: { ko: '저장됨', en: 'Saved' },
+  saved: { ko: '저장했어요. 다음 요청부터 적용돼요.', en: 'Saved. Applies from your next request.' },
+  unsaved: { ko: '저장하지 않은 변경이 있어요.', en: 'You have unsaved changes.' },
+  saveHint: { ko: '바꾼 뒤 저장하면 한 번에 적용돼요.', en: 'Changes apply together when you save.' },
+  cancel: { ko: '취소', en: 'Cancel' },
+  limitNote: { ko: '숫자를 눌러 직접 입력할 수 있어요.', en: 'Tap the amount to type it.' },
   byLlm: { ko: 'Claude가 해석', en: 'Read by Claude' },
   byRule: { ko: '규칙으로 해석', en: 'Read by rules' },
   byLlmNote: { ko: '요청을 Claude가 읽고, 쇼핑몰 조건으로 바꿨어요. 담기·결제 전에는 그대로 물어봐요.', en: 'Claude read the request and turned it into shop criteria. It still asks before adding and paying.' },
@@ -216,6 +223,7 @@ export const ST = {
   avoid: { ko: '피하는 색', en: 'Colors I avoid' },
   avoidMat: { ko: '피하는 소재', en: 'Materials I avoid' },
   woolNote: { ko: '울 (혼방 포함)', en: 'Wool (incl. blends)' },
+  moodTitle: { ko: '무드', en: 'Moods' },
   moodMax: { ko: '최대 3개', en: 'Up to 3' },
   next: { ko: '다음', en: 'Next' },
   skip: { ko: '건너뛰기', en: 'Skip' },

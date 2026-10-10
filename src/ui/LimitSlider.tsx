@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Lang } from '../engine/types';
 import { money } from './copy';
 import { Spring, clamp, makeLoop, reducedMotion } from './motion';
@@ -19,6 +19,42 @@ interface Props {
  * 누르는 동안 knob은 포인터를 그대로 따르고, 끝을 넘겨 끌면 트랙이 고무줄처럼 늘어난다.
  * 놓으면 늘어난 만큼이 스프링으로 돌아온다.
  */
+/** 직접 입력할 때의 범위. 슬라이더 범위보다 넓다. */
+export const LIMIT_INPUT_MIN = 10000;
+export const LIMIT_INPUT_MAX = 10000000;
+
+/** 숫자 칸: 누르면 비워지고 지금 금액이 흐리게 보인다. 입력 후 Enter나 다른 곳을 누르면 반영(1,000원 단위, 범위 안으로). 비워 두면 그대로. */
+function LimitInput({ value, onChange, lang, label, disabled }: { value: number; onChange: (n: number) => void; lang: Lang; label: string; disabled?: boolean }) {
+  const [text, setText] = useState<string | null>(null);
+  const shown = value.toLocaleString(lang === 'ko' ? 'ko-KR' : 'en-US');
+  const commit = () => {
+    if (text) {
+      const n = Number(text);
+      if (n > 0) onChange(clamp(Math.round(n / 1000) * 1000, LIMIT_INPUT_MIN, LIMIT_INPUT_MAX));
+    }
+    setText(null);
+  };
+  return (
+    <label className="lim-read mono">
+      <span className="sr-only">{label}</span>
+      {lang === 'en' && <span className="lim-unit">KRW</span>}
+      <input
+        className="lim-in" inputMode="numeric" disabled={disabled} aria-label={label}
+        value={text ?? shown} placeholder={shown}
+        onFocus={() => setText('')}
+        onChange={(e) => setText(e.target.value.replace(/[^\d]/g, '').slice(0, 8))}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          if (e.key === 'Escape') { setText(null); e.currentTarget.blur(); }
+        }}
+        size={Math.max(6, (text || shown).length)}
+      />
+      {lang === 'ko' && <span className="lim-unit">원</span>}
+    </label>
+  );
+}
+
 export function LimitSlider({ value, onChange, lang, label, disabled, min = 100000, max = 1000000, step = 50000 }: Props) {
   const track = useRef<HTMLDivElement>(null);
   const fill = useRef<HTMLDivElement>(null);
@@ -49,7 +85,8 @@ export function LimitSlider({ value, onChange, lang, label, disabled, min = 1000
     eng.current = {
       set(v, drag) {
         dragging = drag;
-        const r = (v - min) / (max - min);
+        // 직접 입력한 값이 슬라이더 범위를 넘으면 끝에 둔다
+        const r = clamp((v - min) / (max - min), 0, 1);
         if (drag || calm) pos.snap(r); else pos.to(r);
         paint(); loop.kick();
       },
@@ -60,7 +97,7 @@ export function LimitSlider({ value, onChange, lang, label, disabled, min = 1000
       },
       release() { dragging = false; stretch.to(0); if (calm) stretch.snap(0); loop.kick(); },
     };
-    pos.snap((val.current - min) / (max - min));
+    pos.snap(clamp((val.current - min) / (max - min), 0, 1));
     paint();
     const ro = new ResizeObserver(() => { paint(); });
     ro.observe(t);
@@ -103,12 +140,12 @@ export function LimitSlider({ value, onChange, lang, label, disabled, min = 1000
     const d = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? step : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? -step : 0;
     if (!d) return;
     e.preventDefault();
-    onChange(clamp(value + d, min, max));
+    onChange(clamp(clamp(value, min, max) + d, min, max));
   };
 
   return (
     <div className={`lim ${disabled ? 'off' : ''}`}>
-      <div className="lim-read mono" aria-live="polite">{money(value, lang)}</div>
+      <LimitInput value={value} onChange={onChange} lang={lang} label={label} disabled={disabled} />
       <div className="lim-hit" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
         <div className="lim-track" ref={track}>
           <div className="lim-fill" ref={fill} />

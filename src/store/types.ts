@@ -1,6 +1,8 @@
 import type { L } from '../engine/types';
 
-export type Category = 'coat' | 'jacket' | 'sneakers' | 'loafers' | 'knit' | 'shirt' | 'pants' | 'bag';
+export type Category =
+  | 'coat' | 'jacket' | 'knit' | 'sweat' | 'tee' | 'shirt' | 'pants' | 'skirt'
+  | 'sneakers' | 'loafers' | 'boots' | 'bag' | 'cap';
 export type Color = 'black' | 'white' | 'navy' | 'beige' | 'gray' | 'brown' | 'khaki' | 'blue';
 export type Material = 'wool' | 'wool-blend' | 'cotton' | 'leather' | 'denim' | 'cashmere' | 'nylon' | 'canvas' | 'polyester';
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
@@ -28,7 +30,7 @@ export const SIZE_COMMON: Record<'top' | 'shoe' | 'bottom', string[]> = {
   bottom: ['28', '30', '32', '34'],
 };
 export const sizeKindOf = (c: Category): SizeKind =>
-  c === 'sneakers' || c === 'loafers' ? 'shoe' : c === 'pants' ? 'bottom' : c === 'bag' ? 'free' : 'top';
+  c === 'sneakers' || c === 'loafers' || c === 'boots' ? 'shoe' : c === 'pants' || c === 'skirt' ? 'bottom' : c === 'bag' || c === 'cap' ? 'free' : 'top';
 
 /**
  * 상품. 실제 가격·재고는 판매처별 오퍼(Offer)에 있고,

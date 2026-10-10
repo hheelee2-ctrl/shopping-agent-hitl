@@ -1,11 +1,11 @@
 # Nod — Shopping Agent HITL Console
 
 에이전트가 쇼핑을 대행할 때 **사람은 어디서 개입해야 하는가**를 다루는 프로토타입.
-목데이터 쇼핑몰(상품 34개) 위에서 사람과 에이전트가 같은 장바구니·재고 state를 조작한다.
+목데이터 쇼핑몰(상품 62개, 13개 종류) 위에서 사람과 에이전트가 같은 장바구니·재고 state를 조작한다.
 실제 결제는 없다. 요청 해석은 API 키가 있으면 Claude가, 없으면 규칙 파서가 한다.
 
 Prototype exploring where a human should step in when an agent shops on their behalf.
-A mock shop (34 products) whose cart and stock are operated by both the person and the agent.
+A mock shop (62 products in 13 categories) whose cart and stock are operated by both the person and the agent.
 No real payment. Request interpretation uses Claude when an API key is set, rule-based otherwise.
 
 **Live:** https://shopping-agent-hitl.vercel.app (`main`에 푸시하면 Vercel이 자동 배포)
@@ -102,6 +102,6 @@ LLM 에이전트는 store의 검색·담기 기능을 tool로 노출하고, 결�
 
 All products, brands and prices are fictional mock data. Photography is from [Unsplash](https://unsplash.com) (free license), product-style shots chosen without visible real-brand logos; they do not depict the fictional products.
 
-Photographers: steph washi, Lisa Anna, Emre ÇOBAN, nkosie MAPHUMULO, Bulbul Ahmed, Alexander Mass, Tobias Tullius, Caio Coelho, philippe wehrli, Robert Richman, Yucel M, The DK Photography, Nikolai Chernichenko, Ervan M Wirawan, Davide Zacchello, Nelibar Shoes, Amirreza Tavassoli, Kateryna Hliznitsova, Sama Hosseini, Shelter, Vooglam Eyewear, Angelina Litvin, tian dayong, farhad chaudhary, TuanAnh Blue, saeed karimi, engin akyurt, Laura Chouette, Brando Makes Branding, Luis Quintero.
+Photographers: steph washi, Lisa Anna, Emre ÇOBAN, Valentina Schick, nkosie MAPHUMULO, Bulbul Ahmed, Alexander Mass, Tobias Tullius, Caio Coelho, philippe wehrli, Robert Richman, Yucel M, The DK Photography, Nikolai Chernichenko, Ervan M Wirawan, Davide Zacchello, Nelibar Shoes, Amirreza Tavassoli, Kateryna Hliznitsova, Sama Hosseini, Shelter, Vooglam Eyewear, Angelina Litvin, tian dayong, farhad chaudhary, TuanAnh Blue, saeed karimi, engin akyurt, Laura Chouette, Brando Makes Branding, Luis Quintero, Filipp Romanovski, Lea Øchel, SJ, Jia Ye, Husien Bisky, Noah Smith, Adrian Maximiliano Arellano, Zac Wolff, Debby Hudson, lilartsy, Mediamodifier, Federico Faccipieri, mockupbee, Md Salman, Or Hakim, Sincerely Media, Fauzan Fathullah, Maryam Nemati, K8, personalgraphic.com, Yang Deng, Benjamin R., Liam Davids.
 
 Color palette: "BEND FORCE" (Warm Paper `#F0E8D8`, Vermilion `#EF5B36`, Deep Indigo `#212A5E`) from [포스터에 바로 적용하는 3색 조합 15가지](https://subsequent-paw-3ac.notion.site/3-15-3edced0d5b028000844ee29895ea0f34), adjusted for contrast.

@@ -113,16 +113,22 @@ export function MaterialPicker({ lang, value, onChange }: { lang: Lang; value: S
   );
 }
 
-/** 에이전트 패널 설정 안에서 쓰는 한 화면 편집기 (사진 없이) */
+/** 에이전트 패널 설정 안에서 쓰는 편집기. 항목이 많아 기본은 접어 두고, 요약 한 줄만 보여준다. */
 export function StyleProfileEditor({ lang, value, onChange }: { lang: Lang; value: StyleProfile; onChange: (v: StyleProfile) => void }) {
   return (
-    <div className="style-ed">
-      <div>
-        <p className="label">{t(ST.title, lang)} <span className="muted">{t(ST.moodMax, lang)}</span></p>
-        <MoodPicker lang={lang} value={value} onChange={onChange} compact />
+    <details className="style-fold">
+      <summary>
+        <span className="label">{t(ST.title, lang)}</span>
+        <span className="style-sum">{styleSummary(value, lang)}</span>
+      </summary>
+      <div className="style-ed">
+        <div>
+          <p className="label">{t(ST.moodTitle, lang)} <span className="muted">{t(ST.moodMax, lang)}</span></p>
+          <MoodPicker lang={lang} value={value} onChange={onChange} compact />
+        </div>
+        <ColorPicker lang={lang} value={value} onChange={onChange} />
+        <MaterialPicker lang={lang} value={value} onChange={onChange} />
       </div>
-      <ColorPicker lang={lang} value={value} onChange={onChange} />
-      <MaterialPicker lang={lang} value={value} onChange={onChange} />
-    </div>
+    </details>
   );
 }

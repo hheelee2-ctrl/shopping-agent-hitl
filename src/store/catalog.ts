@@ -19,6 +19,7 @@ const ROWS: Row[] = [
   ['c3', 'coat', '블랙 롱 코트 (울 혼방)', 'Black Long Coat (Wool Blend)', 'OAKWARD', 189000, 7, ['black'], ['wool-blend'], ['winter'], ['classic', 'minimal']],
   ['c4', 'coat', '캐시미어 더블 코트', 'Cashmere Double Coat', 'ATELIER 9', 428000, 2, ['beige'], ['cashmere'], ['winter'], ['classic', 'formal', 'warm']],
   ['c5', 'coat', '오버핏 울 코트', 'Oversized Wool Coat', 'NOIR LAB', 236000, 5, ['black'], ['wool'], ['winter'], ['casual', 'street']],
+  ['c6', 'coat', '네이비 벨티드 울 코트', 'Navy Belted Wool Coat', 'MAISON ARC', 248000, 3, ['navy'], ['wool'], AW, ['classic', 'formal', 'warm']],
   // jackets
   ['j1', 'jacket', '라이트 쉘 바람막이 자켓', 'Light Shell Windbreaker', 'TRAIL & CO', 129000, 9, ['navy'], ['nylon'], A, ['outdoor', 'casual', 'light']],
   ['j2', 'jacket', '크롭 코튼 블레이저', 'Cropped Cotton Blazer', 'MAISON ARC', 156000, 5, ['beige'], ['cotton'], A, ['formal', 'minimal']],
@@ -26,12 +27,21 @@ const ROWS: Row[] = [
   ['j4', 'jacket', '데님 트러커 자켓', 'Denim Trucker Jacket', 'NOIR LAB', 98000, 12, ['blue'], ['denim'], A, ['casual', 'street']],
   ['j5', 'jacket', '코튼 헌팅 자켓', 'Cotton Hunting Jacket', 'OAKWARD', 142000, 6, ['khaki'], ['cotton'], ['autumn'], ['outdoor', 'classic', 'warm']],
   ['j6', 'jacket', '리넨 블렌드 블레이저', 'Linen-Blend Blazer', 'MAISON ARC', 135000, 4, ['beige'], ['cotton'], ['spring', 'summer'], ['formal', 'classic', 'light']],
+  ['j7', 'jacket', '블랙 레더 라이더 자켓', 'Black Leather Rider Jacket', 'NOIR LAB', 289000, 3, ['black'], ['leather'], A, ['street', 'casual']],
   // sneakers
   ['s1', 'sneakers', '클린 레더 스니커즈 (화이트)', 'Clean Leather Sneakers (White)', 'STRIDE', 119000, 1, ['white'], ['leather'], ALL, ['minimal', 'casual']],
   ['s2', 'sneakers', '캔버스 로우 (화이트)', 'Canvas Low (White)', 'STRIDE', 79000, 14, ['white'], ['canvas'], ALL, ['casual', 'street']],
   ['s3', 'sneakers', '프리미엄 레더 로우 (화이트)', 'Premium Leather Low (White)', 'ATELIER 9', 342000, 2, ['white'], ['leather'], ALL, ['minimal', 'classic']],
   ['s4', 'sneakers', '블랙 러닝 스니커즈', 'Black Running Sneakers', 'TRAIL & CO', 109000, 8, ['black'], ['nylon'], ALL, ['outdoor', 'street', 'light']],
   ['s5', 'sneakers', '그레이 데일리 스니커즈', 'Gray Daily Sneakers', 'STRIDE', 99000, 6, ['gray'], ['canvas'], ALL, ['casual']],
+  ['s6', 'sneakers', '검 솔 화이트 스니커즈', 'Gum-Sole White Sneakers', 'STRIDE', 129000, 7, ['white'], ['leather'], ALL, ['minimal', 'casual']],
+  ['s7', 'sneakers', '트레이너 스니커즈 (화이트·베이지)', 'Trainer Sneakers (White/Beige)', 'ATELIER 9', 189000, 4, ['white', 'beige'], ['leather'], ALL, ['classic', 'minimal']],
+  // boots
+  ['bt1', 'boots', '블랙 첼시 부츠', 'Black Chelsea Boots', 'NOIR LAB', 219000, 4, ['black'], ['leather'], AW, ['minimal', 'formal']],
+  ['bt2', 'boots', '브라운 첼시 부츠', 'Brown Chelsea Boots', 'OAKWARD', 239000, 3, ['brown'], ['leather'], AW, ['classic']],
+  ['bt3', 'boots', '스웨이드 첼시 부츠 (탄)', 'Suede Chelsea Boots (Tan)', 'OAKWARD', 209000, 5, ['brown'], ['leather'], ['autumn'], ['classic', 'casual']],
+  ['bt4', 'boots', '블랙 컴뱃 부츠', 'Black Combat Boots', 'TRAIL & CO', 179000, 6, ['black'], ['leather'], AW, ['street', 'outdoor', 'warm']],
+  ['bt5', 'boots', '브라운 레이스업 부츠', 'Brown Lace-Up Boots', 'TRAIL & CO', 199000, 4, ['brown'], ['leather'], AW, ['outdoor', 'classic']],
   // loafers
   ['l1', 'loafers', '페니 로퍼 (블랙)', 'Penny Loafer (Black)', 'ATELIER 9', 289000, 3, ['black'], ['leather'], ALL, ['classic', 'formal']],
   ['l2', 'loafers', '스웨이드 로퍼 (브라운)', 'Suede Loafer (Brown)', 'OAKWARD', 198000, 4, ['brown'], ['leather'], AW, ['classic', 'casual']],
@@ -41,6 +51,17 @@ const ROWS: Row[] = [
   ['k2', 'knit', '울 블렌드 니트 (네이비)', 'Wool-Blend Knit (Navy)', 'OAKWARD', 118000, 8, ['navy'], ['wool-blend'], AW, ['casual', 'classic', 'warm']],
   ['k3', 'knit', '코튼 케이블 니트 (화이트)', 'Cotton Cable Knit (White)', 'MAISON ARC', 89000, 9, ['white'], ['cotton'], A, ['casual', 'classic']],
   ['k4', 'knit', '블랙 울 터틀넥', 'Black Wool Turtleneck', 'NOIR LAB', 129000, 6, ['black'], ['wool'], ['winter'], ['minimal', 'warm']],
+  ['k5', 'knit', '차콜 울 니트', 'Charcoal Wool Knit', 'NOIR LAB', 139000, 6, ['gray'], ['wool'], AW, ['minimal', 'warm']],
+  ['k6', 'knit', '그레이 울 가디건', 'Gray Wool Cardigan', 'MAISON ARC', 149000, 5, ['gray'], ['wool-blend'], A, ['classic', 'casual']],
+  // sweats
+  ['w1', 'sweat', '화이트 맨투맨', 'White Sweatshirt', 'STRIDE', 59000, 12, ['white'], ['cotton'], A, ['casual', 'minimal']],
+  ['w2', 'sweat', '화이트 후드', 'White Hoodie', 'TRAIL & CO', 69000, 10, ['white'], ['cotton'], A, ['casual', 'street']],
+  ['w3', 'sweat', '그레이 맨투맨', 'Gray Sweatshirt', 'OAKWARD', 55000, 14, ['gray'], ['cotton'], AW, ['casual', 'warm']],
+  // tees
+  ['t1', 'tee', '베이직 화이트 티셔츠', 'Basic White Tee', 'STRIDE', 29000, 20, ['white'], ['cotton'], ['spring', 'summer', 'autumn'], ['minimal', 'casual', 'light']],
+  ['t2', 'tee', '블랙 크루넥 티셔츠', 'Black Crewneck Tee', 'NOIR LAB', 35000, 16, ['black'], ['cotton'], ['spring', 'summer', 'autumn'], ['minimal', 'street']],
+  ['t3', 'tee', '그레이 롱 티셔츠', 'Gray Longline Tee', 'TRAIL & CO', 39000, 12, ['gray'], ['cotton'], ['spring', 'summer'], ['street', 'casual', 'light']],
+  ['t4', 'tee', '스트라이프 티셔츠', 'Striped Tee', 'MAISON ARC', 45000, 10, ['white', 'navy'], ['cotton'], ['spring', 'summer'], ['classic', 'casual']],
   // shirts
   ['sh1', 'shirt', '화이트 옥스포드 셔츠', 'White Oxford Shirt', 'MAISON ARC', 69000, 15, ['white'], ['cotton'], ALL, ['formal', 'classic']],
   ['sh2', 'shirt', '블루 스트라이프 셔츠', 'Blue Stripe Shirt', 'MAISON ARC', 74000, 10, ['blue'], ['cotton'], ['spring', 'summer', 'autumn'], ['casual', 'classic']],
@@ -51,10 +72,22 @@ const ROWS: Row[] = [
   ['pt2', 'pants', '데님 와이드 팬츠', 'Denim Wide Pants', 'NOIR LAB', 89000, 11, ['blue'], ['denim'], ALL, ['street', 'casual']],
   ['pt3', 'pants', '베이지 치노 팬츠', 'Beige Chino Pants', 'OAKWARD', 79000, 9, ['beige'], ['cotton'], A, ['casual', 'minimal']],
   ['pt4', 'pants', '카키 카고 팬츠', 'Khaki Cargo Pants', 'TRAIL & CO', 98000, 6, ['khaki'], ['cotton'], A, ['street', 'outdoor']],
+  // skirts
+  ['sk1', 'skirt', '블랙 플레어 스커트', 'Black Flared Skirt', 'MAISON ARC', 79000, 6, ['black'], ['polyester'], A, ['formal', 'minimal']],
+  ['sk2', 'skirt', '화이트 데님 미니스커트', 'White Denim Mini Skirt', 'NOIR LAB', 69000, 7, ['white'], ['denim'], ['spring', 'summer'], ['casual', 'minimal']],
+  ['sk3', 'skirt', '연청 데님 미니스커트', 'Light Denim Mini Skirt', 'STRIDE', 59000, 8, ['blue'], ['denim'], ['spring', 'summer'], ['casual', 'street']],
   // bags
   ['b1', 'bag', '블랙 레더 토트', 'Black Leather Tote', 'ATELIER 9', 248000, 3, ['black'], ['leather'], ALL, ['formal', 'minimal']],
   ['b2', 'bag', '캔버스 크로스백 (베이지)', 'Canvas Crossbody (Beige)', 'TRAIL & CO', 59000, 12, ['beige'], ['canvas'], ALL, ['casual', 'street']],
   ['b3', 'bag', '나일론 백팩 (블랙)', 'Nylon Backpack (Black)', 'TRAIL & CO', 88000, 9, ['black'], ['nylon'], ALL, ['outdoor', 'street', 'light']],
+  ['b4', 'bag', '브라운 레더 메신저백', 'Brown Leather Messenger', 'OAKWARD', 198000, 3, ['brown'], ['leather'], ALL, ['classic', 'formal']],
+  ['b5', 'bag', '블랙 미니 크로스백', 'Black Mini Crossbody', 'ATELIER 9', 129000, 5, ['black'], ['leather'], ALL, ['minimal', 'street']],
+  ['b6', 'bag', '캔버스 백팩 (화이트)', 'Canvas Backpack (White)', 'TRAIL & CO', 79000, 7, ['white'], ['canvas'], ALL, ['outdoor', 'casual']],
+  // caps
+  ['cp1', 'cap', '화이트 볼캡', 'White Ball Cap', 'STRIDE', 32000, 10, ['white'], ['cotton'], ALL, ['casual', 'minimal']],
+  ['cp2', 'cap', '워싱 차콜 볼캡', 'Washed Charcoal Cap', 'TRAIL & CO', 35000, 9, ['gray'], ['cotton'], ALL, ['street', 'outdoor']],
+  ['cp3', 'cap', '베이지 린넨 캡', 'Beige Linen Cap', 'MAISON ARC', 42000, 6, ['beige'], ['cotton'], ['spring', 'summer'], ['classic', 'casual']],
+  ['cp4', 'cap', '네이비 볼캡', 'Navy Ball Cap', 'OAKWARD', 33000, 8, ['navy'], ['cotton'], ALL, ['casual', 'classic']],
 ];
 
 /** 사이즈 분포의 중심. 처음 채워 두는 내 사이즈와 같고, 어느 판매처든 이 사이즈는 하나 이상 둔다. */

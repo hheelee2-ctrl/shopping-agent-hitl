@@ -32,7 +32,7 @@ Vocabulary (use these ids only):
 - size: one of ${SIZES.join(', ')}. Tops use XS-XXL, shoes use mm (230-290), pants use waist inches (25-36).
 
 Rules:
-- Group words like "아우터"/"outerwear" (coat, jacket), "신발" (sneakers, loafers), "상의" (knit, shirt) go in "categories" with "category" null. A single specific kind goes in "category".
+- Group words like "아우터"/"outerwear" (coat, jacket), "신발" (sneakers, loafers, boots), "상의" (knit, sweat, tee, shirt), "하의" (pants, skirt) go in "categories" with "category" null. A single specific kind goes in "category".
 - Prices are KRW integers. "20만원 이하" means maxPrice 200000. "10만원 이상" means minPrice 100000.
 - Several products in one request ("코트랑 로퍼") become separate items, at most ${MAX_ITEMS}. A total for everything ("합쳐서 35만원") goes in "budget", not maxPrice. With a single item, a total is that item's maxPrice.
 - Delivery deadlines: "금요일까지" is weekday 5 (Sunday 0 ... Saturday 6). "내일까지" is days 1, "오늘" days 0.

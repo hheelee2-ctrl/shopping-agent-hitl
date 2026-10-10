@@ -16,12 +16,17 @@ export const DIM_L: Record<Dim, L> = {
 export const CATEGORY_L: Record<Category, L> = {
   coat: { ko: '코트', en: 'Coats' },
   jacket: { ko: '자켓', en: 'Jackets' },
-  sneakers: { ko: '스니커즈', en: 'Sneakers' },
-  loafers: { ko: '로퍼', en: 'Loafers' },
   knit: { ko: '니트', en: 'Knits' },
+  sweat: { ko: '맨투맨·후드', en: 'Sweats' },
+  tee: { ko: '티셔츠', en: 'T-shirts' },
   shirt: { ko: '셔츠', en: 'Shirts' },
   pants: { ko: '팬츠', en: 'Pants' },
+  skirt: { ko: '스커트', en: 'Skirts' },
+  sneakers: { ko: '스니커즈', en: 'Sneakers' },
+  loafers: { ko: '로퍼', en: 'Loafers' },
+  boots: { ko: '부츠', en: 'Boots' },
   bag: { ko: '가방', en: 'Bags' },
+  cap: { ko: '모자', en: 'Caps' },
 };
 
 export const COLOR_L: Record<Color, L> = {

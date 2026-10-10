@@ -74,6 +74,12 @@ export const REQUESTS: [string, Expect][] = [
   // 여러 상품
   ['블랙 코트랑 갈색 로퍼, 합쳐서 40만원', { items: 2, budget: 400000 }],
   ['니트하고 슬랙스', { items: 2 }],
+  // 새로 들인 종류
+  ['화이트 반팔티 3만원 이하', { category: 'tee', colors: ['white'], maxPrice: 30000 }],
+  ['그레이 후드티 L', { category: 'sweat', colors: ['gray'], size: 'L' }],
+  ['블랙 첼시부츠 270', { category: 'boots', colors: ['black'], size: '270' }],
+  ['데님 치마', { category: 'skirt', materials: ['denim'] }],
+  ['네이비 볼캡', { category: 'cap', colors: ['navy'] }],
   // 영어
   ['white leather sneakers under 150000', { category: 'sneakers', colors: ['white'], materials: ['leather'], maxPrice: 150000 }],
   ['black wool coat size M', { category: 'coat', colors: ['black'], materials: ['wool'], size: 'M' }],
@@ -96,7 +102,7 @@ export const HELD_OUT: [string, Expect][] = [
   ['주말에 신을 캔버스 운동화', { category: 'sneakers', materials: ['canvas'], styles: ['casual'] }],
   ['20만원대 울 코트', { category: 'coat', materials: ['wool'], minPrice: 200000, maxPrice: 300000 }],
   ['토요일까지 받을 수 있는 니트', { category: 'knit', weekday: 6 }],
-  ['그레이 맨투맨 M', { category: 'knit', colors: ['gray'], size: 'M' }],
+  ['그레이 맨투맨 M', { category: 'sweat', colors: ['gray'], size: 'M' }],
   ['베이지 치노 30', { category: 'pants', colors: ['beige'], size: '30' }],
   ['따뜻한 겨울 패딩', { category: 'jacket', seasons: ['winter'], styles: ['warm'] }],
   ['심플한 흰 셔츠 10만원 이하', { category: 'shirt', colors: ['white'], styles: ['minimal'], maxPrice: 100000 }],

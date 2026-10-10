@@ -152,7 +152,15 @@ fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .settings-sum[aria-expanded='true'] span { background: var(--ink); color: var(--on-ink); }
 .settings-sum:disabled { cursor: default; opacity: 0.6; }
 .settings-sum:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: var(--r-md); }
-.settings { display: grid; gap: var(--sp-5); padding: var(--sp-4); border-radius: var(--r-lg); background: var(--surface); box-shadow: 0 0 0 1px var(--line); animation: enter var(--dur) var(--ease) both; }
+.settings { display: flex; flex-direction: column; min-height: 0; border-radius: var(--r-lg); background: var(--surface); box-shadow: 0 0 0 1px var(--line); animation: enter var(--dur) var(--ease) both; overflow: hidden; }
+/* 항목이 많아도 패널 안에서 스크롤되고, 저장 줄은 항상 보인다 */
+.settings-body { display: grid; gap: var(--sp-5); padding: var(--sp-4); overflow-y: auto; overscroll-behavior: contain; max-height: calc(100dvh - 76px - 16px - 280px); scrollbar-width: thin; }
+.settings-foot { display: grid; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-top: 1px solid var(--line); background: var(--surface); }
+.settings-foot .note { margin: 0; font-size: var(--t-xs); color: var(--ink-3); }
+.settings-foot .row { display: flex; gap: var(--sp-2); justify-content: flex-end; }
+.settings-foot .btn.ghost { margin-right: auto; }
+.settings-foot .btn.primary.ok { background: var(--ok); }
+.settings .lim-read { font-size: var(--t-2xl); }
 .thread { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--sp-3); padding-bottom: var(--sp-5); }
 .suggest { display: grid; gap: var(--sp-4); padding-top: 2px; }
 .suggest-t { font-size: var(--t-md); font-weight: var(--w-bold); letter-spacing: var(--tr-ui); }
@@ -327,7 +335,12 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 /* ---- limit slider ---- */
 .lim { display: grid; gap: var(--sp-3); width: 100%; }
 .lim.off { opacity: 0.5; pointer-events: none; }
-.lim-read { font-size: clamp(28px, 4vw, 40px); font-weight: var(--w-medium); letter-spacing: var(--tr-title); font-variant-numeric: tabular-nums; }
+.lim-read { display: inline-flex; align-items: baseline; gap: var(--sp-1); font-size: clamp(28px, 4vw, 40px); font-weight: var(--w-medium); letter-spacing: var(--tr-title); font-variant-numeric: tabular-nums; cursor: text; }
+.lim-in { all: unset; box-sizing: content-box; min-width: 4ch; padding: 0 var(--sp-1); border-radius: var(--r-xs); color: var(--ink); font: inherit; letter-spacing: inherit; box-shadow: inset 0 -2px 0 var(--line-strong); transition: box-shadow var(--dur-fast) var(--ease); }
+.lim-in:hover { box-shadow: inset 0 -2px 0 var(--ink-3); }
+.lim-in:focus { box-shadow: inset 0 -2px 0 var(--ink); background: var(--hover); }
+.lim-in::placeholder { color: var(--ink-3); }
+.lim-unit { font-size: 0.6em; color: var(--ink-2); }
 .lim-hit { position: relative; height: 44px; touch-action: none; cursor: grab; }
 .lim-hit:active { cursor: grabbing; }
 .lim-track { position: absolute; left: 0; right: 0; top: 50%; height: 6px; margin-top: -3px; border-radius: var(--r-pill); background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; will-change: transform; }
@@ -1027,3 +1040,13 @@ button.pb-row:focus-visible { outline: 2px solid var(--brand); }
 .style-ed .muted { color: var(--ink-3); font-weight: var(--w-medium); text-transform: none; letter-spacing: 0; }
 @media (max-width: 520px) { .moods { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (prefers-reduced-motion: reduce) { .moods li, .mood-ck { animation: none; } }
+
+/* 패널의 내 스타일: 기본은 접힘 */
+.style-fold > summary { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--sp-3); cursor: pointer; list-style: none; padding: var(--sp-2) 0; }
+.style-fold > summary::-webkit-details-marker { display: none; }
+.style-fold > summary::after { content: ''; width: 8px; height: 8px; margin-right: var(--sp-1); border-right: 1.5px solid var(--ink-3); border-bottom: 1.5px solid var(--ink-3); transform: rotate(45deg) translateY(-2px); transition: transform var(--dur-fast) var(--ease); }
+.style-fold[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+.style-fold > summary .label { margin: 0; }
+.style-sum { min-width: 0; font-size: var(--t-sm); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.style-fold > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: var(--r-xs); }
+.style-fold[open] .style-ed { padding-top: var(--sp-3); animation: enter var(--dur) var(--ease) both; }

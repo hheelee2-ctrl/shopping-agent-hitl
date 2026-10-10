@@ -125,7 +125,8 @@ describe('S3 재고 변동·한도 (시장이 store를 실제로 바꾼다)', ()
     expect(h.store.getState().cart).toHaveLength(0);
   });
   it('대안이 한도를 넘으면 exceeded', async () => {
-    const h = setup('화이트 스니커즈 한 켤레', 'cart-only');
+    // 새로 들어온 화이트 스니커즈(s6·s7)를 빼서, 한도를 넘는 s3가 대안 후보에 남게 한다
+    const h = setup('화이트 스니커즈 한 켤레', 'cart-only', { before: (s) => { s.setStock('s6', 0); s.setStock('s7', 0); } });
     await sellOut(h);
     await h.until((e) => e.type === 'needs_input' && e.id === 'q-alt1');
     h.agent.answer('s3');
@@ -453,7 +454,8 @@ describe('판매처·배송', () => {
   it('국내 판매처에 없고 해외직구에만 있으면 조건을 보여주고 묻는다', async () => {
     const h = setup('블랙 레더 토트', 'auto', {
       now: TUE,
-      before: (s) => { s.setStock('b1', 0, 'off-atelier9'); s.setStock('b1', 0, 'daero'); },
+      // 같은 조건(블랙·레더 가방)인 b5는 빼서, b1의 해외직구만 남는 상황을 만든다
+      before: (s) => { s.setStock('b1', 0, 'off-atelier9'); s.setStock('b1', 0, 'daero'); s.setStock('b5', 0); },
     });
     await h.until((e) => e.type === 'needs_input');
     const q = last(h.events, 'needs_input')!;

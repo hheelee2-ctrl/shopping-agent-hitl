@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Dial, Lang, SizeProfile, StyleProfile } from '../engine/types';
 import { DEFAULT_LIMIT } from '../store/catalog';
 import { DIAL, ST, SZ, t } from './copy';
+import { loadPrefs, savePrefs } from './prefs';
 import { ColorPicker, EMPTY_STYLE, loadStyle, MaterialPicker, MoodPicker, saveStyle, styleSummary } from './StyleProfile';
 import { SETUP } from './landCopy';
 import { LimitSlider } from './LimitSlider';
@@ -27,8 +28,10 @@ interface Props {
  * 에이전트 실행 전 첫 단계. 확정하면 로고의 원 안에서 호가 돌다가(준비 중) 체크가 들어간 뒤 워크스페이스로 넘어간다.
  */
 export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
-  const [dial, setDial] = useState<Dial>('cart-only');
-  const [limit, setLimit] = useState(DEFAULT_LIMIT);
+  // 자율도·한도는 매번 고르되, 마지막으로 저장한 값에서 시작한다
+  const [prefs] = useState(loadPrefs);
+  const [dial, setDial] = useState<Dial>(prefs.dial ?? 'cart-only');
+  const [limit, setLimit] = useState(prefs.limit ?? DEFAULT_LIMIT);
   // 내 사이즈는 한 번 정하면 저장해 두고 다음에도 쓴다. 자율도·한도는 매번 새로 고른다.
   const [saved] = useState(loadSizes);
   const [sizes, setSizes] = useState<SizeProfile>(saved ?? DEFAULT_SIZES);
@@ -51,6 +54,7 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
     at(() => setPhase('done'), 1200);
     saveSizes(sizes);
     saveStyle(style);
+    savePrefs({ dial, limit });
     at(() => onConfirm({ dial, limit, sizes, style }), 1900);
   };
   const toTop = () => window.scrollTo({ top: 0 });

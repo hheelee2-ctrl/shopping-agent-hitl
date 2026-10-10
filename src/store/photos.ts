@@ -7,7 +7,7 @@ const P: Record<string, Photo> = {
   c1: { id: '1639270601211-9265bafae0f9', by: 'steph washi' },
   c2: { id: '1722858958066-97deb3471c89', by: 'Lisa Anna' },
   c3: { id: '1648458461360-d2e724ac5321', by: 'Emre ÇOBAN' },
-  c4: { id: '1722859031306-4c81e8d83957', by: 'Lisa Anna' },
+  c4: { id: '1680690395101-1b2a56c0ac21', by: 'Valentina Schick' },
   c5: { id: '1658418818804-adc6dc129ac2', by: 'nkosie MAPHUMULO' },
   j1: { id: '1624548140129-74786c5f1279', by: 'Bulbul Ahmed' },
   j2: { id: '1784749615306-10675f31bae2', by: 'Alexander Mass' },
@@ -38,10 +38,39 @@ const P: Record<string, Photo> = {
   b1: { id: '1614179689702-355944cd0918', by: 'Laura Chouette' },
   b2: { id: '1574365569389-a10d488ca3fb', by: 'Brando Makes Branding' },
   b3: { id: '1581605405669-fcdf81165afa', by: 'Luis Quintero' },
+  c6: { id: '1708712107740-28d360d0a30d', by: 'Filipp Romanovski' },
+  j7: { id: '1551028719-00167b16eac5', by: 'Lea Øchel' },
+  s6: { id: '1727061180303-d91cdeca6f9c', by: 'SJ' },
+  s7: { id: '1620989928625-08536e746255', by: 'Ervan M Wirawan' },
+  bt1: { id: '1534233812932-59b8fa1b780c', by: 'Jia Ye' },
+  bt2: { id: '1777987601677-3059be0e1388', by: 'Husien Bisky' },
+  bt3: { id: '1608629601270-a0007becead3', by: 'Noah Smith' },
+  bt4: { id: '1618947085672-1dcb69696c33', by: 'Adrian Maximiliano Arellano' },
+  bt5: { id: '1608256246200-53e635b5b65f', by: 'Zac Wolff' },
+  k5: { id: '1729525293005-2f214e531b4c', by: 'Debby Hudson' },
+  k6: { id: '1579206464424-7e43a81cadc1', by: 'lilartsy' },
+  w1: { id: '1620799140408-edc6dcb6d633', by: 'Mediamodifier' },
+  w2: { id: '1620799140188-3b2a02fd9a77', by: 'Mediamodifier' },
+  w3: { id: '1656991483595-8a11da8d2bde', by: 'Federico Faccipieri' },
+  t1: { id: '1651761179569-4ba2aa054997', by: 'mockupbee' },
+  t2: { id: '1562135291-7728cc647783', by: 'Md Salman' },
+  t3: { id: '1666358062994-a9bab157abf1', by: 'Or Hakim' },
+  t4: { id: '1586084611164-a9accaeab607', by: 'Sincerely Media' },
+  sk1: { id: '1789110853398-539d78dd63bc', by: 'engin akyurt' },
+  sk2: { id: '1789111161052-fa79455e89e9', by: 'engin akyurt' },
+  sk3: { id: '1789111161084-62ead1367853', by: 'engin akyurt' },
+  b4: { id: '1657603738389-951c374b740c', by: 'Fauzan Fathullah' },
+  b5: { id: '1620786514684-ff35b5aae55e', by: 'Maryam Nemati' },
+  b6: { id: '1596273501583-5bdb2c7220d9', by: 'K8' },
+  cp1: { id: '1691256676359-20e5c6d4bc92', by: 'personalgraphic.com' },
+  cp2: { id: '1521369909029-2afed882baee', by: 'Yang Deng' },
+  cp3: { id: '1656166229825-8bb5c3214111', by: 'Benjamin R.' },
+  cp4: { id: '1663280419473-f650ee0fd0b9', by: 'Liam Davids' },
 };
 
-export const photoUrl = (productId: string, w = 640): string | null => {
+/** 카드와 같은 4:5로 잘라 받는다. w는 화면 폭의 2배 기준(레티나). */
+export const photoUrl = (productId: string, w = 720): string | null => {
   const p = P[productId];
-  return p ? `https://images.unsplash.com/photo-${p.id}?auto=format&fit=crop&w=${w}&h=${w}&q=70` : null;
+  return p ? `https://images.unsplash.com/photo-${p.id}?auto=format&fit=crop&w=${w}&h=${Math.round(w * 1.25)}&q=80` : null;
 };
 export const photoCredit = (productId: string): string | null => P[productId]?.by ?? null;

@@ -37,10 +37,10 @@ describe('묶음·동의어 해석', () => {
       expect(c.category).toBeUndefined();
     }
   });
-  it('상의·신발은 여러 종류, 하의·가방은 한 종류로 잡는다', () => {
-    expect(parseRequest('흰 상의').categories).toEqual(['knit', 'shirt']);
-    expect(parseRequest('검정 신발').categories).toEqual(['sneakers', 'loafers']);
-    expect(parseRequest('하의 30사이즈')).toMatchObject({ category: 'pants', size: '30', unknown: [] });
+  it('상의·신발·하의는 여러 종류, 가방은 한 종류로 잡는다', () => {
+    expect(parseRequest('흰 상의').categories).toEqual(['knit', 'sweat', 'tee', 'shirt']);
+    expect(parseRequest('검정 신발').categories).toEqual(['sneakers', 'loafers', 'boots']);
+    expect(parseRequest('하의 30사이즈')).toMatchObject({ categories: ['pants', 'skirt'], size: '30', unknown: [] });
     expect(parseRequest('가방')).toMatchObject({ category: 'bag', unknown: [] });
   });
   it('구체적인 종류가 함께 오면 그쪽을 따른다', () => {
@@ -52,7 +52,7 @@ describe('묶음·동의어 해석', () => {
   it('흔한 동의어는 가장 가까운 종류로 잇는다', () => {
     const cases: [string, string][] = [
       ['점퍼', 'jacket'], ['블루종', 'jacket'], ['패딩', 'jacket'], ['트렌치', 'coat'], ['롱패딩', 'coat'],
-      ['맨투맨', 'knit'], ['슬랙스', 'pants'], ['청바지', 'pants'], ['운동화', 'sneakers'], ['구두', 'loafers'],
+      ['맨투맨', 'sweat'], ['후드티', 'sweat'], ['반팔티', 'tee'], ['치마', 'skirt'], ['첼시부츠', 'boots'], ['볼캡', 'cap'], ['슬랙스', 'pants'], ['청바지', 'pants'], ['운동화', 'sneakers'], ['구두', 'loafers'],
     ];
     for (const [w, cat] of cases) expect(parseRequest(`검정 ${w}`), w).toMatchObject({ category: cat, unknown: [] });
   });

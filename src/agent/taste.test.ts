@@ -90,7 +90,7 @@ describe('피하는 소재는 후보에서 빼고 기록한다', () => {
     await h.until(searched);
     const s = h.search()!;
     expect(s.itemIds).toEqual(['c4']); // 캐시미어만 남는다
-    expect(s.note!.ko).toContain('피하는 소재(울·울 혼방) 4개 제외');
+    expect(s.note!.ko).toContain('피하는 소재(울·울 혼방) 5개 제외');
   });
   it('빼고 나니 남는 게 없으면 묻고, 포함하기로 하면 다시 찾는다', async () => {
     const h = run('로퍼', profile({ avoidMaterials: ['leather'] }));
