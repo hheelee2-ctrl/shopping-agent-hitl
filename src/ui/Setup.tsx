@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Dial, Lang, SizeProfile } from '../engine/types';
+import type { Dial, Lang, SizeProfile, StyleProfile } from '../engine/types';
 import { DEFAULT_LIMIT } from '../store/catalog';
-import { DIAL, SZ, t } from './copy';
+import { DIAL, ST, SZ, t } from './copy';
+import { ColorPicker, EMPTY_STYLE, loadStyle, MaterialPicker, MoodPicker, saveStyle, styleSummary } from './StyleProfile';
 import { SETUP } from './landCopy';
 import { LimitSlider } from './LimitSlider';
 import { Magnetic } from './Magnetic';
@@ -12,7 +13,7 @@ import { Seg } from './Seg';
 import { DEFAULT_SIZES, loadSizes, saveSizes, SizeProfileEditor, sizeSummary } from './SizeProfile';
 import { ThemeButton } from './ThemeButton';
 
-export interface Config { dial: Dial; limit: number; sizes: SizeProfile }
+export interface Config { dial: Dial; limit: number; sizes: SizeProfile; style: StyleProfile }
 
 interface Props {
   lang: Lang;
@@ -32,6 +33,11 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
   const [saved] = useState(loadSizes);
   const [sizes, setSizes] = useState<SizeProfile>(saved ?? DEFAULT_SIZES);
   const [editSizes, setEditSizes] = useState(!saved);
+  // 내 스타일: 처음이면 기본 설정 뒤에 3단계(무드 → 색 → 소재)로 묻고, 저장돼 있으면 요약만 보여준다
+  const [savedStyle] = useState(loadStyle);
+  const [style, setStyle] = useState<StyleProfile>(savedStyle ?? EMPTY_STYLE);
+  const [editStyle, setEditStyle] = useState(!savedStyle);
+  const [stage, setStage] = useState<'base' | 0 | 1 | 2>('base');
   const [phase, setPhase] = useState<MarkPhase>('idle');
   const [leaving, setLeaving] = useState(false);
   const timers = useRef<number[]>([]);
@@ -44,7 +50,21 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
     at(() => setPhase('busy'), 260);
     at(() => setPhase('done'), 1200);
     saveSizes(sizes);
-    at(() => onConfirm({ dial, limit, sizes }), 1900);
+    saveStyle(style);
+    at(() => onConfirm({ dial, limit, sizes, style }), 1900);
+  };
+  const toTop = () => window.scrollTo({ top: 0 });
+  const start = () => { if (editStyle) { setStage(0); toTop(); } else go(); };
+  const nextStep = () => {
+    if (stage === 2) go();
+    else { setStage(((stage as number) + 1) as 1 | 2); toTop(); }
+  };
+  // 건너뛰기: 이번 단계에서 고른 것은 비우고 다음으로
+  const skip = () => {
+    if (stage === 0) setStyle((v) => ({ ...v, moods: [] }));
+    if (stage === 1) setStyle((v) => ({ ...v, likeColors: [], avoidColors: [] }));
+    if (stage === 2) setStyle((v) => ({ ...v, avoidMaterials: [] }));
+    nextStep();
   };
 
   const label = !leaving ? t(SETUP.go, lang) : phase === 'done' ? t(SETUP.ready, lang) : t(SETUP.preparing, lang);
@@ -63,6 +83,7 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
         </div>
       </header>
 
+      {stage === 'base' ? (
       <main className="setup-in">
         <div className="setup-mark"><Wordmark size={64} phase={phase} /></div>
         <h1 className="setup-title"><Rise text={t(SETUP.title, lang)} /></h1>
@@ -98,15 +119,50 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
           )}
         </section>
 
+        {!editStyle && (
+          <section className="setup-block">
+            <p className="label">{t(ST.title, lang)}</p>
+            <div className="sizes-saved">
+              <span>{styleSummary(style, lang)}</span>
+              <button className="link-btn" onClick={() => setEditStyle(true)} disabled={leaving}>{t(SZ.change, lang)}</button>
+            </div>
+          </section>
+        )}
+
         <div className="setup-actions">
           <Magnetic>
-            <button className={`btn primary cta ${phase === 'done' ? 'ok' : ''}`} onClick={go} disabled={leaving}>
-              <span key={`${leaving}-${phase}-${lang}`} className="swap">{label}</span>
+            <button className={`btn primary cta ${phase === 'done' ? 'ok' : ''}`} onClick={start} disabled={leaving}>
+              <span key={`${leaving}-${phase}-${editStyle}-${lang}`} className="swap">{editStyle ? t(ST.next, lang) : label}</span>
             </button>
           </Magnetic>
           <a className="link" href="#/">{t(SETUP.back, lang)}</a>
         </div>
       </main>
+      ) : (
+      <main className="setup-in setup-step" key={stage}>
+        <p className="eyebrow"><span className="num">{t(ST.title, lang)}</span>{ST.stepOf[lang](stage + 1, 3)}</p>
+        <ol className="step-dots" aria-hidden>{[0, 1, 2].map((i) => <li key={i} className={i <= stage ? 'on' : ''} />)}</ol>
+        <h1 className="setup-title"><Rise text={t(ST.steps[stage].t, lang)} /></h1>
+        <p className="sec-sub">{t(ST.steps[stage].d, lang)}</p>
+
+        <section className="setup-block step-body">
+          {stage === 0 && <MoodPicker lang={lang} value={style} onChange={setStyle} />}
+          {stage === 1 && <ColorPicker lang={lang} value={style} onChange={setStyle} />}
+          {stage === 2 && <MaterialPicker lang={lang} value={style} onChange={setStyle} />}
+          <p className="setup-desc">{t(ST.note, lang)}</p>
+        </section>
+
+        <div className="setup-actions">
+          <Magnetic>
+            <button className={`btn primary cta ${phase === 'done' ? 'ok' : ''}`} onClick={nextStep} disabled={leaving}>
+              <span key={`${leaving}-${phase}-${stage}-${lang}`} className="swap">{stage === 2 ? label : t(ST.next, lang)}</span>
+            </button>
+          </Magnetic>
+          <button className="btn ghost" onClick={skip} disabled={leaving}>{t(ST.skip, lang)}</button>
+          <button className="link-btn" onClick={() => { setStage(stage === 0 ? 'base' : ((stage - 1) as 0 | 1)); toTop(); }} disabled={leaving}>{t(ST.prev, lang)}</button>
+        </div>
+      </main>
+      )}
     </div>
   );
 }

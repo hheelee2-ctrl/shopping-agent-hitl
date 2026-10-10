@@ -22,6 +22,7 @@ import { OfferSheet, Shop } from './ui/Shop';
 import type { Config } from './ui/Setup';
 import { ThemeButton } from './ui/ThemeButton';
 import { saveSizes } from './ui/SizeProfile';
+import { saveStyle } from './ui/StyleProfile';
 import { useStore } from './ui/useStore';
 
 interface AppProps {
@@ -70,6 +71,8 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   const [limit, setLimit] = useState(initial.limit);
   const [sizes, setSizes] = useState(initial.sizes);
   useEffect(() => { saveSizes(sizes); }, [sizes]);
+  const [style, setStyle] = useState(initial.style);
+  useEffect(() => { saveStyle(style); }, [style]);
   const [cmpClosed, setCmpClosed] = useState(false);
   const toasts = useToasts();
   const pushToast = toasts.push;
@@ -110,7 +113,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     emit({ type: 'start' }, 'user');
     setAsked(request);
     setRequest('');
-    agent.start({ request, dial, limit, sizes }, (event) => {
+    agent.start({ request, dial, limit, sizes, style }, (event) => {
       emit({ type: 'event', event });
       // 에이전트가 실제로 담은 순간을 사람이 놓치지 않게 알린다
       if (event.type === 'tool_call' && event.tool === 'cart_add' && event.status === 'done' && event.undoable && event.itemIds?.[0]) {
@@ -124,7 +127,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         });
       }
     });
-  }, [agent, request, dial, limit, sizes, emit, store, pushToast, lang, openCart]);
+  }, [agent, request, dial, limit, sizes, style, emit, store, pushToast, lang, openCart]);
 
   const reset = useCallback(() => {
     agent.stop();
@@ -225,7 +228,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         <AgentPanel
           lang={lang} store={store} state={vState} cartIds={cartIds}
           readOnly={replaying} frames={frames} cursor={cursor} onCursor={setCursor}
-          asked={asked} dial={dial} limit={limit} sizes={sizes} onSizes={setSizes} running={running}
+          asked={asked} dial={dial} limit={limit} sizes={sizes} onSizes={setSizes} style={style} onStyle={setStyle} running={running}
           request={request} onRequest={setRequest} onRun={run} onCompare={() => setCmpClosed(false)} onOpen={setSheet}
           onDial={setDial} onLimit={setLimit}
           onReset={reset} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }}

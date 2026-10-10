@@ -1,5 +1,5 @@
 import type { L } from '../engine/types';
-import type { Category, Color, Material, Season, Style } from './types';
+import type { Category, Color, Material, Mood, Season, Style } from './types';
 
 export type Dim = 'category' | 'color' | 'material' | 'season' | 'style' | 'budget' | 'size';
 
@@ -57,7 +57,20 @@ export const SEASON_L: Record<Season, L> = {
 export const STYLE_L: Record<Style, L> = {
   formal: { ko: '단정한', en: 'Formal' },
   casual: { ko: '캐주얼', en: 'Casual' },
+  minimal: { ko: '미니멀', en: 'Minimal' },
+  street: { ko: '스트릿', en: 'Street' },
+  classic: { ko: '클래식', en: 'Classic' },
+  outdoor: { ko: '아웃도어', en: 'Outdoor' },
   light: { ko: '가벼운', en: 'Light' },
   warm: { ko: '따뜻한', en: 'Warm' },
+};
+
+/** '내 스타일' 무드 타일의 짧은 이름 */
+export const MOOD_L: Record<Mood, L> = {
   minimal: { ko: '미니멀', en: 'Minimal' },
+  casual: { ko: '캐주얼', en: 'Casual' },
+  formal: { ko: '포멀', en: 'Formal' },
+  street: { ko: '스트릿', en: 'Street' },
+  classic: { ko: '클래식', en: 'Classic' },
+  outdoor: { ko: '아웃도어', en: 'Outdoor' },
 };

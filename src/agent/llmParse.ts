@@ -36,7 +36,7 @@ Rules:
 - Prices are KRW integers. "20만원 이하" means maxPrice 200000. "10만원 이상" means minPrice 100000.
 - Several products in one request ("코트랑 로퍼") become separate items, at most ${MAX_ITEMS}. A total for everything ("합쳐서 35만원") goes in "budget", not maxPrice. With a single item, a total is that item's maxPrice.
 - Delivery deadlines: "금요일까지" is weekday 5 (Sunday 0 ... Saturday 6). "내일까지" is days 1, "오늘" days 0.
-- Words that matter to the shopper but fit no field (a brand you do not know, "힙한", a pattern) go in "unknown" as the original word. Filler words do not.
+- Words that matter to the shopper but fit no field (a brand you do not know, "키치한", a pattern) go in "unknown" as the original word. Filler words do not.
 - Do not invent preferences. Leave a field empty or null when the request does not say it.`;
 
 // 구조화 출력이 문서로 지원하는 형태(anyOf)로만 null을 허용한다

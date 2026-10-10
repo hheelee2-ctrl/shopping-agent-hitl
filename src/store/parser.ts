@@ -72,6 +72,9 @@ const STYLES: Dict<Style> = [
   ['light', ['가벼운', '가볍', '시원한', '시원', '얇은', 'light']],
   ['warm', ['따뜻', '따숩', '따스', '포근', '보온', '두툼', '도톰', 'warm']],
   ['minimal', ['미니멀', '심플', 'minimal']],
+  ['street', ['스트릿', '스트리트', '힙한', '힙합', '화려한', '화려', 'street', 'hip']],
+  ['classic', ['클래식', '클래시', '트래디셔널', 'classic', 'traditional']],
+  ['outdoor', ['아웃도어', '등산', '캠핑', '트레킹', 'outdoor', 'hiking', 'camping']],
 ];
 
 const STOP = new Set([
@@ -256,6 +259,7 @@ function batchim(word: string): boolean {
 const STYLE_ADJ: Record<Style, L> = {
   formal: { ko: '단정한', en: 'formal' }, casual: { ko: '캐주얼한', en: 'casual' }, light: { ko: '가벼운', en: 'light' },
   warm: { ko: '따뜻한', en: 'warm' }, minimal: { ko: '미니멀한', en: 'minimal' },
+  street: { ko: '스트릿', en: 'street' }, classic: { ko: '클래식한', en: 'classic' }, outdoor: { ko: '아웃도어', en: 'outdoor' },
 };
 const man = (n: number): L => (n % 10000 === 0 ? { ko: `${n / 10000}만원`, en: `KRW ${n.toLocaleString('en-US')}` } : won(n));
 

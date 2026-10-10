@@ -3,6 +3,7 @@ import { CATEGORY_L, COLOR_L } from '../store/labels';
 import { deadlineL, describeCriteria, restate } from '../store/parser';
 import { ruleInterpreter, type InterpretedBy, type Interpreter } from './interpret';
 import { isEligible, reasonOf, searchProducts, type Scored } from '../store/search';
+import { applyProfile, avoided, excludedNote, rankByTaste, tasteChip, tasteOf, tasteReason, type Applied } from '../store/taste';
 import { arrivalLabel, deadlineOf, DUTY_OVER, SELLERS, sellerOf } from '../store/sellers';
 import type { Ranked, Store } from '../store/store';
 import { sizeKindOf, type Category, type Color, type Criteria, type SizeKind } from '../store/types';
@@ -146,12 +147,19 @@ export class RuleAgent implements AgentAdapter {
     const chips = describeCriteria(c);
     const mine = !c.size && this.wantedSize(c);
     if (mine) chips.push({ label: { ko: '사이즈', en: 'Size' }, value: { ko: `${mine} (내 사이즈)`, en: `${mine} (your size)` } });
+    const taste = tasteChip(applyProfile(c, this.opts.style), this.opts.style);
+    if (taste) chips.push(taste);
     return chips;
   }
 
   /** 항목별 조건을 사람이 확인할 칩으로 보여준다. 한 개면 기존 칩 그대로, 여러 개면 항목 단위로 묶는다. */
   private announce(items: Criteria[], budget?: number) {
-    const say = restate({ items, budget }, (c) => ({ size: this.wantedSize(c), mine: !c.size }));
+    const said = restate({ items, budget }, (c) => ({ size: this.wantedSize(c), mine: !c.size }));
+    // 내 스타일이 적용되면 한 마디 덧붙인다 (요청 때문에 꺼졌으면 말하지 않는다)
+    const moods = items.length === 1 ? tasteChip(applyProfile(items[0], this.opts.style), this.opts.style) : null;
+    const say: L = moods && applyProfile(items[0], this.opts.style).moods.length
+      ? { ko: `${said.ko} 내 스타일(${moods.value.ko})에 가까운 걸 먼저 볼게요.`, en: `${said.en} Leaning toward your style (${moods.value.en}).` }
+      : said;
     if (items.length === 1) return this.emit({ type: 'understood', chips: this.chipsOf(items[0]), unknown: items[0].unknown, by: this.by, say });
     const chips = items.map((c, i) => {
       const ds = this.chipsOf(c);
@@ -391,31 +399,65 @@ export class RuleAgent implements AgentAdapter {
     let eligible: Scored[] = [];
     let relaxed = false;
     let sizeOff = false;
+    // 피하는 소재를 빼서 결과가 비면 한 번 묻고, 포함하기로 하면 이번 항목에서는 끈다
+    let avoidOff = false;
+    let taste: Applied = applyProfile(criteria, this.opts.style);
     for (let round = 1; ; round++) {
       const sid = `t-search${round}${sfx}`;
       const slabel = tag({ ko: '상품 검색', en: 'Search products' });
       this.emit({ type: 'tool_call', id: sid, tool: 'search', label: slabel, status: 'running' });
       await d(900);
       if (!ok()) return 'end';
-      const inStock = Object.values(this.store.getState().products).filter(
+      const base = Object.values(this.store.getState().products).filter(
         (p) => p.stock > 0 && !excluded.ids.has(p.id) && !excluded.brands.has(p.brand) && !p.colors.some((c) => excluded.colors.has(c)),
       );
+      taste = applyProfile(criteria, avoidOff ? { ...this.opts.style!, avoidMaterials: [] } : this.opts.style);
+      const inStock = base.filter((p) => !avoided(p, taste));
       const eff = sizeOff ? undefined : this.wantedSize(criteria);
-      const all = searchProducts(inStock, { ...criteria, size: eff });
+      // 순위: 요청 일치도에 내 스타일을 조금 더한다. 확신도·동점 판정은 요청 일치도로만 한다
+      const all = rankByTaste(searchProducts(inStock, { ...criteria, size: eff }), taste);
       eligible = all.filter(isEligible);
-      const near = eligible.filter((s) => eligible[0].score - s.score < TIE_GAP);
+      const best = Math.max(...eligible.map((s) => s.score));
+      const near = eligible.filter((s) => best - s.score < TIE_GAP);
       const tie = new Set(near.length > 1 ? near.map((s) => s.product.id) : []);
       const shown = [...eligible.slice(0, 4), ...all.filter((s) => !isEligible(s)).slice(0, Math.max(0, 4 - eligible.length))];
+      // 요청한 종류 안에서 피하는 소재 때문에 빠진 수 (다른 종류의 상품은 세지 않는다)
+      const dropped = searchProducts(base, { ...criteria, size: eff }).length - all.length;
+      const found: L = { ko: `${all.length}개 중 조건에 맞는 ${eligible.length}개`, en: `${eligible.length} of ${all.length} match` };
+      const ex = dropped > 0 ? excludedNote(dropped, taste) : null;
       this.emit({
         type: 'tool_call', id: sid, tool: 'search', label: slabel, status: 'done', itemIds: shown.map((s) => s.product.id),
-        note: { ko: `${all.length}개 중 조건에 맞는 ${eligible.length}개`, en: `${eligible.length} of ${all.length} match` },
+        note: ex ? { ko: `${found.ko} · ${ex.ko}`, en: `${found.en} · ${ex.en}` } : found,
       });
       for (const s of shown) {
         await d(180);
         if (!ok()) return 'end';
-        this.emit({ type: 'confidence', itemId: s.product.id, level: this.levelOf(s, tie), reason: reasonOf(s) });
+        const why = reasonOf(s);
+        const tr = tasteReason(tasteOf(s.product, taste));
+        this.emit({ type: 'confidence', itemId: s.product.id, level: this.levelOf(s, tie), reason: tr ? { ko: `${why.ko}, ${tr.ko}`, en: `${why.en}, ${tr.en}` } : why });
       }
       if (eligible.length > 0) break;
+
+      // 피하는 소재를 빼서 비었으면, 포함해서 볼지 묻는다 (한 번만)
+      if (!avoidOff && dropped > 0 && searchProducts(base, { ...criteria, size: eff }).some(isEligible)) {
+        const ex2 = excludedNote(dropped, taste);
+        this.emit({
+          type: 'needs_input', id: `q-avoid${sfx}`,
+          question: { ko: `${ex2.ko}하니 맞는 상품이 없어요. 피하는 소재도 포함해서 볼까요?`, en: `Nothing is left after: ${ex2.en}. Include those materials?` },
+          options: [
+            { id: 'include', label: { ko: '이번만 포함해서 보기', en: 'Include this time' } },
+            { id: 'stop', label: { ko: '중단', en: 'Stop' } },
+          ],
+        });
+        const a = await this.wait();
+        if (!ok()) return 'end';
+        if (a !== 'include') {
+          this.finish('cancelled', { ko: '피하는 소재를 빼고 나니 맞는 상품이 없어 중단했어요.', en: 'Stopped — nothing left without the materials you avoid.' });
+          return 'end';
+        }
+        avoidOff = true;
+        continue;
+      }
 
       // 사이즈 때문에 비었으면 사이즈 조건을 풀지 묻는다 (한 번만)
       if (!sizeOff && eff && searchProducts(inStock, { ...criteria, size: undefined }).some(isEligible)) {
@@ -468,14 +510,18 @@ export class RuleAgent implements AgentAdapter {
     await d(800);
     if (!ok()) return 'end';
     const top = eligible[0];
-    const tied = eligible.length > 1 && top.score - eligible[1].score < TIE_GAP;
+    // 내 스타일로 순서가 바뀌었을 수 있으므로 두 후보의 요청 일치도 차이를 양쪽으로 본다
+    const tied = eligible.length > 1 && Math.abs(top.score - eligible[1].score) < TIE_GAP;
+    const liked = tasteOf(top.product, taste).pref > 0;
     const unsure = top.score < MEDIUM;
     const needsHuman = tied || unsure;
     this.emit({
       type: 'tool_call', id: cid, tool: 'compare', label: clab, status: 'done',
       note: needsHuman
         ? { ko: tied ? '상위 후보의 차이가 작아 확신할 수 없어요' : '조건 일치도가 낮아 확신할 수 없어요', en: tied ? 'Top candidates are too close to call' : 'Match is too weak to be sure' }
-        : { ko: `조건 일치도가 가장 높은 ${name(top).ko} 추천`, en: `Recommending ${name(top).en} — best match` },
+        : liked
+          ? { ko: `조건에 맞고 내 스타일에 가까운 ${name(top).ko} 추천`, en: `Recommending ${name(top).en} — matches and fits your style` }
+          : { ko: `조건 일치도가 가장 높은 ${name(top).ko} 추천`, en: `Recommending ${name(top).en} — best match` },
     });
 
     let pick = top;

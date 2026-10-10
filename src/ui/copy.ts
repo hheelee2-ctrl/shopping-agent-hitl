@@ -204,6 +204,27 @@ export const SZ = {
   change: { ko: '변경', en: 'Change' },
 } as const;
 
+/** 내 스타일 */
+export const ST = {
+  title: { ko: '내 스타일', en: 'My style' },
+  steps: [
+    { t: { ko: '어떤 무드를 좋아하세요?', en: 'Which moods do you like?' }, d: { ko: '2~3개를 고르면 후보를 고를 때 참고해요. 거르지는 않아요.', en: 'Pick 2 or 3. The agent leans toward them; nothing is filtered out.' } },
+    { t: { ko: '자주 입는 색과 피하는 색', en: 'Colors you wear and avoid' }, d: { ko: '자주 입는 색은 앞으로, 피하는 색은 뒤로 보내요.', en: 'Colors you wear move up; colors you avoid move down.' } },
+    { t: { ko: '피하는 소재가 있나요?', en: 'Any materials to avoid?' }, d: { ko: '고른 소재는 후보에서 빼고, 뺐다는 걸 기록에 남겨요.', en: 'These are left out of candidates, and the log says so.' } },
+  ] satisfies { t: L; d: L }[],
+  like: { ko: '자주 입는 색', en: 'Colors I wear' },
+  avoid: { ko: '피하는 색', en: 'Colors I avoid' },
+  avoidMat: { ko: '피하는 소재', en: 'Materials I avoid' },
+  woolNote: { ko: '울 (혼방 포함)', en: 'Wool (incl. blends)' },
+  moodMax: { ko: '최대 3개', en: 'Up to 3' },
+  next: { ko: '다음', en: 'Next' },
+  skip: { ko: '건너뛰기', en: 'Skip' },
+  prev: { ko: '이전', en: 'Back' },
+  stepOf: { ko: (i: number, n: number) => `${i} / ${n}`, en: (i: number, n: number) => `${i} of ${n}` },
+  empty: { ko: '정하지 않음', en: 'Not set' },
+  note: { ko: '요청에 적은 조건이 항상 먼저예요. 이 기기에 저장해요.', en: 'What you ask for always comes first. Saved on this device.' },
+} as const;
+
 export const C = {
   brand: { ko: 'Nod', en: 'Nod' },
   searchPh: { ko: '검색 (예: 검정 울 코트 20만원 이하)', en: 'Search (e.g. black wool coat under 200000)' },
@@ -302,7 +323,7 @@ export const SUGGEST: { g: L; items: { text: L; label?: L }[] }[] = [
   { g: { ko: '대충 말해도', en: 'Loosely put' }, items: [
     { text: { ko: '가을에 입기 좋은 자켓', en: 'jacket for autumn' } },
     { text: { ko: '출근용 블랙 가죽 가방', en: 'black leather bag for work' } },
-    { text: { ko: '코트 힙한 느낌', en: 'coat hype vibe' } },
+    { text: { ko: '코트 키치한 느낌', en: 'coat kitschy vibe' } },
   ] },
 ];
 

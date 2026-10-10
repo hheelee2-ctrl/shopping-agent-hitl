@@ -4,7 +4,10 @@ export type Category = 'coat' | 'jacket' | 'sneakers' | 'loafers' | 'knit' | 'sh
 export type Color = 'black' | 'white' | 'navy' | 'beige' | 'gray' | 'brown' | 'khaki' | 'blue';
 export type Material = 'wool' | 'wool-blend' | 'cotton' | 'leather' | 'denim' | 'cashmere' | 'nylon' | 'canvas' | 'polyester';
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
-export type Style = 'formal' | 'casual' | 'light' | 'warm' | 'minimal';
+/** 무드(formal~outdoor)와 기능(light·warm). 무드만 '내 스타일' 선택지가 된다. */
+export type Style = 'formal' | 'casual' | 'minimal' | 'street' | 'classic' | 'outdoor' | 'light' | 'warm';
+export const MOODS = ['minimal', 'casual', 'formal', 'street', 'classic', 'outdoor'] as const satisfies readonly Style[];
+export type Mood = (typeof MOODS)[number];
 
 /** 사이즈 체계. 같은 체계의 사이즈는 한 번 알려주면 다른 상품에도 쓴다. */
 export type SizeKind = 'top' | 'shoe' | 'bottom' | 'free';

@@ -22,7 +22,7 @@ describe('parseRequest', () => {
     expect(c.colors).toEqual([]);
   });
   it('모르는 표현은 unknown에 남긴다', () => {
-    expect(parseRequest('코트 힙한 느낌').unknown).toContain('힙한');
+    expect(parseRequest('코트 키치한 느낌').unknown).toContain('키치한');
   });
   it('종류가 없으면 category가 비어 있다', () => {
     expect(parseRequest('검정색 20만원 이하').category).toBeUndefined();

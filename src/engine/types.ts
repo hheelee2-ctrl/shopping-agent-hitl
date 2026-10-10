@@ -50,6 +50,15 @@ export type AgentEvent =
 
 export type SizeProfile = Partial<Record<'top' | 'shoe' | 'bottom', string>>;
 
+/** 내 스타일. 모두 비워둘 수 있다. 에이전트가 후보 순서를 정할 때 가산점으로만 쓴다(피하는 소재는 제외). */
+export interface StyleProfile {
+  /** 최대 3개. formal·casual·minimal·street·classic·outdoor */
+  moods: string[];
+  likeColors: string[];
+  avoidColors: string[];
+  avoidMaterials: string[];
+}
+
 export interface RunOptions {
   /** 사용자가 입력한 자연어 요청 */
   request: string;
@@ -58,6 +67,8 @@ export interface RunOptions {
   limit: number;
   /** 내 사이즈. 없는 체계는 담기 전에 묻는다. */
   sizes?: SizeProfile;
+  /** 내 스타일. 요청에 같은 종류의 조건이 있으면 요청이 우선한다. */
+  style?: StyleProfile;
 }
 
 /** 규칙 기반 에이전트와 (향후) LLM 에이전트가 같은 인터페이스를 구현한다. */

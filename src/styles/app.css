@@ -984,3 +984,46 @@ button.pb-row:focus-visible { outline: 2px solid var(--brand); }
 /* 요청을 누가 해석했는지 */
 .interp .by { align-self: center; margin-left: auto; padding: 2px var(--sp-2); border-radius: var(--r-xs); font-size: var(--t-2xs); font-weight: var(--w-semi); letter-spacing: var(--tr-caps); text-transform: uppercase; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line); }
 .interp .by-llm { color: var(--brand-deep); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent); }
+
+/* ── 내 스타일: 무드 타일 · 색 칩 · 단계 ── */
+.setup-step { gap: var(--sp-6); }
+.setup-step .setup-title { font-size: var(--d-3); }
+.step-dots { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--sp-1); }
+.step-dots li { width: 24px; height: 3px; border-radius: var(--r-pill); background: var(--line-strong); transition: background var(--dur) var(--ease); }
+.step-dots li.on { background: var(--ink); }
+.step-body { gap: var(--sp-4); }
+.moods { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+.moods li { animation: chipIn 420ms var(--ease) calc(var(--i) * 50ms) both; }
+.mood { all: unset; box-sizing: border-box; position: relative; width: 100%; display: grid; gap: var(--sp-2); cursor: pointer; }
+.mood-ph { position: relative; display: block; aspect-ratio: 4 / 5; border-radius: var(--r-sm); overflow: hidden; background: var(--bg-2); box-shadow: 0 0 0 1px var(--line); transition: box-shadow var(--dur-fast) var(--ease); }
+.mood-ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 900ms var(--ease), filter var(--dur) var(--ease); }
+.mood:hover .mood-ph img { transform: scale(1.04); }
+.mood-n { font-size: var(--t-base); font-weight: var(--w-semi); color: var(--ink-2); }
+.mood.on .mood-ph { box-shadow: 0 0 0 2px var(--ink); }
+.mood.on .mood-n { color: var(--ink); }
+.mood-ck { position: absolute; top: var(--sp-2); right: var(--sp-2); width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: var(--ink); color: var(--on-ink); animation: okPop 360ms var(--ease) both; }
+.mood:disabled { cursor: not-allowed; }
+.mood:disabled .mood-ph img { filter: grayscale(1); opacity: 0.5; }
+.mood:focus-visible .mood-ph { outline: 2px solid var(--brand); outline-offset: 2px; }
+.moods.compact { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.moods.compact .mood { width: auto; display: inline-flex; align-items: center; gap: var(--sp-1); min-height: 32px; padding: 0 var(--sp-3); border-radius: var(--r-pill); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.moods.compact .mood.on { background: var(--ink); box-shadow: none; }
+.moods.compact .mood.on .mood-n { color: var(--on-ink); }
+.moods.compact .mood-n { font-size: var(--t-sm); }
+.moods.compact .mood-ck { display: none; }
+.moods.compact .mood:disabled { opacity: 0.4; }
+.cpick { display: grid; gap: var(--sp-5); }
+.crow { display: grid; gap: var(--sp-1); }
+.cchips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.cchip { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 36px; padding: 0 var(--sp-3) 0 var(--sp-2); border: 0; border-radius: var(--r-pill); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font-size: var(--t-sm); font-weight: var(--w-medium); color: var(--ink-2); cursor: pointer; transition: box-shadow var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease); }
+.cchip i { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent); }
+.cchip:hover { color: var(--ink); }
+.cchip.on { color: var(--ink); font-weight: var(--w-semi); box-shadow: inset 0 0 0 2px var(--ink); }
+.cchip.other { opacity: 0.45; }
+.cchip.mat { padding: 0 var(--sp-4); }
+.cchip.mat.on { background: var(--ink); color: var(--on-ink); box-shadow: none; }
+.cchip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.style-ed { display: grid; gap: var(--sp-4); }
+.style-ed .muted { color: var(--ink-3); font-weight: var(--w-medium); text-transform: none; letter-spacing: 0; }
+@media (max-width: 520px) { .moods { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .moods li, .mood-ck { animation: none; } }

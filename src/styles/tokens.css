@@ -36,6 +36,9 @@
   --stage-ink: #f2ede4;
   --stage-ink-2: #8f909c;
   --stage-line: #262935;
+  /* 색 칩: 카탈로그 8색의 실제 색 (테마와 무관) */
+  --cc-black: #1d1d1f; --cc-white: #f7f6f2; --cc-navy: #1f2a48; --cc-beige: #d8c6a6;
+  --cc-gray: #8b8b8e; --cc-brown: #7a5238; --cc-khaki: #7c7a4e; --cc-blue: #5b8ac6;
   --stage-scrim: rgba(18, 20, 28, 0.72);
   --stage-shadow: rgba(0, 0, 0, 0.8);
 

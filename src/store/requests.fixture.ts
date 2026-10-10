@@ -78,7 +78,8 @@ export const REQUESTS: [string, Expect][] = [
   ['white leather sneakers under 150000', { category: 'sneakers', colors: ['white'], materials: ['leather'], maxPrice: 150000 }],
   ['black wool coat size M', { category: 'coat', colors: ['black'], materials: ['wool'], size: 'M' }],
   // 알 수 없는 표현은 남아서 질문이 되어야 한다
-  ['힙한 코트', { category: 'coat', unknown: ['힙한'] }],
+  ['힙한 코트', { category: 'coat', styles: ['street'] }],
+  ['키치한 코트', { category: 'coat', unknown: ['키치한'] }],
   ['나이키 운동화', { category: 'sneakers', unknown: ['나이키'] }],
 ];
 

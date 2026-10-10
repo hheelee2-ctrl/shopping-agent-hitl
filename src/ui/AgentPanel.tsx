@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { Dial, Lang, SizeProfile } from '../engine/types';
+import type { Dial, Lang, SizeProfile, StyleProfile } from '../engine/types';
 import type { ConsoleState, LogEntry, Phase } from '../state/console';
 import { Icon } from './Icon';
 import { photoUrl } from '../store/photos';
@@ -12,6 +12,7 @@ import { Seg } from './Seg';
 import { Mark } from './Mark';
 import { PriceBars, SellerBadge } from './Sellers';
 import { SizeProfileEditor } from './SizeProfile';
+import { StyleProfileEditor } from './StyleProfile';
 import type { Frame } from '../state/timeline';
 import { C, DIAL, PHASE, SUGGEST, SV, SZ, TH, money, t } from './copy';
 
@@ -26,6 +27,8 @@ interface Props {
   limit: number;
   sizes: SizeProfile;
   onSizes: (s: SizeProfile) => void;
+  style: StyleProfile;
+  onStyle: (s: StyleProfile) => void;
   running: boolean;
   request: string;
   onRequest: (s: string) => void;
@@ -130,6 +133,9 @@ export function AgentPanel(p: Props) {
             <div>
               <p className="label">{t(SZ.title, lang)}</p>
               <SizeProfileEditor lang={lang} value={p.sizes} onChange={p.onSizes} />
+            </div>
+            <div>
+              <StyleProfileEditor lang={lang} value={p.style} onChange={p.onStyle} />
             </div>
             <div className="row">
               <button className="btn sm" onClick={() => setOpenSet(false)}>{t(TH.done, lang)}</button>
