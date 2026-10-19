@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Dial, Lang } from '../engine/types';
 import type { Phase } from '../state/console';
 import type { Frame } from '../state/timeline';
-import { TASKS, dialOrder, loadSession, measure, saveSession, toCsv, type Session, type Survey, type TaskMetrics } from '../study/study';
+import { TASKS, dialOrder, loadSession, measure, saveSession, toCsv, watchMetrics, type Session, type Survey, type TaskMetrics, type WatchLike, type WatchMetrics } from '../study/study';
 import { DIAL, t } from './copy';
 
 const X = {
@@ -20,6 +20,9 @@ const X = {
   },
   scale: { ko: ['전혀 아니다', '매우 그렇다'], en: ['Strongly disagree', 'Strongly agree'] },
   noticed: { ko: '과제 중에 가격이 바뀐 걸 알아챘나요?', en: 'Did you notice a price change during the task?' },
+  noticedWatch: { ko: '가격이 내려왔는데도 사지 않은 날이 있었다는 걸 알아챘나요?', en: 'Did you notice a day when the price dropped but nothing was bought?' },
+  watchTask: { ko: '가격 대기 과제', en: 'Price-watch task' },
+  watchHint: { ko: '상품을 눌러 사이즈를 고르면 "가격이 내려오면 사기"가 있어요.', en: 'Open a product and pick a size to find "Buy when the price drops".' },
   yn: { yes: { ko: '네', en: 'Yes' }, no: { ko: '아니요', en: 'No' }, unsure: { ko: '잘 모르겠다', en: 'Not sure' } },
   memo: { ko: '한 줄 메모 (선택)', en: 'One-line note (optional)' },
   next: { ko: '저장하고 다음', en: 'Save and continue' },
@@ -42,50 +45,54 @@ interface Props {
   lang: Lang;
   frames: Frame[];
   phase: Phase;
-  /** 과제를 새로 시작한다: 쇼핑몰을 처음 상태로 돌리고 자율도를 맞춘다 */
-  onBegin: (dial: Dial) => void;
+  /** 과제를 새로 시작한다: 쇼핑몰을 처음 상태로 돌리고 자율도를 맞춘다. 가격 대기 과제는 dial이 null */
+  onBegin: (dial: Dial | null, task: string) => void;
+  /** 이번 과제 동안 만든 가격 대기 (새것이 앞) */
+  watches: WatchLike[];
   /** 담긴 상품 하나의 가격을 올린다. 올렸으면 true */
   onInject: () => boolean;
 }
 
 /**
- * 사용성 테스트 띠. 과제 안내 → 수행 → 설문을 세 번 돌고, 끝나면 기록을 내려받는다.
+ * 사용성 테스트 띠. 과제 안내 → 수행 → 설문을 과제 수만큼 돌고, 끝나면 기록을 내려받는다.
  * 기록은 이 브라우저의 localStorage에도 남아 새로고침해도 이어진다.
  */
-export function StudyBar({ pid, lang, frames, phase, onBegin, onInject }: Props) {
+export function StudyBar({ pid, lang, frames, phase, onBegin, watches, onInject }: Props) {
   const [session, setSession] = useState<Session>(() => loadSession(pid));
   const [stage, setStage] = useState<'brief' | 'running' | 'survey'>('brief');
   const run = useRef<{ injected: boolean } | null>(null);
-  const [metrics, setMetrics] = useState<TaskMetrics | null>(null);
+  const [metrics, setMetrics] = useState<(TaskMetrics & Partial<WatchMetrics>) | null>(null);
   const order = dialOrder(pid);
   const i = session.records.length;
   const finished = i >= TASKS.length;
   const task = TASKS[Math.min(i, TASKS.length - 1)];
-  const dial = order[Math.min(i, order.length - 1)];
+  const isWatch = task.kind === 'watch';
+  const dial = isWatch ? null : order[Math.min(i, order.length - 1)];
 
   useEffect(() => { saveSession(session); }, [session]);
 
   // 결제 승인 카드가 뜨면 잠시 뒤 가격을 바꾼다 (자율도와 상관없이 같은 지점)
   useEffect(() => {
-    if (stage !== 'running' || phase !== 'payment-gate' || !run.current || run.current.injected) return;
+    if (isWatch || stage !== 'running' || phase !== 'payment-gate' || !run.current || run.current.injected) return;
     const id = window.setTimeout(() => { if (run.current && onInject()) run.current.injected = true; }, 1200);
     return () => window.clearTimeout(id);
-  }, [stage, phase, onInject]);
+  }, [isWatch, stage, phase, onInject]);
 
   const begin = () => {
     // onBegin이 쇼핑몰을 처음 상태로 돌리면 타임라인도 새로 시작한다. 그 뒤 프레임이 이번 과제다.
-    onBegin(dial);
+    onBegin(dial, task.id);
     run.current = { injected: false };
     setStage('running');
   };
   const end = () => {
     if (!run.current) return;
-    setMetrics(measure(frames, frames[0]?.orders ?? 0));
+    const m = measure(frames, frames[0]?.orders ?? 0);
+    setMetrics(isWatch ? { ...m, ...watchMetrics(watches[0]) } : m);
     setStage('survey');
   };
   const submit = (survey: Survey) => {
     if (!metrics || !run.current) return;
-    const rec = { task: task.id, dial, injected: run.current.injected, ...metrics, survey };
+    const rec = { task: task.id, dial: dial ?? ('-' as const), injected: run.current.injected, ...metrics, survey };
     setSession((s) => ({ ...s, records: [...s.records, rec] }));
     run.current = null;
     setMetrics(null);
@@ -112,8 +119,8 @@ export function StudyBar({ pid, lang, frames, phase, onBegin, onInject }: Props)
           </>
         ) : (
           <>
-            <span className="study-step">{X.task[lang](i + 1, TASKS.length)}<i>{t(X.dial, lang)}: <b>{t(DIAL[dial], lang)}</b></i></span>
-            <p className="study-brief">{t(task.brief, lang)}</p>
+            <span className="study-step">{X.task[lang](i + 1, TASKS.length)}<i>{dial ? <>{t(X.dial, lang)}: <b>{t(DIAL[dial], lang)}</b></> : t(X.watchTask, lang)}</i></span>
+            <p className="study-brief">{t(task.brief, lang)}{isWatch && stage === 'running' && <span className="study-hint">{t(X.watchHint, lang)}</span>}</p>
             <div className="study-act">
               {stage === 'brief' && <button className="btn primary" onClick={begin}>{t(X.start, lang)}</button>}
               {stage === 'running' && <button className="btn" title={t(X.doneNote, lang)} onClick={end}>{t(X.done, lang)}</button>}
@@ -121,12 +128,12 @@ export function StudyBar({ pid, lang, frames, phase, onBegin, onInject }: Props)
           </>
         )}
       </div>
-      {stage === 'survey' && <SurveyCard lang={lang} onSubmit={submit} />}
+      {stage === 'survey' && <SurveyCard lang={lang} watch={isWatch} onSubmit={submit} />}
     </>
   );
 }
 
-function SurveyCard({ lang, onSubmit }: { lang: Lang; onSubmit: (s: Survey) => void }) {
+function SurveyCard({ lang, watch, onSubmit }: { lang: Lang; watch: boolean; onSubmit: (s: Survey) => void }) {
   const [v, setV] = useState<Partial<Survey>>({ memo: '' });
   const ready = v.predictable && v.control && v.again && v.noticed;
   return (
@@ -147,7 +154,7 @@ function SurveyCard({ lang, onSubmit }: { lang: Lang; onSubmit: (s: Survey) => v
           </fieldset>
         ))}
         <fieldset className="likert">
-          <legend>{t(X.noticed, lang)}</legend>
+          <legend>{t(watch ? X.noticedWatch : X.noticed, lang)}</legend>
           <div className="likert-row yn">
             {(['yes', 'no', 'unsure'] as const).map((k) => (
               <label key={k}><input type="radio" name="noticed" checked={v.noticed === k} onChange={() => setV({ ...v, noticed: k })} /><b>{t(X.yn[k], lang)}</b></label>

@@ -9,13 +9,16 @@ import type { Frame } from '../state/timeline';
  */
 export interface Task {
   id: string;
+  /** dial: 자율도를 바꿔 가며 같은 쇼핑을 맡긴다 / watch: 가격 대기를 맡긴다(자리에 없는 상황) */
+  kind: 'dial' | 'watch';
   brief: L;
 }
 
 export const TASKS: Task[] = [
-  { id: 'T1', brief: { ko: '출근할 때 입을 검정 울 코트를 20만원 이하로 사 보세요.', en: 'Buy a black wool coat for work, under ₩200,000.' } },
-  { id: 'T2', brief: { ko: '주말에 신을 화이트 스니커즈를 15만원 이하로 사 보세요.', en: 'Buy white sneakers for weekends, under ₩150,000.' } },
-  { id: 'T3', brief: { ko: '매일 들고 다닐 가방을 10만원 이하로 사 보세요.', en: 'Buy an everyday bag, under ₩100,000.' } },
+  { id: 'T1', kind: 'dial', brief: { ko: '출근할 때 입을 검정 울 코트를 20만원 이하로 사 보세요.', en: 'Buy a black wool coat for work, under ₩200,000.' } },
+  { id: 'T2', kind: 'dial', brief: { ko: '주말에 신을 화이트 스니커즈를 15만원 이하로 사 보세요.', en: 'Buy white sneakers for weekends, under ₩150,000.' } },
+  { id: 'T3', kind: 'dial', brief: { ko: '매일 들고 다닐 가방을 10만원 이하로 사 보세요.', en: 'Buy an everyday bag, under ₩100,000.' } },
+  { id: 'T4', kind: 'watch', brief: { ko: '마음에 드는 상품 하나를, 가격이 내려오면 사도록 맡겨 보세요. 화면 앞에 계속 있을 수는 없다고 생각하고요.', en: 'Pick something you like and have it bought when the price drops. Assume you cannot keep watching the screen.' } },
 ];
 
 const SQUARE: Dial[][] = [
@@ -60,11 +63,41 @@ export interface TaskMetrics {
   orders: number;
 }
 
-export interface TaskRecord extends TaskMetrics {
+/** 가격 대기 과제(T4)에서 참가자가 정한 것과 결과 */
+export interface WatchMetrics {
+  watchPre: boolean | null;
+  watchDomestic: boolean | null;
+  watchTarget: number | null;
+  watchDays: number | null;
+  /** 가격은 내려왔지만 조건 밖이라 사지 않은 날 수 */
+  watchHolds: number;
+  /** auto-bought: 사전 승인으로 결제 / bought-after-ask: 물은 뒤 사람이 승인 / asked: 묻는 중에 끝남 / expired / cancelled / watching / none: 대기를 만들지 않음 */
+  watchOutcome: 'auto-bought' | 'bought-after-ask' | 'asked' | 'expired' | 'cancelled' | 'watching' | 'none';
+}
+
+export interface TaskRecord extends TaskMetrics, Partial<WatchMetrics> {
   task: string;
-  dial: Dial;
+  /** 가격 대기 과제는 자율도와 상관없어 '-' */
+  dial: Dial | '-';
   injected: boolean;
   survey: Survey | null;
+}
+
+/** 화면의 가격 대기 상태 중 지표에 필요한 것만 */
+export interface WatchLike {
+  w: { preapproved: boolean; domesticOnly: boolean; maxTotal: number; days: number };
+  status: 'watching' | 'asked' | 'bought' | 'expired' | 'cancelled';
+  log: { tone: string }[];
+}
+
+/** 과제 동안 만든 가장 최근 대기 하나로 계산한다 */
+export function watchMetrics(s: WatchLike | undefined): WatchMetrics {
+  if (!s) return { watchPre: null, watchDomestic: null, watchTarget: null, watchDays: null, watchHolds: 0, watchOutcome: 'none' };
+  const outcome: WatchMetrics['watchOutcome'] = s.status === 'bought' ? (s.w.preapproved ? 'auto-bought' : 'bought-after-ask') : s.status;
+  return {
+    watchPre: s.w.preapproved, watchDomestic: s.w.domesticOnly, watchTarget: s.w.maxTotal, watchDays: s.w.days,
+    watchHolds: s.log.filter((l) => l.tone === 'hold').length, watchOutcome: outcome,
+  };
 }
 
 export interface Session {
@@ -101,8 +134,9 @@ export function measure(frames: Frame[], ordersBefore: number): TaskMetrics {
   };
 }
 
-const COLS: (keyof TaskRecord | 'pid' | keyof Survey)[] = [
+const COLS: (keyof TaskRecord | 'pid' | keyof Survey | keyof WatchMetrics)[] = [
   'pid', 'task', 'dial', 'durationMs', 'interventions', 'rejects', 'undos', 'questions', 'injected', 'priceResponse', 'outcome', 'orders',
+  'watchPre', 'watchDomestic', 'watchTarget', 'watchDays', 'watchHolds', 'watchOutcome',
   'predictable', 'control', 'again', 'noticed', 'memo',
 ];
 const cell = (v: unknown) => {

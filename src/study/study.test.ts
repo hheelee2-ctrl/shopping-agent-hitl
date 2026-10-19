@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Action } from '../state/console';
 import type { Frame } from '../state/timeline';
-import { TASKS, bumped, dialOrder, measure, studyId, toCsv } from './study';
+import { TASKS, bumped, dialOrder, measure, studyId, toCsv, watchMetrics } from './study';
 
 const f = (at: number, actions: Action[], orders = 0): Frame => ({ at, label: { ko: '', en: '' }, actor: 'user', actions, cart: [], products: {}, orders });
 const ev = (event: Extract<Action, { type: 'event' }>['event']): Action => ({ type: 'event', event });
@@ -9,7 +9,7 @@ const ev = (event: Extract<Action, { type: 'event' }>['event']): Action => ({ ty
 describe('사용성 테스트 모드', () => {
   it('자율도 순서를 참가자마다 돌려, 세 명이면 과제마다 세 자율도가 한 번씩 나온다', () => {
     const rows = ['P01', 'P02', 'P03'].map(dialOrder);
-    for (let i = 0; i < TASKS.length; i++) expect(new Set(rows.map((r) => r[i])).size).toBe(3);
+    for (let i = 0; i < TASKS.filter((x) => x.kind === 'dial').length; i++) expect(new Set(rows.map((r) => r[i])).size).toBe(3);
     expect(dialOrder('P04')).toEqual(dialOrder('P01'));
   });
 
@@ -47,6 +47,14 @@ describe('사용성 테스트 모드', () => {
     }]);
     const [head, row] = csv.trim().split('\n');
     expect(head.split(',')).toContain('noticed');
-    expect(row).toBe('P01,T1,auto,1,1,0,0,0,true,stop,cancelled,0,6,5,4,yes,"가격이 ""갑자기"", 바뀜"');
+    expect(row).toBe('P01,T1,auto,1,1,0,0,0,true,stop,cancelled,0,,,,,,,6,5,4,yes,"가격이 ""갑자기"", 바뀜"');
+  });
+
+  it('[R10] 가격 대기 과제는 참가자가 정한 조건, 사지 않은 날 수, 결과를 남긴다', () => {
+    const w = { preapproved: true, domesticOnly: true, maxTotal: 150000, days: 14 };
+    const log = [{ tone: 'wait' }, { tone: 'hold' }, { tone: 'hold' }, { tone: 'ok' }];
+    expect(watchMetrics({ w, status: 'bought', log })).toEqual({ watchPre: true, watchDomestic: true, watchTarget: 150000, watchDays: 14, watchHolds: 2, watchOutcome: 'auto-bought' });
+    expect(watchMetrics({ w: { ...w, preapproved: false }, status: 'bought', log }).watchOutcome).toBe('bought-after-ask');
+    expect(watchMetrics(undefined).watchOutcome).toBe('none');
   });
 });

@@ -45,6 +45,8 @@ interface Props {
   onReject: () => void;
   onAnswer: (id: string) => void;
   onUndo: (id: string) => void;
+  /** 대화 위에 붙는 영역 (가격 대기) */
+  top?: ReactNode;
   onOrders: () => void;
   readOnly: boolean;
   frames: Frame[];
@@ -171,6 +173,7 @@ export function AgentPanel(p: Props) {
       </header>
 
       <div className="agent-scroll">
+      {p.top}
       <fieldset className="plain thread" disabled={p.readOnly} aria-live="polite">
         {phase === 'idle' && (
           <>

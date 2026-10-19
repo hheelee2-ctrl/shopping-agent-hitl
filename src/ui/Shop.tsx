@@ -207,9 +207,11 @@ function Card({ i, eye, p, lang, cart, agent, store, adding, onAdd, onQty, onOpe
 }
 
 /** 상품 한 개의 판매처를 나란히 놓고 고르는 시트. 총액(배송비 포함)이 낮은 순, 해외직구는 맨 뒤. */
-export function OfferSheet({ id, lang, store, cart, adding, onAdd, onClose }: {
+export function OfferSheet({ id, lang, store, cart, adding, onAdd, onClose, onWatch }: {
   id: string; lang: Lang; store: Store; cart: CartLine[]; adding?: string | null;
   onAdd: (id: string, size: string, sellerId: string) => void; onClose: () => void;
+  /** 가격이 내려오면 사기 */
+  onWatch?: (id: string, size: string) => void;
 }) {
   const p = store.getProduct(id);
   const line = cart.find((l) => l.productId === id);
@@ -281,6 +283,11 @@ export function OfferSheet({ id, lang, store, cart, adding, onAdd, onClose }: {
               )}
             </>
           ) : <p className="hint">{t(SV.pickSizeFirst, lang)}</p>}
+          {size && onWatch && (
+            <button className="btn block watch-open" onClick={() => onWatch(id, size)}>
+              {lang === 'ko' ? '가격이 내려오면 사기' : 'Buy when the price drops'}
+            </button>
+          )}
           <p className="note">{t(SV.sheetNote, lang)}</p>
         </div>
       </div>

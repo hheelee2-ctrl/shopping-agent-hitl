@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { RuleAgent } from './agent/agent';
 import { llmInterpreter } from './agent/interpret';
 import type { Dial, L, Lang } from './engine/types';
@@ -27,6 +27,8 @@ import { useStore } from './ui/useStore';
 import { ReviewCtx, ReviewToggle } from './ui/Review';
 import { StudyBar } from './ui/Study';
 import { bumped, studyId } from './study/study';
+import { checkWatch, decide, describe as describeWatch, scriptedDay, simulateDay, type Verdict, type Watch } from './agent/watch';
+import { WatchList, WatchSetup, type WatchState } from './ui/Watch';
 
 interface AppProps {
   lang: Lang;
@@ -144,7 +146,95 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     setAsked(null);
   }, [agent, store, market, emit]);
 
-  const beginTask = useCallback((d: Dial) => { reset(); setDial(d); setCartOpen(false); setSheet(null); }, [reset]);
+  // 가격 대기: 사람이 자리에 없을 때를 다루므로 시연용 시계로 하루씩 넘긴다
+  const [watches, setWatches] = useState<WatchState[]>([]);
+  const watchRef = useRef<WatchState[]>([]);
+  const putWatches = useCallback((next: WatchState[]) => { watchRef.current = next; setWatches(next); }, []);
+  const [watchFor, setWatchFor] = useState<{ id: string; size: string } | null>(null);
+  const evaluate = useCallback((cur: WatchState, day: number): WatchState => {
+    const v = checkWatch(cur.w, store, day);
+    const p = store.getProduct(cur.w.productId);
+    const pname = p ? t(p.name, lang) : '';
+    const best = (x: Verdict) => (x.kind === 'wait' ? x.best : x.kind === 'expired' ? null : x.total);
+    let next: WatchState = { ...cur, day, trail: [...cur.trail, best(v)] };
+    const line = (tone: WatchState['log'][number]['tone'], text: L) => { next = { ...next, log: [...next.log, { day, text, tone }] }; };
+    switch (decide(cur.w, v)) {
+      case 'wait': line('wait', describeWatch(v, cur.w, day)); break;
+      case 'hold': {
+        line('hold', describeWatch(v, cur.w, day));
+        const prev = cur.log[cur.log.length - 1];
+        if (prev?.tone !== 'hold') pushToast({ tone: 'warn', pid: cur.w.productId, title: lang === 'ko' ? '가격은 내려왔지만 사지 않았어요' : 'Price dropped, but not bought', sub: t(describeWatch(v, cur.w, day), lang) });
+        break;
+      }
+      case 'expire': line('end', describeWatch(v, cur.w, day)); next = { ...next, status: 'expired', auto: false }; break;
+      case 'ask': {
+        if (v.kind !== 'match') break;
+        line('ok', describeWatch(v, cur.w, day));
+        next = { ...next, status: 'asked', auto: false, pending: v };
+        pushToast({ tone: 'ok', pid: cur.w.productId, title: lang === 'ko' ? '조건이 맞았어요. 결제할까요?' : 'Everything fits. Pay now?', sub: `${pname}, ${money(v.total, lang)}` });
+        note({ ko: `가격 대기 조건 충족, 결제 승인 요청: ${p?.name.ko ?? ''}`, en: `Price watch matched, asking to pay: ${p?.name.en ?? ''}` });
+        break;
+      }
+      case 'buy': {
+        if (v.kind !== 'match') break;
+        const order = store.buyNow(cur.w.productId, cur.w.size, v.sellerId, 'agent', cur.w.id);
+        if (!order) { line('hold', { ko: `${day}일째: 결제 직전에 재고가 빠져 사지 않았어요.`, en: `Day ${day}: stock ran out right before paying; nothing bought.` }); break; }
+        line('ok', describeWatch(v, cur.w, day));
+        line('ok', { ko: `미리 승인한 조건으로 결제했어요. 주문 ${order.id}`, en: `Paid under your preset terms. Order ${order.id}` });
+        next = { ...next, status: 'bought', auto: false, orderId: order.id };
+        pushToast({ tone: 'ok', pid: cur.w.productId, title: lang === 'ko' ? '자리에 없는 동안 샀어요' : 'Bought while you were away', sub: `${pname}, ${t(sellerOf(v.sellerId).name, lang)}, ${money(v.total, lang)}`, action: { label: t(SV.ordersTab, lang), run: () => { setDrawerTab('orders'); setCartOpen(true); } } });
+        note({ ko: `가격 대기 사전 승인으로 결제: ${p?.name.ko ?? ''} ${order.total.toLocaleString('ko-KR')}원`, en: `Paid by price-watch pre-approval: ${p?.name.en ?? ''}` });
+        break;
+      }
+    }
+    return next;
+  }, [store, lang, pushToast, note]);
+  const patchWatch = useCallback((id: string, fn: (s: WatchState) => WatchState) => {
+    putWatches(watchRef.current.map((s) => (s.w.id === id ? fn(s) : s)));
+  }, [putWatches]);
+  // 사용성 테스트의 가격 대기 과제는 참가자마다 같은 흐름을 보도록 고정된 가격 변화를 쓴다
+  const scripted = useRef(false);
+  const advanceWatch = useCallback((id: string) => patchWatch(id, (cur) => {
+    if (cur.status !== 'watching') return cur;
+    if (scripted.current) scriptedDay(store, cur.w, cur.day + 1);
+    else simulateDay(store, cur.w, cur.seed, cur.day + 1);
+    return evaluate(cur, cur.day + 1);
+  }), [patchWatch, evaluate, store]);
+  const startWatch = (spec: Omit<Watch, 'id'>) => {
+    const w: Watch = { ...spec, id: `w${Date.now().toString(36)}` };
+    const p = store.getProduct(w.productId);
+    note({ ko: `가격 대기 시작: ${p?.name.ko ?? ''}, 배송비 포함 ${w.maxTotal.toLocaleString('ko-KR')}원 이하${w.preapproved ? ', 사전 승인' : ''}`, en: `Price watch started: ${p?.name.en ?? ''}` });
+    const first = evaluate({ w, day: 0, seed: Math.floor(Math.random() * 1e6), status: 'watching', auto: false, trail: [], log: [] }, 0);
+    putWatches([first, ...watchRef.current]);
+    setWatchFor(null);
+    setSheet(null);
+  };
+  const payWatch = (id: string) => patchWatch(id, (cur) => {
+    // 묻는 사이 조건이 바뀌었으면 그 승인은 낡았다 (R4)
+    const v = checkWatch(cur.w, store, cur.day);
+    const order = v.kind === 'match' ? store.buyNow(cur.w.productId, cur.w.size, v.sellerId, 'user', cur.w.id) : null;
+    if (!order) return { ...cur, status: 'watching', pending: undefined, log: [...cur.log, { day: cur.day, tone: 'hold', text: { ko: '묻는 사이 조건이 바뀌어 사지 않았어요. 계속 기다려요.', en: 'Terms changed while asking, so nothing was bought. Still waiting.' } }] };
+    note({ ko: `가격 대기 결제 승인: 주문 ${order.id}`, en: `Approved price-watch payment: order ${order.id}` });
+    return { ...cur, status: 'bought', pending: undefined, orderId: order.id, log: [...cur.log, { day: cur.day, tone: 'ok', text: { ko: `승인하신 대로 결제했어요. 주문 ${order.id}`, en: `Paid as you approved. Order ${order.id}` } }] };
+  });
+  const endWatch = (id: string) => patchWatch(id, (cur) => ({ ...cur, status: 'cancelled', auto: false, pending: undefined, log: [...cur.log, { day: cur.day, tone: 'end', text: { ko: '그만 기다리기로 했어요. 아무것도 사지 않았어요.', en: 'Stopped waiting. Nothing bought.' } }] }));
+  useEffect(() => {
+    if (!watches.some((s) => s.auto && s.status === 'watching')) return;
+    const timer = window.setInterval(() => {
+      watchRef.current.filter((s) => s.auto && s.status === 'watching').forEach((s) => advanceWatch(s.w.id));
+    }, 420);
+    return () => window.clearInterval(timer);
+  }, [watches, advanceWatch]);
+
+  const beginTask = useCallback((d: Dial | null, task: string) => {
+    reset();
+    if (d) setDial(d);
+    scripted.current = task === 'T4';
+    putWatches([]);
+    setWatchFor(null);
+    setCartOpen(false);
+    setSheet(null);
+  }, [reset, putWatches]);
   const inject = useCallback(() => {
     const line = store.getState().cart[0];
     const o = line && store.getOffer(line.productId, line.sellerId);
@@ -237,7 +327,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         </div>
       </header>
 
-      {pid && <StudyBar pid={pid} lang={lang} frames={frames} phase={state.phase} onBegin={beginTask} onInject={inject} />}
+      {pid && <StudyBar pid={pid} lang={lang} frames={frames} phase={state.phase} onBegin={beginTask} watches={watches} onInject={inject} />}
 
       <main className="layout">
         <Shop
@@ -253,6 +343,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           onReset={reset} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }}
           onApprove={ack(() => agent.approve(), 'approve')} onReject={ack(() => agent.reject(), 'reject')} onAnswer={(id) => ack(() => agent.answer(id), { option: id })()}
           onUndo={(id) => agent.undo(id)}
+          top={<WatchList lang={lang} store={store} watches={watches} onDay={advanceWatch} onRun={(id) => patchWatch(id, (s) => ({ ...s, auto: true }))} onStop={endWatch} onPay={payWatch} onSkip={endWatch} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }} />}
         />
       </main>
 
@@ -275,9 +366,11 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
       {sheet && (
         <OfferSheet
           id={sheet} lang={lang} store={store} cart={shop.cart} adding={adding}
-          onAdd={(id, size, sid) => userAdd(id, size, sid)} onClose={closeSheet}
+          onAdd={(id, size, sid) => userAdd(id, size, sid)} onClose={closeSheet} onWatch={(id, size) => { setSheet(null); setWatchFor({ id, size }); }}
         />
       )}
+
+      {watchFor && <WatchSetup lang={lang} store={store} productId={watchFor.id} size={watchFor.size} onStart={startWatch} onClose={() => setWatchFor(null)} />}
     </ReviewCtx.Provider>
   );
 }

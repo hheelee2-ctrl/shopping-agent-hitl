@@ -82,6 +82,8 @@ export interface Order {
   shipAt: number;
   arriveAt: number;
   by: 'user' | 'agent';
+  /** 사람이 그 자리에서가 아니라 미리 정한 조건(가격 대기)으로 승인한 주문이면 그 대기의 id */
+  mandate?: string;
 }
 
 export interface StoreState {

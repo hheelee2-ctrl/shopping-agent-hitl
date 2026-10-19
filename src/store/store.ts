@@ -55,6 +55,8 @@ export interface Store {
   cartTotal(): number;
   quote(): Quote[];
   checkout(by?: 'user' | 'agent'): Order[] | null;
+  /** 장바구니를 거치지 않고 한 줄만 바로 주문한다 (가격 대기의 사전 승인 구매). 재고가 없으면 null. */
+  buyNow(id: string, size: string, sellerId: string, by: 'user' | 'agent', mandate?: string): Order | null;
   /** 쇼핑몰 쪽 변화. sellerId가 없으면 대표 판매처(공식몰)에만 두고 나머지 판매처는 0으로 맞춘다. */
   setStock(id: string, stock: number, sellerId?: string): void;
   setSizeStock(id: string, size: string, n: number, sellerId?: string): void;
@@ -220,6 +222,24 @@ export function createStore(opts: { now?: () => number } = {}): Store {
       const products = Object.fromEntries(Object.values(state.products).map((p) => [p.id, summarize(p, all)]));
       set({ products, offers, cart: [], orders: [...made, ...state.orders] });
       return made;
+    },
+    buyNow(id, size, sellerId, by, mandate) {
+      const o = state.offers[`${id}@${sellerId}`];
+      if (!o || (o.sizes[size] ?? 0) <= 0) return null;
+      const t = now();
+      const line: CartLine = { productId: id, sellerId, qty: 1, addedBy: by, size, priceAtAdd: o.price };
+      const [q] = quoteOf([line], t);
+      const order: Order = {
+        id: `${ymd(t)}-${String(++seq).padStart(4, '0')}`,
+        sellerId, lines: [line], subtotal: q.subtotal, shipping: q.shipping, total: q.total,
+        placedAt: t, shipAt: q.shipAt, arriveAt: q.arriveAt, by, ...(mandate ? { mandate } : {}),
+      };
+      const sizes = { ...o.sizes, [size]: o.sizes[size] - 1 };
+      const offers = { ...state.offers, [o.id]: { ...o, sizes, stock: sum(sizes) } };
+      const all = Object.values(offers);
+      const products = { ...state.products, [id]: summarize(state.products[id], all) };
+      set({ ...state, products, offers, orders: [order, ...state.orders] });
+      return order;
     },
     setStock(id, stock, sellerId) {
       const p = state.products[id];

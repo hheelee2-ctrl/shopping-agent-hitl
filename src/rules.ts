@@ -2,12 +2,12 @@ import type { L } from './engine/types';
 import counts from './rules.counts.json';
 
 /**
- * 승인 설계 규칙. Nod가 '사람이 어디서 개입하는가'에 대해 지키는 약속이다.
+ * 승인 설계 규칙 10가지. Nod가 '사람이 어디서 개입하는가'에 대해 지키는 약속이다.
  * 각 규칙은 테스트 이름의 [R1] 같은 태그로 테스트와 묶이고, scripts/rules.mjs가 규칙마다 테스트 수를 센다.
  * 테스트가 하나도 없는 규칙이 있으면 검사(npm run check)가 실패한다.
  * 화면에서는 리뷰 모드(설계 보기)와 랜딩 플레이북이 이 목록을 그대로 보여준다.
  */
-export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9';
+export type RuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R7' | 'R8' | 'R9' | 'R10';
 
 export interface Rule {
   id: RuleId;
@@ -23,10 +23,10 @@ export interface Rule {
 export const RULES: Rule[] = [
   {
     id: 'R1',
-    name: { ko: '결제는 사람만 한다', en: 'Only a person pays' },
+    name: { ko: '결제는 사람이 승인한다', en: 'A person approves every payment' },
     problem: { ko: '자율도를 올리면 결제까지 넘어가 되돌릴 수 없는 일이 생긴다.', en: 'Raise autonomy and payment goes too, and that cannot be undone.' },
-    rule: { ko: '어느 자율도에서도 결제 직전에는 멈추고, 사람이 승인해야 주문이 생긴다.', en: 'At every autonomy level the agent stops before payment; orders exist only after a person approves.' },
-    where: { ko: '결제 승인 카드', en: 'Payment approval card' },
+    rule: { ko: '어느 자율도에서도 결제 직전에는 멈추고 사람이 승인해야 주문이 생긴다. 예외는 사람이 미리 정하고 승인한 가격 대기 조건(R10)뿐이다.', en: 'At every autonomy level the agent stops before payment; orders exist only after a person approves. The one exception is a price watch whose conditions the person preset and approved (R10).' },
+    where: { ko: '결제 승인 카드, 가격 대기 사전 승인', en: 'Payment approval card, price-watch pre-approval' },
   },
   {
     id: 'R2',
@@ -83,6 +83,13 @@ export const RULES: Rule[] = [
     problem: { ko: '저장한 취향이 이번 요청을 덮으면 말한 것과 다른 걸 고른다.', en: 'A saved profile that overrides the request picks what you did not ask for.' },
     rule: { ko: '내 스타일은 순위에만 조금 더한다. 요청에 스타일·색·소재가 있으면 그 부분은 끄고, 피하는 소재를 뺐다면 기록한다.', en: 'My style only nudges ranking. Request styles, colors and materials switch it off; excluded materials are logged.' },
     where: { ko: '"내 스타일" 칩, 후보 근거', en: '"My style" chip, candidate reasons' },
+  },
+  {
+    id: 'R10',
+    name: { ko: '자리에 없을 때는 미리 정한 조건 안에서만', en: 'When you are away, only within preset terms' },
+    problem: { ko: '"15만원 이하면 사 줘"에는 말하지 않은 조건이 많다. 가격만 보고 사면 품절 사이즈, 배송비, 해외직구를 떠안는다.', en: '"Buy it under 150k" hides many terms. Buying on price alone means wrong sizes, shipping and overseas sellers.' },
+    rule: { ko: '가격 대기 구매는 사이즈·배송비 포함 총액·판매처 종류·기한을 정하고 사전 승인해야 켜진다. 가격이 내려와도 조건이 하나라도 어긋나면 사지 않고 이유를 남긴다. 사전 승인은 한 번 사면 끝난다.', en: 'A price watch buys only with size, total with shipping, seller type and deadline set and pre-approved. If any term fails when the price drops, it does not buy and logs why. The pre-approval is used once.' },
+    where: { ko: '가격 대기 설정, 대기 기록', en: 'Price-watch setup, watch log' },
   },
 ];
 
