@@ -51,13 +51,15 @@ interface Props {
   watches: WatchLike[];
   /** 담긴 상품 하나의 가격을 올린다. 올렸으면 true */
   onInject: () => boolean;
+  /** 지금 참가자가 에이전트에게 요청해도 되는지 (과제 진행 중이거나 모든 과제를 마친 뒤) */
+  onLive: (live: boolean) => void;
 }
 
 /**
  * 사용성 테스트 띠. 과제 안내 → 수행 → 설문을 과제 수만큼 돌고, 끝나면 기록을 내려받는다.
  * 기록은 이 브라우저의 localStorage에도 남아 새로고침해도 이어진다.
  */
-export function StudyBar({ pid, lang, frames, phase, onBegin, watches, onInject }: Props) {
+export function StudyBar({ pid, lang, frames, phase, onBegin, watches, onInject, onLive }: Props) {
   const [session, setSession] = useState<Session>(() => loadSession(pid));
   const [stage, setStage] = useState<'brief' | 'running' | 'survey'>('brief');
   const run = useRef<{ injected: boolean } | null>(null);
@@ -70,6 +72,7 @@ export function StudyBar({ pid, lang, frames, phase, onBegin, watches, onInject 
   const dial = isWatch ? null : order[Math.min(i, order.length - 1)];
 
   useEffect(() => { saveSession(session); }, [session]);
+  useEffect(() => { onLive(stage === 'running' || finished); }, [stage, finished, onLive]);
 
   // 결제 승인 카드가 뜨면 잠시 뒤 가격을 바꾼다 (자율도와 상관없이 같은 지점)
   useEffect(() => {

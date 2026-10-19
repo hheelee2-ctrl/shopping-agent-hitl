@@ -82,6 +82,8 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   // 설계 보기(리뷰 모드)와 사용성 테스트 모드는 주소로 켤 수 있다: #/app?review=1, #/app?study=P01
   const [review, setReview] = useState(() => /[?&]review=1/.test(location.hash));
   const [pid] = useState(() => studyId(location.hash));
+  // 사용성 테스트에서는 '과제 시작' 전에 요청을 받지 않는다 (다른 자율도로 돌고 기록도 남지 않으므로)
+  const [studyLive, setStudyLive] = useState(false);
   const toasts = useToasts();
   const pushToast = toasts.push;
   const openCart = useCallback(() => { setDrawerTab('cart'); setCartOpen(true); }, []);
@@ -327,7 +329,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         </div>
       </header>
 
-      {pid && <StudyBar pid={pid} lang={lang} frames={frames} phase={state.phase} onBegin={beginTask} watches={watches} onInject={inject} />}
+      {pid && <StudyBar pid={pid} lang={lang} frames={frames} phase={state.phase} onBegin={beginTask} watches={watches} onInject={inject} onLive={setStudyLive} />}
 
       <main className="layout">
         <Shop
@@ -343,6 +345,8 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           onReset={reset} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }}
           onApprove={ack(() => agent.approve(), 'approve')} onReject={ack(() => agent.reject(), 'reject')} onAnswer={(id) => ack(() => agent.answer(id), { option: id })()}
           onUndo={(id) => agent.undo(id)}
+          watching={watches.filter((w) => w.status === 'watching' || w.status === 'asked').length}
+          locked={pid && !studyLive ? { ko: "위쪽 띠에서 '과제 시작'을 먼저 눌러 주세요", en: 'Press "Start task" in the bar above first' } : undefined}
           top={<WatchList lang={lang} store={store} watches={watches} onDay={advanceWatch} onRun={(id) => patchWatch(id, (s) => ({ ...s, auto: true }))} onStop={endWatch} onPay={payWatch} onSkip={endWatch} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }} />}
         />
       </main>

@@ -5,6 +5,7 @@ import { DIAL, ST, SZ, t } from './copy';
 import { loadPrefs, savePrefs } from './prefs';
 import { ColorPicker, EMPTY_STYLE, loadStyle, MaterialPicker, MoodPicker, saveStyle, styleSummary } from './StyleProfile';
 import { SETUP } from './landCopy';
+import { studyId } from '../study/study';
 import { LimitSlider } from './LimitSlider';
 import { Magnetic } from './Magnetic';
 import { Wordmark } from './Wordmark';
@@ -30,6 +31,7 @@ interface Props {
 export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
   // 자율도·한도는 매번 고르되, 마지막으로 저장한 값에서 시작한다
   const [prefs] = useState(loadPrefs);
+  const [inStudy] = useState(() => studyId(location.hash) !== null);
   const [dial, setDial] = useState<Dial>(prefs.dial ?? 'cart-only');
   const [limit, setLimit] = useState(prefs.limit ?? DEFAULT_LIMIT);
   // 내 사이즈는 한 번 정하면 저장해 두고 다음에도 쓴다. 자율도·한도는 매번 새로 고른다.
@@ -95,11 +97,14 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
 
         <section className="setup-block">
           <p className="label">{t(SETUP.dial, lang)}</p>
-          <Seg
-            options={(Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }))}
-            value={dial} onChange={setDial} label={t(SETUP.dial, lang)} disabled={leaving}
-          />
-          <p className="setup-desc" aria-live="polite"><span key={`${dial}-${lang}`} className="swap">{t(SETUP.dialDesc[dial], lang)}</span></p>
+          {/* 사용성 테스트에서는 자율도가 과제마다 정해지므로 여기서 고르게 하지 않는다 */}
+          {inStudy ? <p className="setup-desc">{t(SETUP.dialStudy, lang)}</p> : (<>
+            <Seg
+              options={(Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }))}
+              value={dial} onChange={setDial} label={t(SETUP.dial, lang)} disabled={leaving}
+            />
+            <p className="setup-desc" aria-live="polite"><span key={`${dial}-${lang}`} className="swap">{t(SETUP.dialDesc[dial], lang)}</span></p>
+          </>)}
         </section>
 
         <section className="setup-block">

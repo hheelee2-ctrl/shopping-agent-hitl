@@ -1143,3 +1143,6 @@ button.pb-row:focus-visible { outline: 2px solid var(--brand); }
 .wl-act { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .wl-card > .note { margin: 0; font-size: var(--t-2xs); }
 .study-hint { display: block; margin-top: var(--sp-1); font-size: var(--t-xs); font-weight: var(--w-regular); opacity: 0.75; }
+.live-changed p { margin: 0; }
+.live-changed ul { margin: var(--sp-1) 0 0; padding-left: var(--sp-4); font-weight: var(--w-bold); font-variant-numeric: tabular-nums; }
+.pay-total.stale b { text-decoration: line-through; color: var(--ink-3); }

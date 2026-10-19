@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseMulti, restate } from './parser';
 import { HELD_OUT, REQUESTS, type Expect } from './requests.fixture';
+import { TASKS } from '../study/study';
 
 /** 요청 하나가 기대한 조건으로 해석됐는지. 틀린 항목 이름을 돌려준다. */
 export function check(text: string, e: Expect): string[] {
@@ -37,6 +38,19 @@ describe('요청 해석 평가 세트', () => {
 describe('요청 해석 확인용 세트 (규칙을 맞추지 않은 문장)', () => {
   it.each(HELD_OUT)('%s', (text, e) => {
     expect(check(text, e)).toEqual([]);
+  });
+});
+
+describe('[R5] 사용성 테스트 과제 문구는 그대로 붙여 넣어도 모르는 표현이 없다', () => {
+  // 모르는 표현 질문이 과제마다 인위적으로 생기면 질문 수 지표가 흐려진다
+  const want: Record<string, string> = { T1: 'coat', T2: 'sneakers', T3: 'bag' };
+  it.each(TASKS.filter((x) => x.kind === 'dial').map((x) => [x.id, x.brief.ko] as const))('%s %s', (id, text) => {
+    const c = parseMulti(text).items[0];
+    expect(c.category).toBe(want[id]);
+    expect(c.unknown).toEqual([]);
+  });
+  it.each(['코트 사줘', '가방 10만원 이하로 사 보세요', '매일 들고 다닐 가방', '데일리로 쓸 가방 사고 싶어'])('%s', (text) => {
+    expect(parseMulti(text).items[0].unknown).toEqual([]);
   });
 });
 

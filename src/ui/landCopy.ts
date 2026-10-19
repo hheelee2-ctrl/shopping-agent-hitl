@@ -152,6 +152,7 @@ export const SETUP = {
   title: { ko: '맡길 범위부터 정합니다', en: 'Set how much you hand off' },
   sub: { ko: '나중에 에이전트 패널에서 바꿀 수 있습니다.', en: 'You can change this later in the agent panel.' },
   dial: { ko: '자율도', en: 'Autonomy' },
+  dialStudy: { ko: '자율도는 과제마다 바뀌어요. 화면 위쪽 띠에 이번 과제의 자율도가 나와요.', en: 'Autonomy changes with each task. The bar at the top shows this task’s level.' },
   dialDesc: {
     always: { ko: '계획 시작과 담기를 모두 내가 승인합니다', en: 'You approve the plan and every add' },
     'cart-only': { ko: '계획은 바로 실행하고, 담기 전에 묻습니다', en: 'Runs the plan, asks before adding' },

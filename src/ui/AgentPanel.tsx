@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { Dial, Lang, SizeProfile, StyleProfile } from '../engine/types';
+import type { Dial, L, Lang, SizeProfile, StyleProfile } from '../engine/types';
 import type { ConsoleState, LogEntry, Phase } from '../state/console';
 import { Icon } from './Icon';
 import { photoUrl } from '../store/photos';
@@ -47,6 +47,10 @@ interface Props {
   onUndo: (id: string) => void;
   /** 대화 위에 붙는 영역 (가격 대기) */
   top?: ReactNode;
+  /** 요청을 받지 않는 이유 (사용성 테스트에서 과제를 시작하기 전) */
+  locked?: L;
+  /** 기다리는 중인 가격 대기 수 */
+  watching?: number;
   onOrders: () => void;
   readOnly: boolean;
   frames: Frame[];
@@ -99,6 +103,13 @@ export function AgentPanel(p: Props) {
   const [moreSg, setMoreSg] = useState(false);
   // 모바일에서는 바텀 시트. 접힌 상태에서도 입력창과 현재 상태는 항상 보인다.
   const [open, setOpen] = useState(false);
+  // 가격 대기를 새로 시작하면 (모바일에서 접혀 있어도) 패널을 펼쳐 대기 카드를 보여준다
+  const watching = p.watching ?? 0;
+  const seenWatching = useRef(watching);
+  useEffect(() => {
+    if (watching > seenWatching.current) { setOpen(true); panel.current?.querySelector('.agent-scroll')?.scrollTo({ top: 0 }); }
+    seenWatching.current = watching;
+  }, [watching]);
   const deciding = phase === 'awaiting-approval' || phase === 'needs-input' || phase === 'payment-gate';
 
   // 사람이 결정해야 하는 카드가 나타나면 시트를 펼치고, 패널 안에서 보이게 스크롤한다
@@ -111,6 +122,7 @@ export function AgentPanel(p: Props) {
   useEffect(() => { if (phase === 'planning') setOpen(true); }, [phase]);
 
   const pick = (text: string) => {
+    if (p.locked) return;
     p.onRequest(text);
     window.requestAnimationFrame(() => { field.current?.focus(); field.current?.setSelectionRange(text.length, text.length); });
   };
@@ -131,7 +143,7 @@ export function AgentPanel(p: Props) {
         </button>
         <div className="agent-title" onClick={() => setOpen(true)}>
           <h1>{t(TH.title, lang)}</h1>
-          <span className={`phase ${dotClass(phase)}`}><Mark size={10} phase={dotClass(phase) === "live" ? "busy" : dotClass(phase) === "ok" ? "done" : "idle"} />{t(PHASE[phase], lang)}</span>
+          <span className={`phase ${dotClass(phase)}`}><Mark size={10} phase={dotClass(phase) === "live" ? "busy" : dotClass(phase) === "ok" ? "done" : "idle"} />{phase === 'idle' && watching > 0 ? TH.watching[lang](watching) : t(PHASE[phase], lang)}</span>
         </div>
         <button className="settings-sum" aria-expanded={openSet} onClick={toggleSet} disabled={p.running}>
           <span>{t(DIAL[p.dial], lang)}</span>
@@ -177,7 +189,7 @@ export function AgentPanel(p: Props) {
       <fieldset className="plain thread" disabled={p.readOnly} aria-live="polite">
         {phase === 'idle' && (
           <>
-            <Say><p>{t(TH.hello, lang)}</p></Say>
+            <Say><p>{t(TH.hello[p.dial], lang)}</p></Say>
             <div className="suggest">
               <div className="suggest-row">
                 {(moreSg ? SUGGEST.flatMap((g) => g.items) : SUGGEST.map((g) => g.items[0])).map((x, i) => (
@@ -328,8 +340,8 @@ export function AgentPanel(p: Props) {
       <form className="composer" onSubmit={(e) => { e.preventDefault(); if (p.request.trim() && !p.running) p.onRun(); }}>
         <div className="composer-box">
           <textarea
-            ref={field} rows={1} value={p.request} disabled={p.running || p.readOnly}
-            placeholder={t(C.requestPh, lang)} aria-label={t(C.request, lang)}
+            ref={field} rows={1} value={p.request} disabled={p.running || p.readOnly || !!p.locked}
+            placeholder={p.locked ? t(p.locked, lang) : t(C.requestPh, lang)} aria-label={t(C.request, lang)}
             onFocus={() => setOpen(true)}
             onChange={(e) => p.onRequest(e.target.value)}
             onKeyDown={(e) => {
@@ -339,7 +351,7 @@ export function AgentPanel(p: Props) {
               }
             }}
           />
-          <button type="submit" className="btn nod send" disabled={!p.request.trim() || p.running || p.readOnly}>{t(C.send, lang)}</button>
+          <button type="submit" className="btn nod send" disabled={!p.request.trim() || p.running || p.readOnly || !!p.locked}>{t(C.send, lang)}</button>
         </div>
         {p.running && <p className="composer-hint">{t(C.busyHint, lang)}</p>}
       </form>
@@ -516,7 +528,7 @@ function PayAsk({ lang, store, payment, onApprove, onReject }: {
   return (
     <div className={`card ask-me pay ${payment.exceeded ? 'over' : ''}`} data-action="">
       <h2 className="q">{t(TH.payAsk, lang)}</h2>
-      <p className="pay-total"><span>{t(TH.total, lang)}{groups.length > 1 ? ` · ${SV.orderCount[lang](groups.length)}` : ''}</span><b>{money(payment.total, lang)}</b></p>
+      <p className={`pay-total ${issues.length > 0 ? 'stale' : ''}`}><span>{t(TH.total, lang)}{groups.length > 1 ? ` · ${SV.orderCount[lang](groups.length)}` : ''}</span><b>{money(payment.total, lang)}</b></p>
       <ul className="split">
         {groups.map((g) => {
           const s = sellerOf(g.sellerId);
@@ -538,11 +550,22 @@ function PayAsk({ lang, store, payment, onApprove, onReject }: {
         </div>
       </div>
       {payment.exceeded && <p className="warnline">{t(C.exceeded, lang)}</p>}
-      {issues.length > 0 && <p className="warnline" role="alert">{t(SV.liveChanged, lang)}</p>}
+      {issues.length > 0 && (
+        <div className="warnline live-changed" role="alert">
+          <p>{t(SV.liveChanged, lang)}</p>
+          <ul>
+            {issues.map((x) => {
+              const n = t(store.getProduct(x.productId)?.name ?? { ko: '', en: '' }, lang);
+              return <li key={x.productId}>{x.kind === 'price' ? SV.livePrice[lang](n, money(x.from, lang), money(x.to, lang)) : SV.liveStock[lang](n, x.left)}</li>;
+            })}
+          </ul>
+        </div>
+      )}
       <p className="pay-addr">{t(SV.address, lang)} · {t(SV.addressV, lang)}</p>
       <div className="row">
-        <button className={`btn ${payment.exceeded ? 'primary' : 'nod'}`} onClick={onApprove}>
-          {payment.exceeded ? SV.approveOver[lang](money(payment.total, lang)) : SV.approvePayN[lang](money(payment.total, lang))}
+        {/* 조건이 바뀌었으면 옛 금액을 버튼에 걸지 않는다. 눌러도 결제하지 않고 바뀐 조건으로 다시 묻는다 (R4) */}
+        <button className={`btn ${payment.exceeded || issues.length > 0 ? 'primary' : 'nod'}`} onClick={onApprove}>
+          {issues.length > 0 ? t(SV.liveReview, lang) : payment.exceeded ? SV.approveOver[lang](money(payment.total, lang)) : SV.approvePayN[lang](money(payment.total, lang))}
         </button>
         <button className="btn danger" onClick={onReject}>{t(C.declinePay, lang)}</button>
       </div>

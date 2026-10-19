@@ -135,7 +135,10 @@ export const SV = {
   sellerInfo: { ko: '판매처', en: 'Seller' },
   orderedVia: { ko: '주문 방식', en: 'Placed' },
   expArrive: { ko: (s: string) => `${s} 예정`, en: (s: string) => `${s} (expected)` },
-  liveChanged: { ko: '방금 판매처 조건이 바뀌었어요. 승인하면 결제하지 않고 바뀐 내용을 먼저 보여드려요.', en: 'Seller terms just changed. If you approve, you will see the changes before anything is paid.' },
+  liveChanged: { ko: '방금 판매처 조건이 바뀌었어요. 이 금액으로는 결제하지 않아요.', en: 'Seller terms just changed. Nothing will be paid at this amount.' },
+  liveReview: { ko: '바뀐 내용 확인', en: 'Review the changes' },
+  livePrice: { ko: (n: string, a: string, b: string) => `${n} ${a} → ${b}`, en: (n: string, a: string, b: string) => `${n}: ${a} → ${b}` },
+  liveStock: { ko: (n: string, left: number) => (left === 0 ? `${n} 품절` : `${n} ${left}개만 남음`), en: (n: string, left: number) => (left === 0 ? `${n} sold out` : `${n}: only ${left} left`) },
 } as const;
 
 /** 에이전트 스레드 문구 */
@@ -173,7 +176,13 @@ export const TH = {
   payAsk: { ko: '결제를 승인할까요?', en: 'Approve payment?' },
   payNote: { ko: '승인하면 판매처마다 주문이 접수돼요. Nod는 판매자가 아니에요.', en: 'Approving places one order per seller. Nod is not the seller.' },
   more: { ko: '더 보기', en: 'More' },
-  hello: { ko: '무엇을 찾아드릴까요? 담기 전과 결제 전에는 꼭 먼저 물어볼게요.', en: 'What should I find? I always ask before adding to cart and before paying.' },
+  watching: { ko: (n: number) => `가격 대기 ${n}건`, en: (n: number) => `${n} price watch${n > 1 ? 'es' : ''}` },
+  // 첫 인사는 지금 자율도에서 실제로 묻는 지점만 약속한다 (화면의 약속과 동작이 달라지지 않게)
+  hello: {
+    always: { ko: '무엇을 찾아드릴까요? 계획부터 보여드리고, 담기 전과 결제 전에도 물어볼게요.', en: 'What should I find? I will show the plan first, and ask before adding and before paying.' },
+    'cart-only': { ko: '무엇을 찾아드릴까요? 담기 전과 결제 전에는 꼭 먼저 물어볼게요.', en: 'What should I find? I always ask before adding to cart and before paying.' },
+    auto: { ko: '무엇을 찾아드릴까요? 담기까지는 알아서 하고, 결제 전에만 물어볼게요.', en: 'What should I find? I will add on my own and ask only before paying.' },
+  } as Record<Dial, L>,
   found: { ko: (n: number) => `후보 ${n}개를 골랐어요.`, en: (n: number) => `I shortlisted ${n}.` },
   added: { ko: '장바구니에 담았어요.', en: 'Added to your cart.' },
   askCartQ: { ko: (n: string) => `${n}, 담을까요?`, en: (n: string) => `Add ${n}?` },
