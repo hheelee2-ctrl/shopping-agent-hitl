@@ -42,6 +42,8 @@ interface Props {
   onLimit: (n: number) => void;
   onReset: () => void;
   onApprove: () => void;
+  /** 결제 승인 카드에서 바뀐 조건을 확인하러 간다 (결제하지 않음) */
+  onReview: () => void;
   onReject: () => void;
   onAnswer: (id: string) => void;
   onUndo: (id: string) => void;
@@ -127,7 +129,7 @@ export function AgentPanel(p: Props) {
     window.requestAnimationFrame(() => { field.current?.focus(); field.current?.setSelectionRange(text.length, text.length); });
   };
 
-  const paying = !result && phase === 'executing' && state.feed.some((f) => f.k === 'decided' && f.kind === 'pay' && f.ok);
+  const paying = !result && phase === 'executing' && state.feed.some((f) => f.k === 'decided' && f.kind === 'pay' && f.ok && !f.review);
   const askPlan = !!plan && phase === 'awaiting-approval' && plan.requiresApproval && !pendingCart;
   const sizeSum = [p.sizes.top, p.sizes.shoe, p.sizes.bottom].map((x) => x ?? '–').join(' / ');
   const whyOf = (e: LogEntry) => {
@@ -258,7 +260,7 @@ export function AgentPanel(p: Props) {
             : t(TH.askPlanQ, lang);
           const a = f.kind === 'question' ? (f.a ? t(f.a, lang) : '')
             : f.kind === 'cart' ? t(f.ok ? C.approveCart : C.skipCart, lang)
-            : f.kind === 'pay' ? t(f.ok ? C.approvePay : C.declinePay, lang)
+            : f.kind === 'pay' ? (f.review ? t(SV.liveReview, lang) : t(f.ok ? C.approvePay : C.declinePay, lang))
             : t(f.ok ? C.approveStart : C.cancel, lang);
           return (
             <div key={f.id} className="qa">
@@ -301,7 +303,7 @@ export function AgentPanel(p: Props) {
           </Say>
         )}
 
-        {payment && phase === 'payment-gate' && <Say><RuleMark ids={['R1', 'R3', 'R4']} lang={lang} /><PayAsk lang={lang} store={store} payment={payment} onApprove={p.onApprove} onReject={p.onReject} /></Say>}
+        {payment && phase === 'payment-gate' && <Say><RuleMark ids={['R1', 'R3', 'R4']} lang={lang} /><PayAsk lang={lang} store={store} payment={payment} onApprove={p.onApprove} onReview={p.onReview} onReject={p.onReject} /></Say>}
 
         {paying && <PayProgress lang={lang} log={log} />}
 
@@ -517,9 +519,9 @@ function CartAsk({ lang, store, entry, why, onApprove, onReject }: {
 }
 
 /** 결제 직전 승인. 큰 금액 하나, 판매처별 한 줄, 한도 막대, 배송지 한 줄. */
-function PayAsk({ lang, store, payment, onApprove, onReject }: {
+function PayAsk({ lang, store, payment, onApprove, onReview, onReject }: {
   lang: Lang; store: Store; payment: NonNullable<ConsoleState['payment']>;
-  onApprove: () => void; onReject: () => void;
+  onApprove: () => void; onReview: () => void; onReject: () => void;
 }) {
   const groups = store.quote();
   const issues = store.cartIssues();
@@ -564,7 +566,7 @@ function PayAsk({ lang, store, payment, onApprove, onReject }: {
       <p className="pay-addr">{t(SV.address, lang)} · {t(SV.addressV, lang)}</p>
       <div className="row">
         {/* 조건이 바뀌었으면 옛 금액을 버튼에 걸지 않는다. 눌러도 결제하지 않고 바뀐 조건으로 다시 묻는다 (R4) */}
-        <button className={`btn ${payment.exceeded || issues.length > 0 ? 'primary' : 'nod'}`} onClick={onApprove}>
+        <button className={`btn ${payment.exceeded || issues.length > 0 ? 'primary' : 'nod'}`} onClick={issues.length > 0 ? onReview : onApprove}>
           {issues.length > 0 ? t(SV.liveReview, lang) : payment.exceeded ? SV.approveOver[lang](money(payment.total, lang)) : SV.approvePayN[lang](money(payment.total, lang))}
         </button>
         <button className="btn danger" onClick={onReject}>{t(C.declinePay, lang)}</button>

@@ -29,9 +29,10 @@ export interface LogEntry {
 export type FeedItem =
   | { k: 'found'; id: string; ids: string[] }
   | { k: 'added'; id: string; pid: string; offer?: LogEntry['offer'] }
-  | { k: 'decided'; id: string; kind: 'plan' | 'cart' | 'question' | 'pay'; ok: boolean; q?: L; a?: L; pid?: string; total?: number };
+  | { k: 'decided'; id: string; kind: 'plan' | 'cart' | 'question' | 'pay'; ok: boolean; q?: L; a?: L; pid?: string; total?: number; review?: boolean };
 
-export type Choice = 'approve' | 'reject' | { option: string };
+/** review: 결제 승인 카드에서 조건이 바뀐 걸 보고 '바뀐 내용 확인'을 누름. 에이전트에는 승인으로 가지만 결제는 일어나지 않는다 */
+export type Choice = 'approve' | 'reject' | 'review' | { option: string };
 
 export interface ConsoleState {
   phase: Phase;
@@ -90,8 +91,8 @@ function decided(s: ConsoleState, c: Choice | undefined): FeedItem | null {
     return { k: 'decided', id, kind: 'question', ok: true, q: s.question.question, a: o?.label };
   }
   if (typeof c === 'object') return null;
-  const ok = c === 'approve';
-  if (s.phase === 'payment-gate') return { k: 'decided', id, kind: 'pay', ok, total: s.payment?.total };
+  const ok = c === 'approve' || c === 'review';
+  if (s.phase === 'payment-gate') return { k: 'decided', id, kind: 'pay', ok, total: s.payment?.total, ...(c === 'review' ? { review: true } : {}) };
   const cart = s.log.find((l) => l.tool === 'cart_add' && l.status === 'awaiting-approval');
   if (cart) return { k: 'decided', id, kind: 'cart', ok, pid: cart.itemIds?.[0] };
   if (s.phase === 'awaiting-approval') return { k: 'decided', id, kind: 'plan', ok };

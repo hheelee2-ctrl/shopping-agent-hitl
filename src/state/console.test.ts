@@ -56,6 +56,12 @@ describe('[R7] log / undo', () => {
 });
 
 describe('대화 기록(feed)', () => {
+  it('[R4] 조건이 바뀐 결제 카드에서 확인을 누르면 "결제"가 아니라 확인으로 남고, 결제 중 표시도 없다', () => {
+    const g: AgentEvent = { type: 'payment_gate', itemIds: ['c1'], total: 178000, limit: 300000, exceeded: false };
+    const s = reduce(run([plan(false), g]), { type: 'user_ack', choice: 'review' });
+    const d = s.feed.find((f) => f.k === 'decided');
+    expect(d).toMatchObject({ kind: 'pay', ok: true, review: true, total: 178000 });
+  });
   it('질문에 답하면 질문과 고른 답이 남는다', () => {
     const q: AgentEvent = { type: 'needs_input', id: 'q', question: L('뺄까요?'), options: [{ id: 'go', label: L('빼고 진행') }] };
     const s = reduce(run([plan(false), q]), { type: 'user_ack', choice: { option: 'go' } });

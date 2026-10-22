@@ -343,7 +343,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           request={request} onRequest={setRequest} onRun={run} onCompare={() => setCmpClosed(false)} onOpen={setSheet}
           onDial={setDial} onLimit={setLimit}
           onReset={reset} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }}
-          onApprove={ack(() => agent.approve(), 'approve')} onReject={ack(() => agent.reject(), 'reject')} onAnswer={(id) => ack(() => agent.answer(id), { option: id })()}
+          onApprove={ack(() => agent.approve(), 'approve')} onReview={ack(() => agent.approve(), 'review')} onReject={ack(() => agent.reject(), 'reject')} onAnswer={(id) => ack(() => agent.answer(id), { option: id })()}
           onUndo={(id) => agent.undo(id)}
           watching={watches.filter((w) => w.status === 'watching' || w.status === 'asked').length}
           locked={pid && !studyLive ? { ko: "위쪽 띠에서 '과제 시작'을 먼저 눌러 주세요", en: 'Press "Start task" in the bar above first' } : undefined}
