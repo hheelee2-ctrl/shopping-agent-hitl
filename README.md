@@ -67,6 +67,7 @@ src/agent/    RuleAgent: store 위에서 일하는 에이전트. 요청 해석�
 api/          Vercel Function: Claude 요청 해석 (/api/parse), 테스트 결제 준비·승인 (/api/pay/prepare, /api/pay/confirm)
 src/engine/   에이전트 ↔ UI 경계 (AgentEvent, AgentAdapter)
 src/state/    이벤트 → 화면 State 머신 (순수 reducer)
+src/auth/     로그인(카카오·구글, Supabase)과 사전 승인 기록
 src/pay/      토스 테스트 결제: 서명·대조(contract), 결제 창구(gateway), 팝업 결제 창(window, pay.html)
 src/study/    사용성 테스트 모드: 과제, 자율도 순서, 타임라인 → 지표, CSV
 src/rules.ts  승인 설계 규칙 R1–R10 (리뷰 모드·플레이북이 읽는다)
@@ -136,6 +137,15 @@ Supabase SQL Editor에서 `supabase/001_llm_quota.sql`을 한 번 실행한 뒤 
 - 결제하지 않고 중단하거나 결제가 실패하면 주문하지 않고 장바구니는 그대로 둔다.
 - 테스트 키가 없으면(`GET /api/pay/prepare`가 503) 팝업을 열지 않고 지금까지처럼 시뮬레이션으로 결제한다. 사용성 테스트 모드도 시뮬레이션으로 결제한다.
 - 아직 시뮬레이션인 곳: 장바구니에서 사람이 직접 결제하는 경로, 가격 대기(R10)의 미리 승인 결제. R10은 사람이 없을 때 결제하므로 토스 자동결제(빌링) 계약이 필요하다.
+
+## 로그인: 미리 승인할 때만
+
+데모는 로그인 없이 끝까지 된다. 가격 대기에서 "조건이 맞으면 내 승인 없이 결제"를 켤 때만 카카오·구글 로그인을 묻는다. 자리를 비운 동안 결제를 맡기려면 누가 맡겼는지 남아야 해서다(R10).
+
+- Supabase Auth(PKCE). 로그인 창은 팝업(`auth.html`)에서 열어 Nod 화면의 장바구니·가격 대기 설정이 그대로 남는다.
+- 사전 승인 조건은 `mandates` 테이블에 본인 계정으로 남는다(`supabase/002_mandates.sql`, RLS로 본인 행만). 사면 `used`와 주문번호, 기한이 끝나거나 그만두면 `ended`로 닫는다. 기록하지 못하면 대기를 시작하지 않는다.
+- 사용성 테스트 모드와 Supabase 설정이 없는 환경에서는 로그인을 묻지 않는다.
+- 환경변수: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`(브라우저 공개용). 공급자 설정은 Supabase → Authentication → Sign In / Providers, 돌아올 주소는 Authentication → URL Configuration에 `…/auth.html`을 넣는다.
 
 ## 에이전트 교체 지점
 

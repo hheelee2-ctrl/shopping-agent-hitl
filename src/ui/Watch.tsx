@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { L, Lang } from '../engine/types';
 import { defaultTarget, totalOf, type Verdict, type Watch } from '../agent/watch';
+import type { Account, Provider, SignInResult } from '../auth/auth';
 import { photoUrl } from '../store/photos';
 import { sellerOf } from '../store/sellers';
 import type { Store } from '../store/store';
@@ -60,11 +61,30 @@ const X = {
   skip: { ko: '사지 않기', en: "Don't buy" },
   orders: { ko: '주문 보기', en: 'View order' },
   sim: { ko: '시연용 시계예요. 하루를 1초 안쪽으로 줄여 보여줘요.', en: 'Demo clock: one day passes in under a second.' },
+  login: {
+    why: { ko: '미리 승인하려면 로그인이 필요해요. 자리를 비운 동안 결제를 맡기려면 누가 맡겼는지 남아야 해요.', en: 'Sign in to pre-approve. Paying while you are away needs a record of who approved it.' },
+    kakao: { ko: '카카오로 로그인', en: 'Sign in with Kakao' },
+    google: { ko: 'Google로 로그인', en: 'Sign in with Google' },
+    as: { ko: (n: string) => `${n} 계정으로 미리 승인해요`, en: (n: string) => `Pre-approving as ${n}` },
+    blocked: { ko: '브라우저가 로그인 창(팝업)을 막았어요. 팝업을 허용하고 다시 눌러 주세요.', en: 'The browser blocked the sign-in window. Allow pop-ups and try again.' },
+    failed: { ko: '로그인 창을 열지 못했어요. 잠시 뒤 다시 해 주세요.', en: 'Could not open sign-in. Try again shortly.' },
+    waiting: { ko: '로그인 창에서 계속해 주세요.', en: 'Continue in the sign-in window.' },
+  },
+  saveFail: { ko: '미리 승인 기록을 남기지 못해 시작하지 않았어요. 다시 해 주세요.', en: 'Could not record the pre-approval, so nothing started. Try again.' },
+  preBy: { ko: (n: string) => `사전 승인 · ${n}`, en: (n: string) => `Pre-approved · ${n}` },
 };
 
-export function WatchSetup({ lang, store, productId, size: size0, onStart, onClose }: {
+/** 미리 승인할 때만 쓰는 로그인. 로그인 설정이 없는 환경(사용성 테스트 등)에서는 넘기지 않는다. */
+export interface WatchLogin {
+  account: Account | null;
+  signIn: (p: Provider) => Promise<SignInResult>;
+}
+
+export function WatchSetup({ lang, store, productId, size: size0, login, onStart, onClose }: {
   lang: Lang; store: Store; productId: string; size: string;
-  onStart: (w: Omit<Watch, 'id'>) => void; onClose: () => void;
+  login?: WatchLogin;
+  /** 미리 승인 기록을 남기지 못하면 throw한다 */
+  onStart: (w: Omit<Watch, 'id'>) => void | Promise<void>; onClose: () => void;
 }) {
   const p = store.getProduct(productId)!;
   const sizes = Object.keys(p.sizes);
@@ -73,13 +93,32 @@ export function WatchSetup({ lang, store, productId, size: size0, onStart, onClo
   const [domesticOnly, setDom] = useState(true);
   const [days, setDays] = useState(14);
   const [pre, setPre] = useState(false);
+  const [msg, setMsg] = useState<L | null>(null);
+  const [busy, setBusy] = useState(false);
+  // 미리 승인은 누가 맡겼는지 남아야 한다(R10). 로그인 전에는 시작하지 않는다.
+  const needLogin = pre && !!login && !login.account;
+  const signIn = async (prov: Provider) => {
+    setMsg(null);
+    const r = await login!.signIn(prov);
+    setMsg(r === 'ok' ? X.login.waiting : r === 'blocked' ? X.login.blocked : X.login.failed);
+  };
+  const submit = async () => {
+    if (max <= 0 || needLogin || busy) return;
+    setBusy(true);
+    try {
+      await onStart({ productId, size, maxTotal: max, domesticOnly, days, preapproved: pre });
+    } catch {
+      setMsg(X.saveFail);
+      setBusy(false);
+    }
+  };
   const domestic = store.offersOf(productId).filter((o) => !sellerOf(o.sellerId).overseas && (o.sizes[size] ?? 0) > 0).map((o) => totalOf(o.sellerId, o.price));
   const nowBest = domestic.length ? Math.min(...domestic) : null;
   const src = photoUrl(productId);
   return (
     <div className="cmp-wrap watch-setup" role="dialog" aria-modal="true" aria-label={t(X.setupTitle, lang)}>
       <div className="cmp-scrim" onClick={onClose} />
-      <form className="cmp" onSubmit={(e) => { e.preventDefault(); if (max > 0) onStart({ productId, size, maxTotal: max, domesticOnly, days, preapproved: pre }); }}>
+      <form className="cmp" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
         <header className="ws-head">
           <span className={`ws-ph sw sw-${p.colors[0]}`}>{src && <img src={src} alt="" />}</span>
           <div>
@@ -110,9 +149,21 @@ export function WatchSetup({ lang, store, productId, size: size0, onStart, onClo
           <ul>{X.cond[lang](size, money(max, lang), domesticOnly, days).map((c) => <li key={c}>{c}</li>)}</ul>
           <label className="ws-check"><input type="checkbox" checked={pre} onChange={(e) => setPre(e.target.checked)} /><b>{t(X.pre, lang)}</b></label>
           <p className="note">{t(pre ? X.preOn : X.preOff, lang)}</p>
+          {pre && login && (login.account ? (
+            <p className="ws-as">{X.login.as[lang](login.account.name)}</p>
+          ) : (
+            <div className="ws-login">
+              <p>{t(X.login.why, lang)}</p>
+              <div className="row">
+                <button type="button" className="btn ws-kakao" onClick={() => void signIn('kakao')}>{t(X.login.kakao, lang)}</button>
+                <button type="button" className="btn" onClick={() => void signIn('google')}>{t(X.login.google, lang)}</button>
+              </div>
+            </div>
+          ))}
         </div>
+        {msg && <p className="ws-msg" role="status">{t(msg, lang)}</p>}
         <div className="row">
-          <button className="btn primary" type="submit" disabled={max <= 0}>{t(X.start, lang)}</button>
+          <button className="btn primary" type="submit" disabled={max <= 0 || needLogin || busy}>{t(X.start, lang)}</button>
           <button className="btn" type="button" onClick={onClose}>{t(X.cancel, lang)}</button>
         </div>
       </form>
@@ -158,7 +209,7 @@ export function WatchList({ lang, store, watches, onDay, onRun, onStop, onPay, o
               <div className="wl-t">
                 <span className="wl-k">{t(X.listTitle, lang)}</span>
                 <b>{t(p.name, lang)} {s.w.size !== 'FREE' && s.w.size}</b>
-                <span className="wl-c">{money(s.w.maxTotal, lang)} · {s.w.domesticOnly ? (lang === 'ko' ? '국내만' : 'domestic') : (lang === 'ko' ? '해외 포함' : 'overseas ok')} · {t(s.w.preapproved ? X.preTag : X.askTag, lang)}</span>
+                <span className="wl-c">{money(s.w.maxTotal, lang)} · {s.w.domesticOnly ? (lang === 'ko' ? '국내만' : 'domestic') : (lang === 'ko' ? '해외 포함' : 'overseas ok')} · {s.w.preapproved ? (s.w.by ? X.preBy[lang](s.w.by) : t(X.preTag, lang)) : t(X.askTag, lang)}</span>
               </div>
               <span className="wl-st">{X.status[s.status][lang](left)}</span>
             </header>

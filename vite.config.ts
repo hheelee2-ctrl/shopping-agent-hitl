@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => {
   for (const [k, v] of Object.entries(loadEnv(mode, process.cwd(), ''))) process.env[k] ??= v;
   return {
     plugins: [react(), devApi()],
-    build: { rollupOptions: { input: { main: resolve('index.html'), pay: resolve('pay.html') } } },
+    build: { rollupOptions: { input: { main: resolve('index.html'), pay: resolve('pay.html'), auth: resolve('auth.html'), privacy: resolve('privacy.html') } } },
     test: { environment: 'node', include: ['src/**/*.test.ts'] },
   };
 });

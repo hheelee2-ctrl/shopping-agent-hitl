@@ -253,6 +253,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
       <footer className="land-foot">
         <span className="logo"><Wordmark size={16} /></span>
         <p>{t(LAND.foot, lang)}</p>
+        <a className="land-foot-link" href="/privacy.html">{lang === 'ko' ? '개인정보처리방침' : 'Privacy policy'}</a>
       </footer>
     </div>
   );

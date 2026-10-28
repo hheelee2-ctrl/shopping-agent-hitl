@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { RuleAgent } from './agent/agent';
 import { llmInterpreter } from './agent/interpret';
 import { simulatedGateway, tossGateway } from './pay/gateway';
+import { supabase, useAuth } from './auth/auth';
+import { closeMandate, recordMandate } from './auth/mandates';
 import type { Dial, L, Lang } from './engine/types';
 import { initialState, reduce } from './state/console';
 import type { Action, Choice } from './state/console';
@@ -153,6 +155,14 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     setAsked(null);
   }, [agent, store, market, emit]);
 
+  // 로그인은 가격 대기를 미리 승인할 때만 묻는다(R10). 사용성 테스트 모드에서는 묻지 않는다.
+  const auth = useAuth();
+  // 사전 승인 기록을 닫는다. 실패해도 쇼핑은 멈추지 않는다.
+  const closeRecord = useCallback((w: Watch, status: 'used' | 'ended', orderId?: string) => {
+    const sb = supabase();
+    if (sb && w.mandateId) void closeMandate(sb, w.mandateId, status, orderId).catch(() => {});
+  }, []);
+
   // 가격 대기: 사람이 자리에 없을 때를 다루므로 시연용 시계로 하루씩 넘긴다
   const [watches, setWatches] = useState<WatchState[]>([]);
   const watchRef = useRef<WatchState[]>([]);
@@ -173,7 +183,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         if (prev?.tone !== 'hold') pushToast({ tone: 'warn', pid: cur.w.productId, title: lang === 'ko' ? '가격은 내려왔지만 사지 않았어요' : 'Price dropped, but not bought', sub: t(describeWatch(v, cur.w, day), lang) });
         break;
       }
-      case 'expire': line('end', describeWatch(v, cur.w, day)); next = { ...next, status: 'expired', auto: false }; break;
+      case 'expire': line('end', describeWatch(v, cur.w, day)); next = { ...next, status: 'expired', auto: false }; closeRecord(cur.w, 'ended'); break;
       case 'ask': {
         if (v.kind !== 'match') break;
         line('ok', describeWatch(v, cur.w, day));
@@ -189,13 +199,14 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         line('ok', describeWatch(v, cur.w, day));
         line('ok', { ko: `미리 승인한 조건으로 결제했어요. 주문 ${order.id}`, en: `Paid under your preset terms. Order ${order.id}` });
         next = { ...next, status: 'bought', auto: false, orderId: order.id };
+        closeRecord(cur.w, 'used', order.id);
         pushToast({ tone: 'ok', pid: cur.w.productId, title: lang === 'ko' ? '자리에 없는 동안 샀어요' : 'Bought while you were away', sub: `${pname}, ${t(sellerOf(v.sellerId).name, lang)}, ${money(v.total, lang)}`, action: { label: t(SV.ordersTab, lang), run: () => { setDrawerTab('orders'); setCartOpen(true); } } });
         note({ ko: `가격 대기 사전 승인으로 결제: ${p?.name.ko ?? ''} ${order.total.toLocaleString('ko-KR')}원`, en: `Paid by price-watch pre-approval: ${p?.name.en ?? ''}` });
         break;
       }
     }
     return next;
-  }, [store, lang, pushToast, note]);
+  }, [store, lang, pushToast, note, closeRecord]);
   const patchWatch = useCallback((id: string, fn: (s: WatchState) => WatchState) => {
     putWatches(watchRef.current.map((s) => (s.w.id === id ? fn(s) : s)));
   }, [putWatches]);
@@ -207,9 +218,15 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     else simulateDay(store, cur.w, cur.seed, cur.day + 1);
     return evaluate(cur, cur.day + 1);
   }), [patchWatch, evaluate, store]);
-  const startWatch = (spec: Omit<Watch, 'id'>) => {
-    const w: Watch = { ...spec, id: `w${Date.now().toString(36)}` };
-    const p = store.getProduct(w.productId);
+  const login = auth.enabled && !pid ? { account: auth.account, signIn: auth.signIn } : undefined;
+  const startWatch = async (spec: Omit<Watch, 'id'>) => {
+    const p = store.getProduct(spec.productId);
+    // 미리 승인이면 누가 맡겼는지 먼저 남긴다. 남기지 못하면 시작하지 않는다(WatchSetup이 이유를 보여준다).
+    const sb = supabase();
+    const mandate = spec.preapproved && login?.account && sb
+      ? { by: login.account.name, mandateId: await recordMandate(sb, spec, p?.name.ko ?? spec.productId) }
+      : {};
+    const w: Watch = { ...spec, ...mandate, id: `w${Date.now().toString(36)}` };
     note({ ko: `가격 대기 시작: ${p?.name.ko ?? ''}, 배송비 포함 ${w.maxTotal.toLocaleString('ko-KR')}원 이하${w.preapproved ? ', 사전 승인' : ''}`, en: `Price watch started: ${p?.name.en ?? ''}` });
     const first = evaluate({ w, day: 0, seed: Math.floor(Math.random() * 1e6), status: 'watching', auto: false, trail: [], log: [] }, 0);
     putWatches([first, ...watchRef.current]);
@@ -224,7 +241,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     note({ ko: `가격 대기 결제 승인: 주문 ${order.id}`, en: `Approved price-watch payment: order ${order.id}` });
     return { ...cur, status: 'bought', pending: undefined, orderId: order.id, log: [...cur.log, { day: cur.day, tone: 'ok', text: { ko: `승인하신 대로 결제했어요. 주문 ${order.id}`, en: `Paid as you approved. Order ${order.id}` } }] };
   });
-  const endWatch = (id: string) => patchWatch(id, (cur) => ({ ...cur, status: 'cancelled', auto: false, pending: undefined, log: [...cur.log, { day: cur.day, tone: 'end', text: { ko: '그만 기다리기로 했어요. 아무것도 사지 않았어요.', en: 'Stopped waiting. Nothing bought.' } }] }));
+  const endWatch = (id: string) => patchWatch(id, (cur) => (closeRecord(cur.w, 'ended'), { ...cur, status: 'cancelled', auto: false, pending: undefined, log: [...cur.log, { day: cur.day, tone: 'end', text: { ko: '그만 기다리기로 했어요. 아무것도 사지 않았어요.', en: 'Stopped waiting. Nothing bought.' } }] }));
   useEffect(() => {
     if (!watches.some((s) => s.auto && s.status === 'watching')) return;
     const timer = window.setInterval(() => {
@@ -326,6 +343,11 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           <button className="top-btn" onClick={() => { setDrawerTab('orders'); setCartOpen(true); }}>{t(SV.ordersTab, lang)}{shop.orders.length > 0 && <span className="cnt">{shop.orders.length}</span>}</button>
           <button className="top-btn" data-cart-btn onClick={() => { setDrawerTab('cart'); setCartOpen(true); }}>{t(C.cart, lang)}{cartCount > 0 && <span className="cnt">{cartCount}</span>}</button>
           <ReviewToggle on={review} onToggle={() => setReview((v) => !v)} lang={lang} />
+          {auth.account && (
+            <button className="top-btn top-account" title={lang === 'ko' ? `${auth.account.name} 로그아웃` : `Sign out ${auth.account.name}`} onClick={() => void auth.signOut()}>
+              <span className="top-account-n">{auth.account.name}</span>{lang === 'ko' ? '로그아웃' : 'Sign out'}
+            </button>
+          )}
           <ThemeButton theme={theme} onToggle={onTheme} lang={lang} />
           <div className="lang" role="group" aria-label="language">
             <button aria-pressed={lang === 'ko'} onClick={() => onLang('ko')}>KO</button>
@@ -379,7 +401,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         />
       )}
 
-      {watchFor && <WatchSetup lang={lang} store={store} productId={watchFor.id} size={watchFor.size} onStart={startWatch} onClose={() => setWatchFor(null)} />}
+      {watchFor && <WatchSetup lang={lang} store={store} productId={watchFor.id} size={watchFor.size} login={login} onStart={startWatch} onClose={() => setWatchFor(null)} />}
     </ReviewCtx.Provider>
   );
 }

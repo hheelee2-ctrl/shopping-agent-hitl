@@ -20,6 +20,9 @@ export interface Watch {
   days: number;
   /** 조건이 모두 맞으면 사람의 그 자리 승인 없이 결제해도 된다는 사전 승인 */
   preapproved: boolean;
+  /** 사전 승인한 사람(로그인 계정 이름)과 그 기록의 id. 로그인 설정이 없는 환경(테스트·사용성 테스트)에서는 없다 */
+  by?: string;
+  mandateId?: string;
 }
 
 /** 가격은 내려왔는데 사지 않은 이유 */

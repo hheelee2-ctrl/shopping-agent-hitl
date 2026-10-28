@@ -1,0 +1,22 @@
+@import './tokens.css';
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  line-height: var(--lh-body);
+}
+.doc {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 48px 16px 80px;
+}
+.doc h1 { margin: 8px 0 4px; font-size: 28px; line-height: var(--lh-tight); }
+.doc h2 { margin: 32px 0 8px; font-size: 18px; line-height: var(--lh-snug); }
+.doc p, .doc li { color: var(--ink-2); font-size: 15px; }
+.doc b { color: var(--ink); }
+.doc ul { padding-left: 20px; }
+.doc a { color: var(--brand-ink); }
+.doc-meta { color: var(--ink-3) !important; font-size: 13px !important; }
+.doc-back a { text-decoration: none; font-size: 14px; }
