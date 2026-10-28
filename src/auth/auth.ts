@@ -18,13 +18,22 @@ const DEFAULT_URL = 'https://pgaluyeodqiriowhoppw.supabase.co';
 const DEFAULT_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYWx1eWVvZHFpcmlvd2hvcHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNDczNzcsImV4cCI6MjEwODcyMzM3N30.ouqWjNw58lN7cYFOtD4268PVru39sq96NQ5hf7FzDK0';
 // 테스트(vitest)에서는 기본값을 쓰지 않는다: 로그인 없이 도는 것이 기본이다
 const inTest = import.meta.env.MODE === 'test';
-const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || (inTest ? undefined : DEFAULT_URL);
-const anon = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) || (inTest ? undefined : DEFAULT_ANON);
+// 환경변수 값이 주소가 아니면(다른 칸에 넣은 키 등) 무시하고 기본값을 쓴다
+const envUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim();
+const envAnon = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
+const url = envUrl && /^https:\/\//.test(envUrl) ? envUrl : inTest ? undefined : DEFAULT_URL;
+const anon = envAnon || (inTest ? undefined : DEFAULT_ANON);
 
 let client: SupabaseClient | null | undefined;
-/** 설정이 없으면(키 없는 배포·테스트) null. 그때는 로그인을 묻지 않는다. */
+/** 설정이 없거나 잘못됐으면 null. 그때는 로그인을 묻지 않는다(쇼핑 화면은 멈추지 않는다). */
 export function supabase(): SupabaseClient | null {
-  if (client === undefined) client = url && anon ? createClient(url, anon, { auth: { flowType: 'pkce', persistSession: true, detectSessionInUrl: false } }) : null;
+  if (client === undefined) {
+    try {
+      client = url && anon ? createClient(url, anon, { auth: { flowType: 'pkce', persistSession: true, detectSessionInUrl: false } }) : null;
+    } catch {
+      client = null;
+    }
+  }
   return client;
 }
 
