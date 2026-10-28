@@ -12,8 +12,14 @@ import { useCallback, useEffect, useState } from 'react';
 export type Provider = 'kakao' | 'google';
 export const AUTH_CHANNEL = 'nod-auth';
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// 프로젝트 주소와 anon 키는 브라우저에 공개하라고 만든 값이다(데이터는 RLS가 막는다). 환경변수가 있으면 그것을 쓴다.
+// service_role 키는 여기에 두지 않는다.
+const DEFAULT_URL = 'https://pgaluyeodqiriowhoppw.supabase.co';
+const DEFAULT_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYWx1eWVvZHFpcmlvd2hvcHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNDczNzcsImV4cCI6MjEwODcyMzM3N30.ouqWjNw58lN7cYFOtD4268PVru39sq96NQ5hf7FzDK0';
+// 테스트(vitest)에서는 기본값을 쓰지 않는다: 로그인 없이 도는 것이 기본이다
+const inTest = import.meta.env.MODE === 'test';
+const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || (inTest ? undefined : DEFAULT_URL);
+const anon = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) || (inTest ? undefined : DEFAULT_ANON);
 
 let client: SupabaseClient | null | undefined;
 /** 설정이 없으면(키 없는 배포·테스트) null. 그때는 로그인을 묻지 않는다. */

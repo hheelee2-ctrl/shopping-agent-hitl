@@ -145,7 +145,7 @@ Supabase SQL Editor에서 `supabase/001_llm_quota.sql`을 한 번 실행한 뒤 
 - Supabase Auth(PKCE). 로그인 창은 팝업(`auth.html`)에서 열어 Nod 화면의 장바구니·가격 대기 설정이 그대로 남는다.
 - 사전 승인 조건은 `mandates` 테이블에 본인 계정으로 남는다(`supabase/002_mandates.sql`, RLS로 본인 행만). 사면 `used`와 주문번호, 기한이 끝나거나 그만두면 `ended`로 닫는다. 기록하지 못하면 대기를 시작하지 않는다.
 - 사용성 테스트 모드와 Supabase 설정이 없는 환경에서는 로그인을 묻지 않는다.
-- 환경변수: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`(브라우저 공개용). 공급자 설정은 Supabase → Authentication → Sign In / Providers, 돌아올 주소는 Authentication → URL Configuration에 `…/auth.html`을 넣는다.
+- 프로젝트 주소와 anon 키는 브라우저 공개용이라 `src/auth/auth.ts`에 기본값으로 둔다(`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`가 있으면 그것을 쓴다). service_role 키는 서버 환경변수에만 둔다. 공급자 설정은 Supabase → Authentication → Sign In / Providers, 돌아올 주소는 Authentication → URL Configuration에 `…/auth.html`을 넣는다.
 
 ## 에이전트 교체 지점
 
