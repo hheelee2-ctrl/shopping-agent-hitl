@@ -54,7 +54,8 @@ export interface Store {
   /** 상품가 + 판매처별 배송비 */
   cartTotal(): number;
   quote(): Quote[];
-  checkout(by?: 'user' | 'agent'): Order[] | null;
+  /** locked: 결제를 승인한 순간의 견적. 주면 그 금액·묶음으로 주문하고, 그 줄만 장바구니에서 뺀다. */
+  checkout(by?: 'user' | 'agent', locked?: Quote[], paidVia?: Order['paidVia']): Order[] | null;
   /** 장바구니를 거치지 않고 한 줄만 바로 주문한다 (가격 대기의 사전 승인 구매). 재고가 없으면 null. */
   buyNow(id: string, size: string, sellerId: string, by: 'user' | 'agent', mandate?: string): Order | null;
   /** 쇼핑몰 쪽 변화. sellerId가 없으면 대표 판매처(공식몰)에만 두고 나머지 판매처는 0으로 맞춘다. */
@@ -204,23 +205,28 @@ export function createStore(opts: { now?: () => number } = {}): Store {
     },
     cartTotal: () => quote().reduce((a, q) => a + q.total, 0),
     quote,
-    checkout(by = 'user') {
-      if (state.cart.length === 0) return null;
+    checkout(by = 'user', locked, paidVia) {
+      const qs = locked ?? quote();
+      if (qs.length === 0) return null;
       const t = now();
-      const made: Order[] = quote().map((q) => ({
+      const made: Order[] = qs.map((q) => ({
         id: `${ymd(t)}-${String(++seq).padStart(4, '0')}`,
         sellerId: q.sellerId, lines: q.lines, subtotal: q.subtotal, shipping: q.shipping, total: q.total,
-        placedAt: t, shipAt: q.shipAt, arriveAt: q.arriveAt, by,
+        placedAt: t, shipAt: q.shipAt, arriveAt: q.arriveAt, by, ...(paidVia ? { paidVia } : {}),
       }));
+      const bought = qs.flatMap((q) => q.lines);
       const offers = { ...state.offers };
-      for (const l of state.cart) {
+      for (const l of bought) {
         const o = offers[`${l.productId}@${l.sellerId}`];
+        if (!o) continue;
         const sizes = { ...o.sizes, [l.size]: Math.max(0, (o.sizes[l.size] ?? 0) - l.qty) };
         offers[o.id] = { ...o, sizes, stock: sum(sizes) };
       }
       const all = Object.values(offers);
       const products = Object.fromEntries(Object.values(state.products).map((p) => [p.id, summarize(p, all)]));
-      set({ products, offers, cart: [], orders: [...made, ...state.orders] });
+      const same = (a: CartLine, b: CartLine) => a.productId === b.productId && a.sellerId === b.sellerId && a.size === b.size;
+      const cart = locked ? state.cart.filter((l) => !bought.some((b) => same(l, b))) : [];
+      set({ products, offers, cart, orders: [...made, ...state.orders] });
       return made;
     },
     buyNow(id, size, sellerId, by, mandate) {

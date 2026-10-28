@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { RuleAgent } from './agent/agent';
 import { llmInterpreter } from './agent/interpret';
+import { simulatedGateway, tossGateway } from './pay/gateway';
 import type { Dial, L, Lang } from './engine/types';
 import { initialState, reduce } from './state/console';
 import type { Action, Choice } from './state/console';
@@ -40,8 +41,12 @@ interface AppProps {
 
 export default function App({ lang, onLang, theme, onTheme, initial }: AppProps) {
   const store = useMemo(() => createStore(), []);
-  // 요청 해석은 서버의 Claude를 먼저 쓰고, 키가 없거나 실패하면 규칙 파서로 한다
-  const agent = useMemo(() => new RuleAgent(store, undefined, llmInterpreter()), [store]);
+  const langRef = useRef(lang);
+  langRef.current = lang;
+  // 요청 해석은 서버의 Claude를 먼저 쓰고, 키가 없거나 실패하면 규칙 파서로 한다.
+  // 결제는 토스 테스트 결제창으로 받고, 키가 없거나 사용성 테스트 모드면 시뮬레이션으로 한다.
+  const agent = useMemo(() => new RuleAgent(store, undefined, llmInterpreter(),
+    studyId(location.hash) ? simulatedGateway : tossGateway({ lang: () => langRef.current })), [store]);
   const market = useMemo(() => createMarket(store), [store]);
   const shop = useStore(store);
   const [state, dispatch] = useReducer(reduce, initialState);

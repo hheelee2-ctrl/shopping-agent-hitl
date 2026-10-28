@@ -17,7 +17,7 @@ import { savePrefs } from './prefs';
 import { StyleProfileEditor } from './StyleProfile';
 import type { Frame } from '../state/timeline';
 import { RuleMark } from './Review';
-import { C, DIAL, PHASE, SUGGEST, SV, SZ, TH, money, t } from './copy';
+import { C, DIAL, PHASE, SUGGEST, SV, SZ, TH, money, payMethodOf, t } from './copy';
 
 interface Props {
   lang: Lang;
@@ -456,7 +456,7 @@ function Result({ lang, store, state, onOrders, onPick }: {
           {ok && orders.length > 0 && (
             <>
               <dl className="rcpt-sum">
-                <div><dt>{t(TH.paidWith, lang)}</dt><dd>{t(SV.payMethodV, lang)}</dd></div>
+                <div><dt>{t(TH.paidWith, lang)}</dt><dd>{t(payMethodOf(orders[0]), lang)}</dd></div>
                 <div className="grand"><dt>{t(TH.total, lang)}</dt><dd>{money(total, lang)}</dd></div>
               </dl>
               <ol className="rcpt-tl" aria-label={t(TH.tlPlaced, lang)}>

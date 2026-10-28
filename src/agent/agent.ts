@@ -2,6 +2,7 @@ import type { AgentAdapter, AgentEvent, L, Level, PlanStep, RunOptions } from '.
 import { CATEGORY_L, COLOR_L } from '../store/labels';
 import { deadlineL, describeCriteria, restate } from '../store/parser';
 import { ruleInterpreter, type InterpretedBy, type Interpreter } from './interpret';
+import { simulatedGateway, type ChargeResult, type PaymentGateway } from '../pay/gateway';
 import { isEligible, reasonOf, searchProducts, type Scored } from '../store/search';
 import { applyProfile, avoided, excludedNote, rankByTaste, tasteChip, tasteOf, tasteReason, type Applied } from '../store/taste';
 import { arrivalLabel, deadlineOf, DUTY_OVER, SELLERS, sellerOf } from '../store/sellers';
@@ -44,6 +45,8 @@ export class RuleAgent implements AgentAdapter {
   private waiter: ((v: string) => void) | null = null;
   private stopped = false;
   private paid = false;
+  /** 결제창이 열려 있는 동안. 이때는 담은 항목을 되돌리지 않는다(결제 중인 금액이 바뀌므로). */
+  private charging = false;
   private gatePending = false;
   private undoEmptied = false;
   private runId = 0;
@@ -53,7 +56,7 @@ export class RuleAgent implements AgentAdapter {
 
   /** 이번 요청을 누가 해석했는지. 해석 칩과 함께 화면에 보여준다. */
   private by: InterpretedBy = 'rule';
-  constructor(private store: Store, private delay: Delay = realDelay, private interpret: Interpreter = ruleInterpreter) {}
+  constructor(private store: Store, private delay: Delay = realDelay, private interpret: Interpreter = ruleInterpreter, private gateway: PaymentGateway = simulatedGateway) {}
 
   start(opts: RunOptions, onEvent: (e: AgentEvent) => void) {
     this.stop();
@@ -61,6 +64,7 @@ export class RuleAgent implements AgentAdapter {
     this.onEvent = onEvent;
     this.stopped = false;
     this.paid = false;
+    this.charging = false;
     this.gatePending = false;
     this.undoEmptied = false;
     this.lines.clear();
@@ -85,6 +89,13 @@ export class RuleAgent implements AgentAdapter {
   undo(targetId: string) {
     const productId = this.lines.get(targetId);
     if (!productId) return;
+    if (this.charging) {
+      this.emit({
+        type: 'undo', targetId, status: 'blocked',
+        reason: { ko: '결제창이 열려 있어요. 결제를 끝내거나 창을 닫은 뒤에 되돌릴 수 있어요.', en: 'The payment window is open. Finish or close it before undoing.' },
+      });
+      return;
+    }
     if (this.paid) {
       this.emit({
         type: 'undo', targetId, status: 'blocked',
@@ -341,17 +352,73 @@ export class RuleAgent implements AgentAdapter {
       });
     }
     // 결제는 한 번에 끝내지 않고 단계마다 보여준다: 결제 승인 → 판매처별 주문 접수 → 주문 확인
-    const amount = this.store.cartTotal();
-    const emitPay = (pid: string, status: 'running' | 'done', label: L, note?: L) =>
+    // 승인한 순간의 조건(금액·판매처별 묶음)을 고정한다. 결제창에 있는 사이 시세가 바뀌어도 결제 금액과 주문은 그대로다.
+    const locked = this.store.quote();
+    const amount = locked.reduce((a, q) => a + q.total, 0);
+    const names = locked.flatMap((q) => q.lines.map((l) => this.store.getProduct(l.productId)?.name ?? { ko: '상품', en: 'Item' }));
+    const emitPay = (pid: string, status: 'running' | 'done' | 'failed', label: L, note?: L) =>
       this.emit({ type: 'tool_call', id: pid, tool: 'pay', status, label, note });
     const authL: L = { ko: '결제 승인 요청', en: 'Requesting payment approval' };
-    // 승인한 순간의 조건으로 바로 주문을 확정한다(기다리는 사이 시세가 바뀌어도 금액은 그대로)
+    let paid: ChargeResult;
+    for (let tryN = 1; ; tryN++) {
+      // 팝업 결제창은 승인 클릭의 흐름 안에서 바로 열어야 브라우저가 막지 않는다. 그래서 기다리기 전에 부른다.
+      this.charging = true;
+      const pending = this.gateway.charge({ amount, names });
+      emitPay('t-pay-auth', 'running', authL, won(amount));
+      paid = await pending;
+      this.charging = false;
+      if (!ok()) return;
+      if (paid.status === 'canceled') {
+        // 토스 샌드박스도 결제를 끝내려면 실제 카드 앱 인증이 필요하다. 인증할 수 없는 사람도 흐름 끝까지 볼 수 있게 묻는다.
+        this.emit({
+          type: 'needs_input', id: `q-paycancel${tryN}`,
+          question: {
+            ko: '토스 결제창에서 결제하지 않았어요. 테스트 결제창은 카드 앱 인증을 해야 끝나요. 실제 돈은 나가지 않아요.',
+            en: 'Nothing was paid in the Toss window. The test window needs card-app verification to finish. No real money moves.',
+          },
+          options: [
+            { id: 'skip', label: { ko: '인증 없이 테스트 결제로 계속', en: 'Continue as a test payment without verification' } },
+            { id: 'retry', label: { ko: '결제창 다시 열기', en: 'Open the payment window again' } },
+            { id: 'stop', label: { ko: '결제하지 않고 중단', en: 'Stop without paying' } },
+          ],
+        });
+        const f = await this.wait();
+        if (!ok()) return;
+        if (f === 'retry') continue;
+        if (f === 'skip') { paid = { status: 'paid', via: 'skip' }; break; }
+        return this.finish('cancelled', { ko: '결제하지 않고 중단했어요. 주문하지 않았고, 장바구니는 그대로예요.', en: 'Stopped without paying. No order was placed and your cart is unchanged.' });
+      }
+      if (paid.status !== 'blocked') break;
+      this.emit({
+        type: 'needs_input', id: `q-popup${tryN}`,
+        question: { ko: '브라우저가 결제창(팝업)을 막았어요. 결제하지 않았어요.', en: 'The browser blocked the payment window (pop-up). Nothing was charged.' },
+        options: [
+          { id: 'retry', label: { ko: '결제창 다시 열기', en: 'Open the payment window again' } },
+          { id: 'skip', label: { ko: '결제창 없이 테스트 결제로 계속', en: 'Continue as a test payment without the window' } },
+          { id: 'stop', label: { ko: '결제하지 않고 중단', en: 'Stop without paying' } },
+        ],
+      });
+      const f = await this.wait();
+      if (!ok()) return;
+      if (f === 'skip') { paid = { status: 'paid', via: 'skip' }; break; }
+      if (f !== 'retry') return this.finish('cancelled', { ko: '결제하지 않고 중단했어요. 장바구니는 그대로예요.', en: 'Stopped without paying. Your cart is unchanged.' });
+    }
+    if (paid.status !== 'paid') {
+      const why: L = { ko: '결제하지 못했어요', en: 'Payment failed' };
+      emitPay('t-pay-auth', 'failed', why, won(amount));
+      return this.finish('cancelled', { ko: `${why.ko}. 주문하지 않았고, 장바구니는 그대로예요.`, en: `${why.en}. No order was placed and your cart is unchanged.` });
+    }
+    if (paid.via === 'sim') {
+      await d(1100);
+      if (!ok()) return;
+    }
     this.paid = true;
-    const orders = this.store.checkout('agent') ?? [];
-    emitPay('t-pay-auth', 'running', authL, won(amount));
-    await d(1100);
-    if (!ok()) return;
-    emitPay('t-pay-auth', 'done', { ko: '결제 승인됨', en: 'Payment approved' }, won(amount));
+    const orders = this.store.checkout('agent', locked, paid.via === 'sim' ? undefined : paid.via) ?? [];
+    const via: Partial<Record<typeof paid.via, L>> = {
+      toss: { ko: `${won(amount).ko} · 토스 테스트 결제`, en: `${won(amount).en} · Toss test payment` },
+      skip: { ko: `${won(amount).ko} · 테스트 결제 (카드 인증 생략)`, en: `${won(amount).en} · Test payment (verification skipped)` },
+    };
+    emitPay('t-pay-auth', 'done', { ko: '결제 승인됨', en: 'Payment approved' }, via[paid.via] ?? won(amount));
     for (const [i, o] of orders.entries()) {
       const s = sellerOf(o.sellerId).name;
       emitPay(`t-pay-order${i}`, 'running', { ko: `${s.ko}에 주문 전달`, en: `Sending order to ${s.en}` });

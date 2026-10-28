@@ -4,7 +4,7 @@ import { photoUrl } from '../store/photos';
 import { arrivalLabel, dateLabel, returnLabel, sellerOf } from '../store/sellers';
 import { quoteOf, type CartIssue, type Quote } from '../store/store';
 import type { Order, StoreState } from '../store/types';
-import { C, SV, money, t } from './copy';
+import { C, SV, money, payMethodOf, t } from './copy';
 import { Icon } from './Icon';
 import { Stepper } from './Shop';
 import { Spinner } from './Spinner';
@@ -299,7 +299,7 @@ function Done({ lang, orders, now, state, onOrders, onOpen, onClose }: {
         ))}
       </ul>
       <dl className="done-sum">
-        <div><dt>{t(SV.payMethod, lang)}</dt><dd>{t(SV.payMethodV, lang)}</dd></div>
+        <div><dt>{t(SV.payMethod, lang)}</dt><dd>{t(payMethodOf(orders[0]), lang)}</dd></div>
         <div><dt>{t(SV.address, lang)}</dt><dd>{t(SV.addressV, lang)}</dd></div>
         <div className="grand"><dt>{t(SV.grand, lang)}</dt><dd>{money(total, lang)}</dd></div>
       </dl>
@@ -448,7 +448,7 @@ function OrderDetail({ lang, order: o, state }: { lang: Lang; order: Order; stat
           <div><dt>{t(SV.itemsTotal, lang)}</dt><dd>{money(o.subtotal, lang)}</dd></div>
           <div><dt>{t(SV.shipTotalL, lang)}</dt><dd>{o.shipping > 0 ? money(o.shipping, lang) : t(SV.freeShip, lang)}</dd></div>
           <div className="grand"><dt>{t(SV.grand, lang)}</dt><dd>{money(o.total, lang)}</dd></div>
-          <div><dt>{t(SV.payMethod, lang)}</dt><dd>{t(SV.payMethodV, lang)}</dd></div>
+          <div><dt>{t(SV.payMethod, lang)}</dt><dd>{t(payMethodOf(o), lang)}</dd></div>
           <div><dt>{t(SV.paidAt, lang)}</dt><dd>{t(dateLabel(o.placedAt), lang)}</dd></div>
           <div><dt>{t(SV.orderedVia, lang)}</dt><dd>{SV.placedBy[lang][o.by]}</dd></div>
         </dl>

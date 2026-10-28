@@ -52,6 +52,14 @@ describe('llmInterpreter: 서버가 안 되면 규칙 파서로', () => {
     await interp('가방');
     expect(f).toHaveBeenCalledTimes(1);
   });
+  it('호출 한도를 넘으면(429) 규칙 파서로 해석하고, 그 뒤로는 서버에 묻지 않는다', async () => {
+    const f = vi.fn(async () => new Response('{}', { status: 429 }));
+    vi.stubGlobal('fetch', f);
+    const interp = llmInterpreter();
+    expect((await interp('가방')).by).toBe('rule');
+    await interp('코트');
+    expect(f).toHaveBeenCalledTimes(1);
+  });
   it('네트워크 오류나 이상한 응답도 규칙 파서로', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('offline'); }));
     expect((await llmInterpreter()('가방')).by).toBe('rule');

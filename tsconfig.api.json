@@ -4,5 +4,5 @@
     "lib": ["ES2022", "DOM"],
     "types": ["node"]
   },
-  "include": ["api", "src/agent/llmParse.ts"]
+  "include": ["api", "src/agent/llmParse.ts", "src/agent/quota.ts", "src/pay/contract.ts"]
 }

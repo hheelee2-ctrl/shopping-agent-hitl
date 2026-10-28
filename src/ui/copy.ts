@@ -1,5 +1,6 @@
 import type { Dial, L, Lang, Level } from '../engine/types';
 import type { Phase } from '../state/console';
+import type { Order } from '../store/types';
 
 export const t = (l: L, lang: Lang) => l[lang];
 
@@ -84,6 +85,8 @@ export const SV = {
   back: { ko: '장바구니로', en: 'Back to cart' },
   payMethod: { ko: '결제 수단', en: 'Payment' },
   payMethodV: { ko: '등록된 카드 •••• 4821', en: 'Saved card •••• 4821' },
+  payMethodToss: { ko: '토스페이먼츠 테스트 결제', en: 'Toss Payments test payment' },
+  payMethodSkip: { ko: '테스트 결제 (카드 인증 생략)', en: 'Test payment (verification skipped)' },
   itemsTotal: { ko: '상품 금액', en: 'Items' },
   shipTotalL: { ko: '배송비', en: 'Shipping' },
   grand: { ko: '총 결제 금액', en: 'Total' },
@@ -373,3 +376,6 @@ export const PHASE: Record<Phase, L> = {
 
 export const money = (n: number, lang: Lang) =>
   lang === 'ko' ? `${n.toLocaleString('ko-KR')}원` : `KRW ${n.toLocaleString('en-US')}`;
+
+/** 주문의 결제 수단. 토스로 결제했으면 그렇게, 아니면 시뮬레이션의 등록 카드 */
+export const payMethodOf = (o?: Order): L => (o?.paidVia === 'toss' ? SV.payMethodToss : o?.paidVia === 'skip' ? SV.payMethodSkip : SV.payMethodV);

@@ -64,9 +64,10 @@ npm run check    # rule gate + typecheck + token gate + tests + build
 ```
 src/store/    쇼핑몰 도메인: 카탈로그, state(store), 요청 파서, 점수화 검색
 src/agent/    RuleAgent: store 위에서 일하는 에이전트. 요청 해석기(interpret.ts)는 주입한다
-api/          Vercel Function: Claude 요청 해석 (/api/parse)
+api/          Vercel Function: Claude 요청 해석 (/api/parse), 테스트 결제 준비·승인 (/api/pay/prepare, /api/pay/confirm)
 src/engine/   에이전트 ↔ UI 경계 (AgentEvent, AgentAdapter)
 src/state/    이벤트 → 화면 State 머신 (순수 reducer)
+src/pay/      토스 테스트 결제: 서명·대조(contract), 결제 창구(gateway), 팝업 결제 창(window, pay.html)
 src/study/    사용성 테스트 모드: 과제, 자율도 순서, 타임라인 → 지표, CSV
 src/rules.ts  승인 설계 규칙 R1–R10 (리뷰 모드·플레이북이 읽는다)
 src/ui/       랜딩(히어로 진열대 HeroPicks), 쇼핑몰 화면, 에이전트 패널, 장바구니·주문 상세, 모션 엔진(motion.ts)
@@ -80,7 +81,7 @@ src/ui/       랜딩(히어로 진열대 HeroPicks), 쇼핑몰 화면, 에이전
 - `src/agent/llmParse.ts`: 시스템 프롬프트, 스키마, `sanitize`. 서버와 클라이언트가 같이 쓰고, 클라이언트는 받은 값을 다시 어휘 안으로 거른다.
 - `src/agent/interpret.ts`: `/api/parse`를 먼저 부르고, 키 없음(503)·실패·9초 초과면 규칙 파서(`parseMulti`)로 해석한다. 에이전트 패널의 해석 칩 끝에 `Claude가 해석` / `규칙으로 해석`이 붙는다.
 
-공개 데모(https://shopping-agent-hitl.vercel.app)는 키 없이 규칙 파서로 동작한다. 해석하는 동안 "요청을 읽는 중 → 조건을 정리하는 중 → 쇼핑몰 조건으로 바꾸는 중"을 보여주고, 해석 결과를 한 문장으로 되말한 뒤(`restate`) 조건 칩을 보여준다. `Claude가 해석` 표시는 실제로 Claude가 해석했을 때만 붙는다.
+공개 데모(https://shopping-agent-hitl.vercel.app)는 키와 호출 제한이 설정되기 전까지 규칙 파서로 동작한다. 해석하는 동안 "요청을 읽는 중 → 조건을 정리하는 중 → 쇼핑몰 조건으로 바꾸는 중"을 보여주고, 해석 결과를 한 문장으로 되말한 뒤(`restate`) 조건 칩을 보여준다. `Claude가 해석` 표시는 실제로 Claude가 해석했을 때만 붙는다.
 
 ### 해석률 (규칙 파서)
 
@@ -93,8 +94,48 @@ src/ui/       랜딩(히어로 진열대 HeroPicks), 쇼핑몰 화면, 에이전
 
 두 세트 모두 직접 쓴 문장이라, 실사용자 문장에 대한 해석률은 이보다 낮을 수 있다.
 
-설정: Vercel 프로젝트 환경변수에 `ANTHROPIC_API_KEY`를 넣고 다시 배포한다. 공개 URL이라 누구나 호출할 수 있으므로 Anthropic 콘솔에서 월 사용 한도를 걸어 두는 것을 권장한다. 요청은 200자까지만 받는다.
-로컬 `npm run dev`(Vite)에는 `/api`가 없어 규칙 파서로 동작한다. 로컬에서 Claude 해석까지 보려면 `vercel dev`를 쓴다.
+### 호출 제한
+
+공개 URL이라 누구나 `/api/parse`를 부를 수 있다. 그래서 Claude를 부르기 전에 횟수부터 센다(`src/agent/quota.ts`).
+
+- 한 사람(IP 해시, 원래 IP는 저장하지 않음) 시간당 10회, 전체 하루 200회. 넘으면 429를 돌려주고 클라이언트는 그 세션 동안 규칙 파서로 해석한다.
+- 서버리스 함수는 메모리가 이어지지 않아 횟수는 Supabase에 둔다(`supabase/001_llm_quota.sql`). 셀 곳이 없거나 DB가 응답하지 않으면 Claude를 부르지 않는다.
+- 요청은 200자까지만 받는다. Anthropic 콘솔의 월 사용 한도는 이와 별도로 걸어 둔다.
+
+### 설정 (Vercel 환경변수)
+
+| 이름 | 값 | 공개 여부 |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Anthropic 콘솔에서 발급 | 비밀 |
+| `SUPABASE_URL` | Supabase 프로젝트 URL | 공개돼도 됨 |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase 서버 키. 서버 함수에서만 쓴다 | 비밀 |
+| `QUOTA_SALT` | 아무 긴 문자열. IP 해시에 섞는다 | 비밀 |
+| `LLM_LIMIT_PER_HOUR`, `LLM_LIMIT_PER_DAY` | 선택. 기본 10, 200 | — |
+
+| `TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY` | 토스페이먼츠 **테스트** 키(API 개별 연동 키, `test_ck_`·`test_sk_`). live 키는 받지 않는다 | 시크릿 키는 비밀 |
+
+Supabase SQL Editor에서 `supabase/001_llm_quota.sql`을 한 번 실행한 뒤 다시 배포한다.
+로컬 `npm run dev`도 `api/*.ts`를 그대로 부른다(`vite.config.ts`의 개발용 미들웨어). 키는 `.env.local`에 넣는다(저장소에 올라가지 않음). Supabase 없이 Claude 해석을 볼 때만 `LLM_UNLIMITED=1`을 넣는다.
+
+## 결제: 토스페이먼츠 테스트 결제
+
+사람이 결제 승인 카드에서 승인하면, 토스 테스트 결제창(샌드박스)에서 한 번 더 결제한다. 실제로 돈이 나가지 않는다.
+
+```
+승인 클릭 ─ /api/pay/prepare: 주문번호 + 승인한 금액에 서명
+          ├ 데스크톱: Nod 화면 위에 토스 결제창(페이지 이동 없음, Promise로 결과 받음)
+          └ 모바일:   팝업(pay.html) 안에서 토스 결제창 → 성공 주소 → BroadcastChannel로 결과
+          → /api/pay/confirm: 토스가 돌려준 주문번호·금액 = 서명한 값일 때만 토스 승인 API 호출
+          → 에이전트가 승인 순간의 견적 그대로 주문 확정
+```
+
+- **서버는 상품 가격을 모른다.** 가격은 브라우저 안의 시뮬레이션 쇼핑몰이 정한다. 그래서 서버는 가격을 다시 계산하지 않고, 사람이 Nod에서 승인한 금액에 서명해 두었다가 토스가 돌려준 금액과 1원이라도 다르면 승인하지 않는다(`src/pay/contract.ts`, [R4]). 승인하지 않은 결제는 토스에서 만료되어 돈이 나가지 않는다.
+- **결제창은 Nod 화면을 떠나지 않는다.** Nod의 장바구니·에이전트 상태는 메모리에 있다. 데스크톱은 결제창을 화면 위에 띄우고, 모바일은 토스가 페이지 이동만 허용하므로 이동을 팝업 안에서만 일으킨다. 팝업이 막히면 에이전트가 "결제창 다시 열기"를 묻는다.
+- **샌드박스도 끝까지 가려면 카드 앱 인증이 필요하다.** 인증할 수 없는 사람(포트폴리오 리뷰어 등)이 막히지 않게, 결제창을 닫으면 "인증 없이 테스트 결제로 계속 / 결제창 다시 열기 / 결제하지 않고 중단"을 묻는다. 이렇게 낸 주문은 결제 수단에 `테스트 결제 (카드 인증 생략)`으로 남는다. 금액 불일치처럼 결제가 실패한 경우에는 이 선택지를 주지 않는다.
+- **승인 순간의 조건을 고정한다.** 결제창에 있는 동안 시세가 바뀌어도 결제 금액과 주문 묶음은 승인한 견적 그대로다. 결제창이 열려 있는 동안에는 담은 항목을 되돌리지 않는다.
+- 결제하지 않고 중단하거나 결제가 실패하면 주문하지 않고 장바구니는 그대로 둔다.
+- 테스트 키가 없으면(`GET /api/pay/prepare`가 503) 팝업을 열지 않고 지금까지처럼 시뮬레이션으로 결제한다. 사용성 테스트 모드도 시뮬레이션으로 결제한다.
+- 아직 시뮬레이션인 곳: 장바구니에서 사람이 직접 결제하는 경로, 가격 대기(R10)의 미리 승인 결제. R10은 사람이 없을 때 결제하므로 토스 자동결제(빌링) 계약이 필요하다.
 
 ## 에이전트 교체 지점
 

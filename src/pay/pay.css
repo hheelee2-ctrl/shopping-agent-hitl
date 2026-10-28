@@ -1,0 +1,35 @@
+@import '../styles/tokens.css';
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+.pay-win {
+  max-width: 360px;
+  padding: 0 16px;
+  text-align: center;
+}
+.pay-win h1 {
+  margin: 12px 0 8px;
+  font-size: 20px;
+  line-height: var(--lh-tight);
+}
+.pay-win p {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: var(--lh-body);
+}
+.pay-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  background: var(--brand-wash);
+  color: var(--brand-ink) !important;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}

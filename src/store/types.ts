@@ -84,6 +84,8 @@ export interface Order {
   by: 'user' | 'agent';
   /** 사람이 그 자리에서가 아니라 미리 정한 조건(가격 대기)으로 승인한 주문이면 그 대기의 id */
   mandate?: string;
+  /** 토스 테스트 결제로 결제했으면 toss, 토스 결제창을 닫고 인증 없이 테스트 결제로 계속했으면 skip. 없으면 시뮬레이션 결제 */
+  paidVia?: 'toss' | 'skip';
 }
 
 export interface StoreState {
