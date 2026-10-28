@@ -87,6 +87,9 @@ fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .sw-gray { --c: var(--sw-gray); }
 .sw-brown { --c: var(--sw-brown); }
 .sw-khaki { --c: var(--sw-khaki); }
+.sw-pink { --c: var(--sw-pink); }
+.sw-gold { --c: var(--sw-gold); }
+.sw-silver { --c: var(--sw-silver); }
 .sw-blue { --c: var(--sw-blue); }
 .prod .sw.sw-black { --c: var(--sw-black); }
 .prod .sw.sw-white { --c: var(--sw-white); }
@@ -95,6 +98,9 @@ fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .prod .sw.sw-gray { --c: var(--sw-gray); }
 .prod .sw.sw-brown { --c: var(--sw-brown); }
 .prod .sw.sw-khaki { --c: var(--sw-khaki); }
+.sw-pink { --c: var(--sw-pink); }
+.sw-gold { --c: var(--sw-gold); }
+.sw-silver { --c: var(--sw-silver); }
 .prod .sw.sw-blue { --c: var(--sw-blue); }
 .ph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 900ms var(--ease); }
 .prod .sw:hover .ph { transform: scale(1.035); }

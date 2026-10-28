@@ -12,7 +12,8 @@ const CATEGORIES: Dict<Category> = [
   ['coat', ['코트', '트렌치', '롱패딩', '파카', 'coat', 'trench', 'parka']],
   ['jacket', ['자켓', '재킷', '점퍼', '잠바', '바람막이', '블루종', '블레이저', '패딩', '야상', 'jacket', 'blazer', 'windbreaker', 'puffer', 'padding']],
   ['sneakers', ['스니커즈', '스니커', '운동화', 'sneaker', 'trainers']],
-  ['loafers', ['로퍼', '구두', 'loafer', 'dress shoes']],
+  ['heels', ['힐', '펌프스', '슬링백', 'heels', 'heel', 'pumps', 'slingback']],
+  ['loafers', ['로퍼', '플랫', '구두', 'loafer', 'flats', 'dress shoes']],
   ['boots', ['첼시부츠', '부츠', '워커', 'boots', 'boot', 'chelsea']],
   ['knit', ['니트', '스웨터', '터틀넥', '가디건', 'knit', 'sweater', 'turtleneck', 'cardigan']],
   // 티셔츠·맨투맨은 '셔츠'·'shirt'를 품고 있어 셔츠보다 먼저 지운다
@@ -20,9 +21,11 @@ const CATEGORIES: Dict<Category> = [
   ['tee', ['티셔츠', '반팔티', '긴팔티', '반팔', '티 셔츠', 't-shirt', 'tshirt', 'tee']],
   ['shirt', ['셔츠', '블라우스', '남방', 'shirt', 'blouse']],
   ['skirt', ['스커트', '치마', 'skirt']],
+  ['dress', ['원피스', '드레스', 'dress']],
   ['cap', ['볼캡', '캡모자', '모자', '비니', 'cap', 'beanie', 'hat']],
   ['pants', ['카고바지', '바지', '팬츠', '슬랙스', '청바지', '치노', '카고', 'pants', 'trousers', 'slacks', 'jeans', 'chinos', 'shorts', 'cargo']],
   ['bag', ['가방', '백팩', '토트', 'bag', 'backpack', 'tote']],
+  ['acc', ['액세서리', '악세사리', '선글라스', '안경', '시계', '워치', '목걸이', '귀걸이', '반지', '벨트', 'accessory', 'accessories', 'sunglasses', 'glasses', 'watch', 'necklace', 'earrings', 'belt']],
 ];
 
 /** 묶음 표현. 구체적인 종류가 함께 오면 그쪽을 따른다("아우터 코트" → 코트). */
@@ -30,7 +33,7 @@ const GROUPS: { cats: Category[]; label: L; words: string[] }[] = [
   { cats: ['coat', 'jacket'], label: { ko: '아우터', en: 'Outerwear' }, words: ['아우터', '외투', '겉옷', 'outerwear', 'outer'] },
   { cats: ['knit', 'sweat', 'tee', 'shirt'], label: { ko: '상의', en: 'Tops' }, words: ['상의', 'tops'] },
   { cats: ['pants', 'skirt'], label: { ko: '하의', en: 'Bottoms' }, words: ['하의', 'bottoms'] },
-  { cats: ['sneakers', 'loafers', 'boots'], label: { ko: '신발', en: 'Shoes' }, words: ['신발', 'shoes', 'footwear'] },
+  { cats: ['sneakers', 'loafers', 'heels', 'boots'], label: { ko: '신발', en: 'Shoes' }, words: ['신발', 'shoes', 'footwear'] },
 ];
 
 function takeGroup(text: string): { cats: Category[]; labels: L[]; rest: string } {
@@ -47,7 +50,7 @@ function takeGroup(text: string): { cats: Category[]; labels: L[]; rest: string 
   return { cats, labels, rest };
 }
 const COLORS: Dict<Color> = [
-  // 카탈로그 8색에 가장 가까운 쪽으로 잇는다 (아이보리·크림 → 화이트, 차콜 → 그레이, 진청 → 네이비)
+  // 카탈로그 색에 가장 가까운 쪽으로 잇는다 (아이보리·크림 → 화이트, 차콜 → 그레이, 진청 → 네이비)
   ['black', ['블랙', '검정', '검은', '까만', '깜장', '먹색', 'black']],
   ['white', ['화이트', '하얀', '흰', '아이보리', '크림', '오프화이트', 'white', 'ivory', 'cream']],
   ['navy', ['네이비', '남색', '곤색', '진청', 'navy']],
@@ -56,6 +59,9 @@ const COLORS: Dict<Color> = [
   ['brown', ['브라운', '갈색', '카멜', '모카', 'brown', 'camel']],
   ['khaki', ['카키', '올리브', 'khaki', 'olive']],
   ['blue', ['블루', '파란', '하늘색', '하늘', '연청', 'blue', 'sky']],
+  ['pink', ['핑크', '분홍', 'pink']],
+  ['gold', ['골드', '금색', 'gold']],
+  ['silver', ['실버', '은색', 'silver']],
 ];
 const MATERIALS: Dict<Material> = [
   ['cashmere', ['캐시미어', 'cashmere']],
@@ -65,6 +71,7 @@ const MATERIALS: Dict<Material> = [
   ['denim', ['데님', 'denim']],
   ['nylon', ['나일론', 'nylon']],
   ['canvas', ['캔버스', 'canvas']],
+  ['metal', ['메탈', '금속', 'metal']],
 ];
 const SEASONS: Dict<Season> = [
   ['spring', ['봄', 'spring']],

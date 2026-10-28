@@ -13,7 +13,7 @@ describe('sanitize: LLM 출력은 어휘 안의 값만 남긴다', () => {
     expect(p).toEqual({ items: [expect.objectContaining({ category: 'coat', colors: ['black'], materials: ['wool'], maxPrice: 200000, unknown: [] })], budget: undefined });
   });
   it('어휘 밖의 값, 음수 가격, 없는 사이즈는 버린다', () => {
-    const p = sanitize({ items: [item({ category: 'hat', colors: ['black', 'pink'], maxPrice: -5, size: '999' })], budget: null })!;
+    const p = sanitize({ items: [item({ category: 'hat', colors: ['black', 'purple'], maxPrice: -5, size: '999' })], budget: null })!;
     expect(p.items[0]).toMatchObject({ category: undefined, colors: ['black'], maxPrice: undefined, size: undefined });
   });
   it('묶음 종류는 categories와 표시 이름으로, 하나뿐이면 category로', () => {

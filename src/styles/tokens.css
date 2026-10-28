@@ -34,6 +34,7 @@
 
   --cc-black: #1d1d1f; --cc-white: #f7f6f2; --cc-navy: #1f2a48; --cc-beige: #d8c6a6;
   --cc-gray: #8b8b8e; --cc-brown: #7a5238; --cc-khaki: #7c7a4e; --cc-blue: #5b8ac6;
+  --cc-pink: #e3aab4; --cc-gold: #c9a24a; --cc-silver: #b9bcc2;
   --stage-scrim: rgba(11, 11, 11, 0.72);
   --stage-shadow: rgba(0, 0, 0, 0.8);
 
@@ -140,6 +141,7 @@
 
   --sw-black: #1d1d1d; --sw-white: #cfcfcf; --sw-navy: #1f2a48; --sw-beige: #8d8068;
   --sw-gray: #4b4b4b; --sw-brown: #5a4233; --sw-khaki: #5a5a3a; --sw-blue: #35527f;
+  --sw-pink: #6e4a52; --sw-gold: #6a5626; --sw-silver: #55585e;
 }
 
 :root[data-theme='light'] {
@@ -192,4 +194,5 @@
 
   --sw-black: #cfcfcf; --sw-white: #f1f1f1; --sw-navy: #c4cde4; --sw-beige: #e7dcc7;
   --sw-gray: #dcdcdc; --sw-brown: #dccbbd; --sw-khaki: #dad9be; --sw-blue: #c9d8ee;
+  --sw-pink: #f2d9de; --sw-gold: #eee2c4; --sw-silver: #e6e7ea;
 }

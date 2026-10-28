@@ -7,7 +7,7 @@ import { Mark } from './Mark';
 import { reducedMotion } from './motion';
 
 /** 진열대 9칸. 요청에 맞는 건 검정 울 코트 셋, 그중 하나는 예산을 넘는다. */
-const SHELF = ['k1', 'c3', 'b1', 'c1', 's3', 'sh2', 'l2', 'c5', 'pt3'];
+const SHELF = ['k1', 'c3', 'a5', 'c1', 's3', 'sh2', 'l2', 'c5', 'pt3'];
 const MATCH = new Set(['c1', 'c3', 'c5']);
 const OVER = 'c5';
 const PICK = 'c1';

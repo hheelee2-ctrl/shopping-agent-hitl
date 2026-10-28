@@ -39,7 +39,7 @@ describe('묶음·동의어 해석', () => {
   });
   it('상의·신발·하의는 여러 종류, 가방은 한 종류로 잡는다', () => {
     expect(parseRequest('흰 상의').categories).toEqual(['knit', 'sweat', 'tee', 'shirt']);
-    expect(parseRequest('검정 신발').categories).toEqual(['sneakers', 'loafers', 'boots']);
+    expect(parseRequest('검정 신발').categories).toEqual(['sneakers', 'loafers', 'heels', 'boots']);
     expect(parseRequest('하의 30사이즈')).toMatchObject({ categories: ['pants', 'skirt'], size: '30', unknown: [] });
     expect(parseRequest('가방')).toMatchObject({ category: 'bag', unknown: [] });
   });

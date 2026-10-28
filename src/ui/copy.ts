@@ -331,7 +331,7 @@ export const SUGGEST: { g: L; items: { text: L; label?: L }[] }[] = [
   ] },
   { g: { ko: '예산 안에서', en: 'Within budget' }, items: [
     { text: { ko: '캐시미어 니트 20만원 이하', en: 'cashmere knit under 200000' } },
-    { text: { ko: '바람막이 자켓 15만원 이하', en: 'windbreaker jacket under 150000' } },
+    { text: { ko: '데님 자켓 15만원 이하', en: 'denim jacket under 150000' } },
     { text: { ko: '블랙 로퍼랑 블랙 슬랙스 합쳐서 30만원', en: 'black loafers and black slacks, total 300000' } },
   ] },
   { g: { ko: '한 번에 맞추기', en: 'A full look' }, items: [

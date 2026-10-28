@@ -2,9 +2,9 @@ import type { L } from '../engine/types';
 
 export type Category =
   | 'coat' | 'jacket' | 'knit' | 'sweat' | 'tee' | 'shirt' | 'pants' | 'skirt'
-  | 'sneakers' | 'loafers' | 'boots' | 'bag' | 'cap';
-export type Color = 'black' | 'white' | 'navy' | 'beige' | 'gray' | 'brown' | 'khaki' | 'blue';
-export type Material = 'wool' | 'wool-blend' | 'cotton' | 'leather' | 'denim' | 'cashmere' | 'nylon' | 'canvas' | 'polyester';
+  | 'dress' | 'sneakers' | 'loafers' | 'heels' | 'boots' | 'bag' | 'cap' | 'acc';
+export type Color = 'black' | 'white' | 'navy' | 'beige' | 'gray' | 'brown' | 'khaki' | 'blue' | 'pink' | 'gold' | 'silver';
+export type Material = 'wool' | 'wool-blend' | 'cotton' | 'leather' | 'denim' | 'cashmere' | 'nylon' | 'canvas' | 'polyester' | 'metal';
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 /** 무드(formal~outdoor)와 기능(light·warm). 무드만 '내 스타일' 선택지가 된다. */
 export type Style = 'formal' | 'casual' | 'minimal' | 'street' | 'classic' | 'outdoor' | 'light' | 'warm';
@@ -30,7 +30,7 @@ export const SIZE_COMMON: Record<'top' | 'shoe' | 'bottom', string[]> = {
   bottom: ['28', '30', '32', '34'],
 };
 export const sizeKindOf = (c: Category): SizeKind =>
-  c === 'sneakers' || c === 'loafers' || c === 'boots' ? 'shoe' : c === 'pants' || c === 'skirt' ? 'bottom' : c === 'bag' || c === 'cap' ? 'free' : 'top';
+  c === 'sneakers' || c === 'loafers' || c === 'heels' || c === 'boots' ? 'shoe' : c === 'pants' || c === 'skirt' ? 'bottom' : c === 'bag' || c === 'cap' || c === 'acc' ? 'free' : 'top';
 
 /**
  * 상품. 실제 가격·재고는 판매처별 오퍼(Offer)에 있고,

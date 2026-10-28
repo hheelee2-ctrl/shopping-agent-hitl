@@ -1,76 +1,16 @@
-// Unsplash 무료 라이선스 이미지. 국내 쇼핑몰처럼 모델컷보다 제품컷(옷걸이·플랫레이·누끼·디테일) 위주로 골랐다.
-// 상품(가상)과 실제 관계 없고, 실존 브랜드 로고가 드러나는 사진은 뺐다.
-// 색·소재는 완전히 일치하지 않을 수 있어, 카드는 이미지 위에 상품 정보를 텍스트로 항상 함께 보여준다.
+// 상품 사진은 흰 배경 단독 제품컷(public/products/<id>.jpg, 600x800)이다. 옷이 주인공이 되도록 모델 없이 같은 조명·구도로 맞췄다.
+// 제품컷이 없는 가방 두 개(b1, b5)만 Unsplash 사진(무료 라이선스)을 쓴다. 실존 브랜드 로고가 드러나는 사진은 쓰지 않는다.
 type Photo = { id: string; by: string };
 
-const P: Record<string, Photo> = {
-  c1: { id: '1639270601211-9265bafae0f9', by: 'steph washi' },
-  c2: { id: '1722858958066-97deb3471c89', by: 'Lisa Anna' },
-  c3: { id: '1648458461360-d2e724ac5321', by: 'Emre ÇOBAN' },
-  c4: { id: '1680690395101-1b2a56c0ac21', by: 'Valentina Schick' },
-  c5: { id: '1658418818804-adc6dc129ac2', by: 'nkosie MAPHUMULO' },
-  j1: { id: '1624548140129-74786c5f1279', by: 'Bulbul Ahmed' },
-  j2: { id: '1784749615306-10675f31bae2', by: 'Alexander Mass' },
-  j3: { id: '1591047139829-d91aecb6caea', by: 'Tobias Tullius' },
-  j4: { id: '1611312449408-fcece27cdbb7', by: 'Caio Coelho' },
-  j5: { id: '1739384879592-79903b12b2a6', by: 'philippe wehrli' },
-  j6: { id: '1740650874524-4f57a78e5878', by: 'Robert Richman' },
-  s1: { id: '1586556694812-fdae68467216', by: 'Yucel M' },
-  s2: { id: '1556812191-381c7e7d96d6', by: 'The DK Photography' },
-  s3: { id: '1608379743498-ac08f6d022ba', by: 'The DK Photography' },
-  s4: { id: '1547586877-0351a7143cbe', by: 'Nikolai Chernichenko' },
-  s5: { id: '1621665421571-2d325f9c7c6a', by: 'Ervan M Wirawan' },
-  l1: { id: '1649503376979-25d9ce7df3ea', by: 'Davide Zacchello' },
-  l2: { id: '1676121270762-47c8d3a7b9d5', by: 'Nelibar Shoes' },
-  l3: { id: '1570800493677-12a7ad3d4d86', by: 'Amirreza Tavassoli' },
-  k1: { id: '1633943934209-31b7f3775fee', by: 'Kateryna Hliznitsova' },
-  k2: { id: '1635447272203-92e6fdf27245', by: 'Sama Hosseini' },
-  k3: { id: '1621198059871-0d5f9b449233', by: 'Shelter' },
-  k4: { id: '1635447272615-a414b7ea1df4', by: 'Sama Hosseini' },
-  sh1: { id: '1761896902115-49793a359daf', by: 'Vooglam Eyewear' },
-  sh2: { id: '1441035430039-1c421470b6c0', by: 'Angelina Litvin' },
-  sh3: { id: '1691053318576-4bf08315e877', by: 'tian dayong' },
-  sh4: { id: '1642764873855-934ed87e79e1', by: 'farhad chaudhary' },
-  pt1: { id: '1718252540511-e958742e4165', by: 'TuanAnh Blue' },
-  pt2: { id: '1714143164072-7646ef5cb24d', by: 'TuanAnh Blue' },
-  pt3: { id: '1711443813147-def27861b9af', by: 'saeed karimi' },
-  pt4: { id: '1789110520148-bb52ba37759b', by: 'engin akyurt' },
+const UNSPLASH: Record<string, Photo> = {
   b1: { id: '1614179689702-355944cd0918', by: 'Laura Chouette' },
-  b2: { id: '1574365569389-a10d488ca3fb', by: 'Brando Makes Branding' },
-  b3: { id: '1581605405669-fcdf81165afa', by: 'Luis Quintero' },
-  c6: { id: '1708712107740-28d360d0a30d', by: 'Filipp Romanovski' },
-  j7: { id: '1551028719-00167b16eac5', by: 'Lea Øchel' },
-  s6: { id: '1727061180303-d91cdeca6f9c', by: 'SJ' },
-  s7: { id: '1620989928625-08536e746255', by: 'Ervan M Wirawan' },
-  bt1: { id: '1534233812932-59b8fa1b780c', by: 'Jia Ye' },
-  bt2: { id: '1777987601677-3059be0e1388', by: 'Husien Bisky' },
-  bt3: { id: '1608629601270-a0007becead3', by: 'Noah Smith' },
-  bt4: { id: '1618947085672-1dcb69696c33', by: 'Adrian Maximiliano Arellano' },
-  bt5: { id: '1608256246200-53e635b5b65f', by: 'Zac Wolff' },
-  k5: { id: '1729525293005-2f214e531b4c', by: 'Debby Hudson' },
-  k6: { id: '1579206464424-7e43a81cadc1', by: 'lilartsy' },
-  w1: { id: '1620799140408-edc6dcb6d633', by: 'Mediamodifier' },
-  w2: { id: '1620799140188-3b2a02fd9a77', by: 'Mediamodifier' },
-  w3: { id: '1656991483595-8a11da8d2bde', by: 'Federico Faccipieri' },
-  t1: { id: '1651761179569-4ba2aa054997', by: 'mockupbee' },
-  t2: { id: '1562135291-7728cc647783', by: 'Md Salman' },
-  t3: { id: '1666358062994-a9bab157abf1', by: 'Or Hakim' },
-  t4: { id: '1586084611164-a9accaeab607', by: 'Sincerely Media' },
-  sk1: { id: '1789110853398-539d78dd63bc', by: 'engin akyurt' },
-  sk2: { id: '1789111161052-fa79455e89e9', by: 'engin akyurt' },
-  sk3: { id: '1789111161084-62ead1367853', by: 'engin akyurt' },
-  b4: { id: '1657603738389-951c374b740c', by: 'Fauzan Fathullah' },
   b5: { id: '1620786514684-ff35b5aae55e', by: 'Maryam Nemati' },
-  b6: { id: '1596273501583-5bdb2c7220d9', by: 'K8' },
-  cp1: { id: '1691256676359-20e5c6d4bc92', by: 'personalgraphic.com' },
-  cp2: { id: '1521369909029-2afed882baee', by: 'Yang Deng' },
-  cp3: { id: '1656166229825-8bb5c3214111', by: 'Benjamin R.' },
-  cp4: { id: '1663280419473-f650ee0fd0b9', by: 'Liam Davids' },
 };
 
-/** 카드와 같은 4:5로 잘라 받는다. w는 화면 폭의 2배 기준(레티나). */
+/** 카드와 같은 3:4로 받는다. w는 화면 폭의 2배 기준(레티나). */
 export const photoUrl = (productId: string, w = 720): string | null => {
-  const p = P[productId];
-  return p ? `https://images.unsplash.com/photo-${p.id}?auto=format&fit=crop&w=${w}&h=${Math.round(w * 1.25)}&q=80` : null;
+  const p = UNSPLASH[productId];
+  return p ? `https://images.unsplash.com/photo-${p.id}?auto=format&fit=crop&w=${w}&h=${Math.round((w * 4) / 3)}&q=80` : `/products/${productId}.jpg`;
 };
-export const photoCredit = (productId: string): string | null => P[productId]?.by ?? null;
+/** Unsplash 사진만 작가를 밝힌다 */
+export const photoCredit = (productId: string): string | null => UNSPLASH[productId]?.by ?? null;

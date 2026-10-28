@@ -89,8 +89,8 @@ describe('[R9] 피하는 소재는 후보에서 빼고 기록한다', () => {
     const h = run('코트', profile({ avoidMaterials: ['wool'] }));
     await h.until(searched);
     const s = h.search()!;
-    expect(s.itemIds).toEqual(['c4']); // 캐시미어만 남는다
-    expect(s.note!.ko).toContain('피하는 소재(울·울 혼방) 5개 제외');
+    expect(s.itemIds).toEqual(['c7', 'c6', 'c4']); // 코튼 트렌치 둘과 캐시미어만 남는다
+    expect(s.note!.ko).toContain('피하는 소재(울·울 혼방) 4개 제외');
   });
   it('빼고 나니 남는 게 없으면 묻고, 포함하기로 하면 다시 찾는다', async () => {
     const h = run('로퍼', profile({ avoidMaterials: ['leather'] }));
@@ -104,7 +104,7 @@ describe('[R9] 피하는 소재는 후보에서 빼고 기록한다', () => {
 
 describe('cleanProfile', () => {
   it('무드는 3개까지, 어휘 밖 값은 버리고, 자주 입는 색과 겹치는 피하는 색은 뺀다', () => {
-    expect(cleanProfile({ moods: ['minimal', 'casual', 'formal', 'street', 'light'], likeColors: ['black', 'pink'], avoidColors: ['black', 'brown'], avoidMaterials: ['leather', 'silk'] }))
+    expect(cleanProfile({ moods: ['minimal', 'casual', 'formal', 'street', 'light'], likeColors: ['black', 'purple'], avoidColors: ['black', 'brown'], avoidMaterials: ['leather', 'silk'] }))
       .toEqual({ moods: ['minimal', 'casual', 'formal'], likeColors: ['black'], avoidColors: ['brown'], avoidMaterials: ['leather'] });
     expect(cleanProfile(null)).toEqual({ moods: [], likeColors: [], avoidColors: [], avoidMaterials: [] });
   });

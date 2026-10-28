@@ -1,11 +1,11 @@
 # Nod — 에이전트에게 결제까지 맡길 때, 사람이 개입할 자리를 설계하다
 
 에이전트가 계획·담기·결제를 할 수 있을 때 **사람은 어디서, 무엇을 근거로 개입해야 하는가**를 승인 설계 원칙 10가지(R1–R10)로 정하고, 그 원칙을 시험하는 프로토타입.
-목데이터 쇼핑몰(상품 62개, 13개 종류) 위에서 사람과 에이전트가 같은 장바구니·재고 state를 조작한다. 쇼핑몰은 결과물이 아니라 원칙을 시험하는 무대다.
+목데이터 쇼핑몰(상품 89개, 15개 종류) 위에서 사람과 에이전트가 같은 장바구니·재고 state를 조작한다. 쇼핑몰은 결과물이 아니라 원칙을 시험하는 무대다.
 실제 결제는 없다. 요청 해석은 API 키가 있으면 Claude가, 없으면 규칙 파서가 한다.
 
 Designing where a person steps in when an agent can plan, add and pay: ten approval rules (R1–R10) and a prototype that tests them.
-A mock shop (62 products in 13 categories) whose cart and stock are operated by both the person and the agent; the shop is the test bed, not the product.
+A mock shop (89 products in 15 categories) whose cart and stock are operated by both the person and the agent; the shop is the test bed, not the product.
 No real payment. Request interpretation uses Claude when an API key is set, rule-based otherwise.
 
 **Live:** https://shopping-agent-hitl.vercel.app (`main`에 푸시하면 Vercel이 자동 배포)
@@ -160,7 +160,7 @@ LLM 에이전트는 store의 검색·담기 기능을 tool로 노출하고, 결�
 ## 한계
 
 - 키가 없을 때의 요청 해석은 규칙 기반이라 카테고리·색상·소재·계절·스타일·가격만 인식한다. 그 밖의 표현은 해석하지 못했다고 알리고 묻는다. Claude 해석도 같은 어휘 안으로만 바꾼다(쇼핑몰에 없는 조건은 `unknown`으로 남아 질문이 된다).
-- 상품 상세 페이지는 없다. 사진은 Unsplash 제품컷이며 가상 상품과 실제 관계가 없어, 색·디테일이 상품명과 다를 수 있다. 카드에 상품 정보를 텍스트로 함께 보여준다.
+- 상품 상세 페이지는 없다. 사진은 흰 배경 단독 제품컷(`public/products/`, 모델 없이 같은 조명·구도)이다. 원본 격자 이미지를 자른 파일이 칸이 어긋나 있어, 다시 이어 붙이고 찢긴 부분은 반대편을 좌우 반전해 메웠다. 그래서 일부 소매에 옅은 이음 자국이 남아 있다. 실존 브랜드 표시가 보이는 신발 3장은 쓰지 않았고, 가방 두 개(b1, b5)만 Unsplash 사진이다.
 - 모든 상품·브랜드·판매처·가격·재고·별점·리뷰 수는 가상이다. 별점·리뷰 수는 상품 id에서 고정 난수로 만든 값이다.
 - 배송 이력은 실제 배송사 연동이 아니라 출고·도착 예정 시각으로 계산한 값이고, 화면 속도는 압축되어 있다.
 
@@ -172,7 +172,7 @@ LLM 에이전트는 store의 검색·담기 기능을 tool로 노출하고, 결�
 
 ## Credits
 
-All products, brands and prices are fictional mock data. Photography is from [Unsplash](https://unsplash.com) (free license), product-style shots chosen without visible real-brand logos; they do not depict the fictional products.
+All products, brands and prices are fictional mock data. Product photos are garment-only shots on a white background (`public/products/`); the two bags b1 and b5 use [Unsplash](https://unsplash.com) photos (free license). Photos showing real-brand marks were left out.
 
 Photographers: steph washi, Lisa Anna, Emre ÇOBAN, Valentina Schick, nkosie MAPHUMULO, Bulbul Ahmed, Alexander Mass, Tobias Tullius, Caio Coelho, philippe wehrli, Robert Richman, Yucel M, The DK Photography, Nikolai Chernichenko, Ervan M Wirawan, Davide Zacchello, Nelibar Shoes, Amirreza Tavassoli, Kateryna Hliznitsova, Sama Hosseini, Shelter, Vooglam Eyewear, Angelina Litvin, tian dayong, farhad chaudhary, TuanAnh Blue, saeed karimi, engin akyurt, Laura Chouette, Brando Makes Branding, Luis Quintero, Filipp Romanovski, Lea Øchel, SJ, Jia Ye, Husien Bisky, Noah Smith, Adrian Maximiliano Arellano, Zac Wolff, Debby Hudson, lilartsy, Mediamodifier, Federico Faccipieri, mockupbee, Md Salman, Or Hakim, Sincerely Media, Fauzan Fathullah, Maryam Nemati, K8, personalgraphic.com, Yang Deng, Benjamin R., Liam Davids.
 

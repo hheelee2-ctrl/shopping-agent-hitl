@@ -39,6 +39,7 @@ interface Props {
   store: Store;
 }
 
+// 상품이 하나도 없는 종류(예: 모자)는 탭에 띄우지 않는다
 const CATS = Object.keys(CATEGORY_L) as Category[];
 
 export function Shop({ lang, results, criteria, category, onCategory, cart, agent, adding, onAdd, onQty, onOpen, readOnly, market, store }: Props) {
@@ -71,7 +72,7 @@ export function Shop({ lang, results, criteria, category, onCategory, cart, agen
       <div className="shop-bar">
         <div className="cats" role="group" aria-label="category">
           <button aria-pressed={category === null} onClick={() => onCategory(null)}>{t(C.all, lang)}</button>
-          {CATS.map((c) => (
+          {CATS.filter((c) => Object.values(store.getState().products).some((p) => p.category === c)).map((c) => (
             <button key={c} aria-pressed={category === c} onClick={() => onCategory(c)}>{t(CATEGORY_L[c], lang)}</button>
           ))}
         </div>

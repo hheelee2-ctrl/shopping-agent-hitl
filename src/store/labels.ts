@@ -22,11 +22,14 @@ export const CATEGORY_L: Record<Category, L> = {
   shirt: { ko: '셔츠', en: 'Shirts' },
   pants: { ko: '팬츠', en: 'Pants' },
   skirt: { ko: '스커트', en: 'Skirts' },
+  dress: { ko: '원피스', en: 'Dresses' },
   sneakers: { ko: '스니커즈', en: 'Sneakers' },
   loafers: { ko: '로퍼', en: 'Loafers' },
+  heels: { ko: '힐', en: 'Heels' },
   boots: { ko: '부츠', en: 'Boots' },
   bag: { ko: '가방', en: 'Bags' },
   cap: { ko: '모자', en: 'Caps' },
+  acc: { ko: '액세서리', en: 'Accessories' },
 };
 
 export const COLOR_L: Record<Color, L> = {
@@ -38,6 +41,9 @@ export const COLOR_L: Record<Color, L> = {
   brown: { ko: '브라운', en: 'Brown' },
   khaki: { ko: '카키', en: 'Khaki' },
   blue: { ko: '블루', en: 'Blue' },
+  pink: { ko: '핑크', en: 'Pink' },
+  gold: { ko: '골드', en: 'Gold' },
+  silver: { ko: '실버', en: 'Silver' },
 };
 
 export const MATERIAL_L: Record<Material, L> = {
@@ -50,6 +56,7 @@ export const MATERIAL_L: Record<Material, L> = {
   nylon: { ko: '나일론', en: 'Nylon' },
   canvas: { ko: '캔버스', en: 'Canvas' },
   polyester: { ko: '폴리에스터', en: 'Polyester' },
+  metal: { ko: '메탈', en: 'Metal' },
 };
 
 export const SEASON_L: Record<Season, L> = {
