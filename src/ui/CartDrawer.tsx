@@ -26,6 +26,8 @@ interface Props {
   onQty: (id: string, qty: number) => void;
   onRefresh: () => void;
   onCheckout: () => Order[] | null;
+  /** 결제 전에 로그인을 확인한다. 로그인돼 있으면 바로 run */
+  gate?: (run: () => void) => void;
   onOrders: () => void;
   readOnly?: boolean;
 }
@@ -34,7 +36,7 @@ interface Props {
  * 장바구니 → 결제 전 확인 → 주문 완료. 단계마다 지금 무엇을 하는지, 얼마가 어디로 나가는지 한 화면에서 보인다.
  * 담은 뒤 판매처 조건(가격·재고)이 바뀌면 결제를 막고 먼저 반영하게 한다.
  */
-export function CartDrawer({ lang, open, tab, onTab, state, now, issues, onClose, onRemove, onQty, onRefresh, onCheckout, onOrders, readOnly }: Props) {
+export function CartDrawer({ lang, open, tab, onTab, state, now, issues, onClose, onRemove, onQty, onRefresh, onCheckout, gate = (run) => run(), onOrders, readOnly }: Props) {
   const [step, setStep] = useState<Step>('cart');
   const [placed, setPlaced] = useState<Order[]>([]);
   const [checking, setChecking] = useState(false);
@@ -65,10 +67,10 @@ export function CartDrawer({ lang, open, tab, onTab, state, now, issues, onClose
     later(() => { setChecking(false); setStep('review'); }, 700 + Math.random() * 400);
   };
   // 누른 순간의 조건으로 주문을 확정하고, 승인·판매처별 접수·확인을 차례로 보여준다
-  const pay = () => {
+  const pay = () => gate(() => {
     const made = onCheckout();
     if (made) { setPlaced(made); setStep('paying'); }
-  };
+  });
   const openOrder = (id: string) => { onOrders(); setDetail(id); };
 
   return (

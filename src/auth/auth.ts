@@ -2,14 +2,15 @@ import { createClient, type SupabaseClient, type User } from '@supabase/supabase
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * 소셜 로그인(카카오·구글). Supabase Auth를 쓴다.
- * 로그인은 데모를 보는 데 필요하지 않다. 가격 대기를 "미리 승인"할 때만 묻는다:
- * 자리를 비운 동안 결제를 맡기려면 누가 맡겼는지 남아야 하기 때문이다(R10).
+ * 구글 로그인. Supabase Auth를 쓴다.
+ * 둘러보기와 에이전트에게 맡기기는 로그인 없이 된다. 결제할 때와 가격 대기를 "미리 승인"할 때만 묻는다:
+ * 누가 결제를 승인했는지, 자리를 비운 동안 누가 결제를 맡겼는지 남아야 하기 때문이다(R1, R10).
  *
  * 로그인 창은 팝업(auth.html)에서 연다. 페이지가 이동하면 메모리에 있는 장바구니·가격 대기 설정이 사라지기 때문이다.
  */
 
-export type Provider = 'kakao' | 'google';
+/** 지금은 구글만 쓴다. 카카오는 비즈 앱 전환(이메일 권한)이 필요해 뺐다. */
+export type Provider = 'google';
 export const AUTH_CHANNEL = 'nod-auth';
 
 // 프로젝트 주소와 anon 키는 브라우저에 공개하라고 만든 값이다(데이터는 RLS가 막는다). 환경변수가 있으면 그것을 쓴다.

@@ -32,6 +32,7 @@ import { StudyBar } from './ui/Study';
 import { bumped, studyId } from './study/study';
 import { checkWatch, decide, describe as describeWatch, scriptedDay, simulateDay, type Verdict, type Watch } from './agent/watch';
 import { WatchList, WatchSetup, type WatchState } from './ui/Watch';
+import { LoginGate } from './ui/LoginGate';
 
 interface AppProps {
   lang: Lang;
@@ -219,6 +220,13 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
     return evaluate(cur, cur.day + 1);
   }), [patchWatch, evaluate, store]);
   const login = auth.enabled && !pid ? { account: auth.account, signIn: auth.signIn } : undefined;
+  // 결제는 로그인한 사람만 한다: 누가 결제를 승인했는지 남긴다. 로그인 설정이 없거나 사용성 테스트면 묻지 않는다.
+  const [gate, setGate] = useState<{ cta: string; run: () => void } | null>(null);
+  const needLogin = (run: () => void) => {
+    if (!login || login.account) return run();
+    const amount = money(store.cartTotal(), lang);
+    setGate({ cta: lang === 'ko' ? `${amount} 결제 계속` : `Continue paying ${amount}`, run });
+  };
   const startWatch = async (spec: Omit<Watch, 'id'>) => {
     const p = store.getProduct(spec.productId);
     // 미리 승인이면 누가 맡겼는지 먼저 남긴다. 남기지 못하면 시작하지 않는다(WatchSetup이 이유를 보여준다).
@@ -343,11 +351,13 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           <button className="top-btn" onClick={() => { setDrawerTab('orders'); setCartOpen(true); }}>{t(SV.ordersTab, lang)}{shop.orders.length > 0 && <span className="cnt">{shop.orders.length}</span>}</button>
           <button className="top-btn" data-cart-btn onClick={() => { setDrawerTab('cart'); setCartOpen(true); }}>{t(C.cart, lang)}{cartCount > 0 && <span className="cnt">{cartCount}</span>}</button>
           <ReviewToggle on={review} onToggle={() => setReview((v) => !v)} lang={lang} />
-          {auth.account && (
+          {login && (auth.account ? (
             <button className="top-btn top-account" title={lang === 'ko' ? `${auth.account.name} 로그아웃` : `Sign out ${auth.account.name}`} onClick={() => void auth.signOut()}>
               <span className="top-account-n">{auth.account.name}</span>{lang === 'ko' ? '로그아웃' : 'Sign out'}
             </button>
-          )}
+          ) : (
+            <button className="top-btn" onClick={() => void auth.signIn('google')}>{lang === 'ko' ? '로그인' : 'Sign in'}</button>
+          ))}
           <ThemeButton theme={theme} onToggle={onTheme} lang={lang} />
           <div className="lang" role="group" aria-label="language">
             <button aria-pressed={lang === 'ko'} onClick={() => onLang('ko')}>KO</button>
@@ -370,7 +380,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           request={request} onRequest={setRequest} onRun={run} onCompare={() => setCmpClosed(false)} onOpen={setSheet}
           onDial={setDial} onLimit={setLimit}
           onReset={reset} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }}
-          onApprove={ack(() => agent.approve(), 'approve')} onReview={ack(() => agent.approve(), 'review')} onReject={ack(() => agent.reject(), 'reject')} onAnswer={(id) => ack(() => agent.answer(id), { option: id })()}
+          onApprove={() => (phase === 'payment-gate' ? needLogin(ack(() => agent.approve(), 'approve')) : ack(() => agent.approve(), 'approve')())} onReview={ack(() => agent.approve(), 'review')} onReject={ack(() => agent.reject(), 'reject')} onAnswer={(id) => ack(() => agent.answer(id), { option: id })()}
           onUndo={(id) => agent.undo(id)}
           watching={watches.filter((w) => w.status === 'watching' || w.status === 'asked').length}
           locked={pid && !studyLive ? { ko: "위쪽 띠에서 '과제 시작'을 먼저 눌러 주세요", en: 'Press "Start task" in the bar above first' } : undefined}
@@ -388,7 +398,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
       <CartDrawer
         lang={lang} open={cartOpen} tab={drawerTab} onTab={setDrawerTab} now={store.now()}
         state={replaying ? { ...shop, products: vProducts, cart: vCart } : shop} readOnly={replaying} onClose={closeDrawer}
-        onRemove={userRemove} onQty={userQty} onCheckout={userCheckout} onRefresh={() => store.refreshCart()}
+        onRemove={userRemove} onQty={userQty} onCheckout={userCheckout} gate={needLogin} onRefresh={() => store.refreshCart()}
         issues={replaying ? [] : store.cartIssues()} onOrders={() => setDrawerTab('orders')}
       />
 
@@ -401,6 +411,10 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         />
       )}
 
+      {gate && login && (
+        <LoginGate lang={lang} account={login.account} signIn={login.signIn} cta={gate.cta}
+          onContinue={() => { const run = gate.run; setGate(null); run(); }} onClose={() => setGate(null)} />
+      )}
       {watchFor && <WatchSetup lang={lang} store={store} productId={watchFor.id} size={watchFor.size} login={login} onStart={startWatch} onClose={() => setWatchFor(null)} />}
     </ReviewCtx.Provider>
   );

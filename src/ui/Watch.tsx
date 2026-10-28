@@ -63,7 +63,6 @@ const X = {
   sim: { ko: '시연용 시계예요. 하루를 1초 안쪽으로 줄여 보여줘요.', en: 'Demo clock: one day passes in under a second.' },
   login: {
     why: { ko: '미리 승인하려면 로그인이 필요해요. 자리를 비운 동안 결제를 맡기려면 누가 맡겼는지 남아야 해요.', en: 'Sign in to pre-approve. Paying while you are away needs a record of who approved it.' },
-    kakao: { ko: '카카오로 로그인', en: 'Sign in with Kakao' },
     google: { ko: 'Google로 로그인', en: 'Sign in with Google' },
     as: { ko: (n: string) => `${n} 계정으로 미리 승인해요`, en: (n: string) => `Pre-approving as ${n}` },
     blocked: { ko: '브라우저가 로그인 창(팝업)을 막았어요. 팝업을 허용하고 다시 눌러 주세요.', en: 'The browser blocked the sign-in window. Allow pop-ups and try again.' },
@@ -155,8 +154,7 @@ export function WatchSetup({ lang, store, productId, size: size0, login, onStart
             <div className="ws-login">
               <p>{t(X.login.why, lang)}</p>
               <div className="row">
-                <button type="button" className="btn ws-kakao" onClick={() => void signIn('kakao')}>{t(X.login.kakao, lang)}</button>
-                <button type="button" className="btn" onClick={() => void signIn('google')}>{t(X.login.google, lang)}</button>
+                <button type="button" className="btn primary" onClick={() => void signIn('google')}>{t(X.login.google, lang)}</button>
               </div>
             </div>
           ))}

@@ -3,11 +3,11 @@ import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { accountOf } from './auth';
 import { closeMandate, recordMandate } from './mandates';
 
-const user = (meta: Record<string, unknown>, email?: string) => ({ id: 'u1', user_metadata: meta, app_metadata: { provider: 'kakao' }, email }) as unknown as User;
+const user = (meta: Record<string, unknown>, email?: string) => ({ id: 'u1', user_metadata: meta, app_metadata: { provider: 'google' }, email }) as unknown as User;
 
 describe('로그인 계정 이름', () => {
-  it('카카오 닉네임, 구글 이름, 이메일 순으로 쓴다', () => {
-    expect(accountOf(user({ full_name: '이현희' }))).toEqual({ id: 'u1', name: '이현희', provider: 'kakao' });
+  it('이름, 닉네임, 이메일 순으로 쓴다', () => {
+    expect(accountOf(user({ full_name: '이현희' }))).toEqual({ id: 'u1', name: '이현희', provider: 'google' });
     expect(accountOf(user({ nickname: '현희' }))?.name).toBe('현희');
     expect(accountOf(user({}, 'a@b.c'))?.name).toBe('a@b.c');
     expect(accountOf(user({}))?.name).toBe('Nod 사용자');
