@@ -90,15 +90,15 @@ export const LAND = {
 
   playTitle: { ko: '승인 설계 원칙 10가지', en: 'Ten rules for approval design' },
   playSub: {
-    ko: '사람이 어디서 개입하는지를 화면 감각이 아니라 규칙으로 정했습니다. 규칙마다 그 규칙을 지키는 테스트가 묶여 있고, 테스트가 없는 규칙이 생기면 빌드가 실패합니다.',
-    en: 'Where a person steps in is set by rules, not by feel. Each rule is bound to the tests that guard it, and a rule without tests fails the build.',
+    ko: '규칙마다 테스트가 묶여 있어, 테스트 없는 규칙은 빌드를 통과하지 못합니다.',
+    en: 'Every rule is bound to tests. A rule without tests fails the build.',
   },
   playWithout: { ko: '없으면', en: 'Without it' },
   playWhere: { ko: '화면', en: 'Where' },
   playTests: { ko: (n: number) => `테스트 ${n}개`, en: (n: number) => `${n} tests` },
   playLink: { ko: '설계 원칙 10가지', en: 'The ten rules' },
   playOpen: { ko: '앱에서 규칙 위치 보기', en: 'See the rules in the app' },
-  playNote: { ko: '앱 상단의 "설계 보기"를 켜면 각 카드 위에 그 자리가 지키는 규칙이 붙습니다.', en: 'Turn on "Design notes" in the app header to see which rule each card follows.' },
+  playNote: { ko: '앱의 "설계 보기" 스위치를 켜면 카드마다 규칙이 붙습니다.', en: 'Switch on "Design notes" in the app to tag each card with its rule.' },
 
   foot: {
     ko: 'Nod는 판매자가 아닙니다. 주문, 배송, 반품은 각 판매처가 처리합니다.',

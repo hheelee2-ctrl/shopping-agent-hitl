@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Dial, Lang } from '../engine/types';
-import { RULES, RULE_TESTS } from '../rules';
+import { RULES, RULE_TESTS, type Rule, type RuleId } from '../rules';
 import { DIAL, t } from './copy';
 import { HeroPicks } from './HeroPicks';
 import { LAND, APPROVES } from './landCopy';
@@ -85,6 +85,45 @@ function InterventionMap({ lang }: { lang: Lang }) {
         <span>{t(M.touchNote, lang)}</span>
       </figcaption>
     </figure>
+  );
+}
+
+/**
+ * 설계 원칙: 이름만 짧게 늘어놓고, 고른 하나만 자세히 보여준다(한 번에 읽는 양을 줄인다).
+ * 넓은 화면은 왼쪽 목록 + 오른쪽 상세, 좁은 화면은 고른 줄 아래에 펼친다.
+ */
+function Playbook({ lang }: { lang: Lang }) {
+  const [on, setOn] = useState<RuleId>('R1');
+  const detail = (r: Rule) => (
+    <>
+      <p className="pb-rule">{t(r.rule, lang)}</p>
+      <dl className="pb-meta">
+        <div><dt>{t(LAND.playWithout, lang)}</dt><dd>{t(r.problem, lang)}</dd></div>
+        <div><dt>{t(LAND.playWhere, lang)}</dt><dd>{t(r.where, lang)}</dd></div>
+      </dl>
+      <p className="pb-tests">{LAND.playTests[lang](RULE_TESTS[r.id])}</p>
+    </>
+  );
+  const cur = RULES.find((r) => r.id === on)!;
+  return (
+    <div className="pb rv">
+      <ol className="pb-list">
+        {RULES.map((r) => (
+          <li key={r.id} className={r.id === on ? 'on' : ''}>
+            <button aria-expanded={r.id === on} onClick={() => setOn(r.id)}>
+              <span className="pb-id num">{r.id}</span>
+              <span className="pb-name">{t(r.name, lang)}</span>
+            </button>
+            {r.id === on && <div className="pb-inline">{detail(r)}</div>}
+          </li>
+        ))}
+      </ol>
+      <article className="pb-detail" aria-live="polite" key={on}>
+        <p className="pb-id num">{cur.id}</p>
+        <h3>{t(cur.name, lang)}</h3>
+        {detail(cur)}
+      </article>
+    </div>
   );
 }
 
@@ -190,19 +229,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
       <section className="sec" id="playbook">
         <div className="sec-in" ref={r3}>
           <Head n="03" label={nav('playbook')} title={t(LAND.playTitle, lang)} sub={t(LAND.playSub, lang)} />
-          <ol className="play rv">
-            {RULES.map((r) => (
-              <li key={r.id}>
-                <p className="play-id"><span className="num">{r.id}</span><span className="play-tests">{LAND.playTests[lang](RULE_TESTS[r.id])}</span></p>
-                <h3>{t(r.name, lang)}</h3>
-                <p className="play-rule">{t(r.rule, lang)}</p>
-                <dl>
-                  <div><dt>{t(LAND.playWithout, lang)}</dt><dd>{t(r.problem, lang)}</dd></div>
-                  <div><dt>{t(LAND.playWhere, lang)}</dt><dd>{t(r.where, lang)}</dd></div>
-                </dl>
-              </li>
-            ))}
-          </ol>
+          <Playbook lang={lang} />
           <div className="play-foot rv">
             <a className="btn" href="#/app?review=1">{t(LAND.playOpen, lang)}</a>
             <p className="note">{t(LAND.playNote, lang)}</p>

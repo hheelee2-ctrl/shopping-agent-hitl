@@ -4,7 +4,7 @@ import type { ConsoleState } from '../state/console';
 import { CATEGORY_L } from '../store/labels';
 import { describeCriteria } from '../store/parser';
 import type { Scored } from '../store/search';
-import { DUTY_OVER, arrivalLabel, sellerOf } from '../store/sellers';
+import { DUTY_OVER, sellerOf } from '../store/sellers';
 import type { Category, CartLine, Criteria, Product } from '../store/types';
 import { photoCredit, photoUrl } from '../store/photos';
 import { SOCIAL } from '../store/catalog';
@@ -63,6 +63,11 @@ export function Shop({ lang, results, criteria, category, onCategory, cart, agen
   const scanKey = criteria ? JSON.stringify(criteria) : category ?? '';
   return (
     <section className={`shop ${active && cands.length ? 'focus' : ''}`} aria-label="shop">
+      {/* 에디토리얼 머리: 지금 보고 있는 범위를 크게, 개수는 작게 */}
+      <header className="shop-head">
+        <h2>{criteria ? (lang === 'ko' ? '검색 결과' : 'Results') : category ? t(CATEGORY_L[category], lang) : (lang === 'ko' ? '전체 상품' : 'All items')}</h2>
+        <span className="shop-count num">{results.length}</span>
+      </header>
       <div className="shop-bar">
         <div className="cats" role="group" aria-label="category">
           <button aria-pressed={category === null} onClick={() => onCategory(null)}>{t(C.all, lang)}</button>
@@ -104,11 +109,6 @@ interface CardProps {
   onOpen: (id: string) => void; readOnly: boolean;
 }
 
-/** 1,234 → 1.2천 / 1.2k */
-const compact = (n: number, lang: Lang) => {
-  if (lang === 'ko') return n >= 10000 ? `${(n / 10000).toFixed(1).replace(/\.0$/, '')}만` : n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}천` : String(n);
-  return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n);
-};
 
 const Minus = () => <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden><path d="M2.5 6h7" /></svg>;
 const Plus = () => <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden><path d="M2.5 6h7M6 2.5v7" /></svg>;
@@ -134,7 +134,6 @@ function Card({ i, eye, p, lang, cart, agent, store, adding, onAdd, onQty, onOpe
   const lead = line ? ranked.find((r) => r.offer.sellerId === line.sellerId) : ranked[0];
   const linePrice = line ? store.getOffer(p.id, line.sellerId)?.price : undefined;
   const sellers = store.offersOf(p.id).length;
-  const now = store.now();
 
   const conf = agent.confidence[p.id];
   const [broken, setBroken] = useState(false);
@@ -149,7 +148,6 @@ function Card({ i, eye, p, lang, cart, agent, store, adding, onAdd, onQty, onOpe
   // 5% 미만 차이는 할인으로 보이지 않게 둔다
   const pct = so ? Math.round((1 - shown / so.listPrice) * 100) : 0;
   const off = pct >= 5 ? pct : 0;
-  const ship = lead ? `${lead.shipping <= 0 ? t(SV.freeShip, lang) : money(lead.shipping, lang)} · ${t(arrivalLabel(lead.arriveAt, now), lang)}` : '';
 
   return (
     <article data-flip={p.id} data-pid={p.id} style={{ '--i': Math.min(i, 11) } as CSSProperties}
@@ -160,7 +158,6 @@ function Card({ i, eye, p, lang, cart, agent, store, adding, onAdd, onQty, onOpe
         )}
         {level && <span className={`pill ${level}`}>{t(LEVEL[level], lang)}</span>}
         {eye && <span className="eye-tag"><Mark size={10} phase="busy" tone="on-brand" />{t(SV.looking, lang)}</span>}
-        {so?.best && <span className="best">BEST</span>}
         {line && <span className="incart" key={line.qty}>{line.addedBy === 'agent' ? t(C.byAgent, lang) : t(C.cart, lang)} {line.qty}</span>}
       </button>
       <div className="meta">
@@ -175,17 +172,10 @@ function Card({ i, eye, p, lang, cart, agent, store, adding, onAdd, onQty, onOpe
             <button className="cmp-chip" onClick={() => onOpen(p.id)}>{SV.nCompare[lang](sellers)}</button>
           )}
         </div>
-        {line && linePrice !== undefined && linePrice !== line.priceAtAdd
-          ? <p className="ship-line moved">{money(line.priceAtAdd, lang)} → {money(linePrice, lang)}</p>
-          : ship && <p className="ship-line">{ship}</p>}
-        {so && (
-          <p className="social">
-            <span className="star" aria-label={SV.ratingL[lang](so.rating)}>★ {so.rating.toFixed(1)}</span>
-            <span>{SV.reviewsN[lang](so.reviews)}</span>
-            <span aria-label={SV.likesL[lang](so.likes)}>♡ {compact(so.likes, lang)}</span>
-          </p>
+        {/* 목록은 브랜드·이름·가격만. 별점·배송·고른 이유는 시트와 에이전트 패널에서 본다. 담은 뒤 가격이 바뀐 것만 알린다 */}
+        {line && linePrice !== undefined && linePrice !== line.priceAtAdd && (
+          <p className="ship-line moved">{money(line.priceAtAdd, lang)} → {money(linePrice, lang)}</p>
         )}
-        {level && conf?.reason && <p className="reason">{t(conf.reason, lang)}</p>}
         <div className="buy">
           {line ? (
             <>
@@ -226,11 +216,11 @@ export function OfferSheet({ id, lang, store, cart, adding, onAdd, onClose, onWa
     return () => window.removeEventListener('keydown', k);
   }, [onClose]);
   if (!p) return null;
-  const now = store.now();
   const size = line?.size ?? picked;
   const avail = store.availableSizes(id);
   const offers = store.offersOf(id);
   const ranked = store.rankOffers(id, size ?? undefined);
+  const now = store.now();
   const bestId = ranked.find((r) => !r.seller.overseas)?.offer.sellerId;
   const gone = offers.filter((o) => !ranked.some((r) => r.offer.sellerId === o.sellerId));
   const focus = pickSeller && ranked.some((r) => r.offer.sellerId === pickSeller) ? pickSeller : line?.sellerId ?? bestId;

@@ -83,11 +83,14 @@ export function tossGateway({ lang, mode = () => (isMobile() ? 'popup' : 'inline
     const prep = await prepare(amount, names);
     if (!prep) return { status: 'failed', message: 'prepare' };
     let paid: { paymentKey?: string; orderId?: string; amount?: number | { value?: number } };
+    const off = testBanner(lang());
     try {
       const p = await toss(prep.clientKey);
       paid = (await p.requestPayment({ method: 'CARD', amount: { currency: 'KRW', value: amount }, orderId: prep.orderId, orderName: prep.orderName })) as typeof paid;
     } catch (e) {
       return isCancel(e) ? { status: 'canceled' } : { status: 'failed', message: (e as Error)?.message ?? 'toss' };
+    } finally {
+      off();
     }
     // 서버가 대조할 금액은 토스가 돌려준 값이다. 이 값이 승인한 금액과 다르면 서버가 승인하지 않는다.
     const back = typeof paid?.amount === 'object' ? paid.amount?.value : paid?.amount;
@@ -116,6 +119,22 @@ export function tossGateway({ lang, mode = () => (isMobile() ? 'popup' : 'inline
       return wait(w, chan(), prep.orderId);
     },
   };
+}
+
+/**
+ * 토스 결제창은 실제 결제창과 똑같이 생겨서, 떠 있는 동안 화면 맨 위에 '테스트 결제' 띠를 고정한다.
+ * 결제창보다 위에 그려지도록 z-index를 최대로 둔다. 문서가 없는 환경(테스트)에서는 아무것도 하지 않는다.
+ */
+function testBanner(lang: Lang): () => void {
+  if (typeof document === 'undefined') return () => {};
+  const el = document.createElement('div');
+  el.className = 'test-banner';
+  el.setAttribute('role', 'status');
+  el.innerHTML = lang === 'ko'
+    ? '<b>TEST</b><span>테스트 결제예요. 실제로 돈이 나가지 않아요. 카드 인증 없이 창을 닫아도 테스트로 마칠 수 있어요.</span>'
+    : '<b>TEST</b><span>This is a test payment. No real money moves. You can close the window and finish as a test.</span>';
+  document.body.appendChild(el);
+  return () => el.remove();
 }
 
 /** 결제 창이 결과를 보내거나, 사람이 창을 닫거나, 서명이 만료될 때까지 기다린다 */

@@ -28,6 +28,7 @@ import { saveSizes } from './ui/SizeProfile';
 import { saveStyle } from './ui/StyleProfile';
 import { useStore } from './ui/useStore';
 import { ReviewCtx, ReviewToggle } from './ui/Review';
+import { AccountMenu } from './ui/AccountMenu';
 import { StudyBar } from './ui/Study';
 import { bumped, studyId } from './study/study';
 import { checkWatch, decide, describe as describeWatch, scriptedDay, simulateDay, type Verdict, type Watch } from './agent/watch';
@@ -353,9 +354,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           <button className="top-btn" onClick={() => { setDrawerTab('orders'); setCartOpen(true); }}>{t(SV.ordersTab, lang)}{shop.orders.length > 0 && <span className="cnt">{shop.orders.length}</span>}</button>
           <button className="top-btn" data-cart-btn onClick={() => { setDrawerTab('cart'); setCartOpen(true); }}>{t(C.cart, lang)}{cartCount > 0 && <span className="cnt">{cartCount}</span>}</button>
           {login && (auth.account ? (
-            <button className="top-btn top-account" title={lang === 'ko' ? `${auth.account.name} 로그아웃` : `Sign out ${auth.account.name}`} onClick={() => void auth.signOut()}>
-              <span className="top-account-n">{auth.account.name}</span>{lang === 'ko' ? '로그아웃' : 'Sign out'}
-            </button>
+            <AccountMenu account={auth.account} lang={lang} onSignOut={() => void auth.signOut()} />
           ) : (
             <button className="top-btn" onClick={() => void auth.signIn('google')}>{lang === 'ko' ? '로그인' : 'Sign in'}</button>
           ))}

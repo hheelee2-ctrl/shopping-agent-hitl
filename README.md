@@ -52,7 +52,7 @@ npm run check    # rule gate + typecheck + token gate + tests + build
 
 숫자는 `src/rules.counts.json`에서 온다(한 테스트가 여러 규칙에 걸릴 수 있다).
 
-- **설계 보기**: 앱 상단 '설계 보기'를 켜거나 `#/app?review=1`로 열면, 각 카드 위에 그 자리가 지키는 규칙과 테스트 수가 붙는다(`src/ui/Review.tsx`).
+- **설계 보기**: 에이전트 패널의 '설계 보기' 스위치를 켜거나 `#/app?review=1`로 열면, 각 카드 위에 그 자리가 지키는 규칙과 테스트 수가 붙는다(`src/ui/Review.tsx`).
 - **플레이북**: 랜딩 04 섹션(`#/playbook`)이 같은 목록을 보여준다.
 
 ## 사용성 테스트 모드
@@ -176,4 +176,4 @@ All products, brands and prices are fictional mock data. Photography is from [Un
 
 Photographers: steph washi, Lisa Anna, Emre ÇOBAN, Valentina Schick, nkosie MAPHUMULO, Bulbul Ahmed, Alexander Mass, Tobias Tullius, Caio Coelho, philippe wehrli, Robert Richman, Yucel M, The DK Photography, Nikolai Chernichenko, Ervan M Wirawan, Davide Zacchello, Nelibar Shoes, Amirreza Tavassoli, Kateryna Hliznitsova, Sama Hosseini, Shelter, Vooglam Eyewear, Angelina Litvin, tian dayong, farhad chaudhary, TuanAnh Blue, saeed karimi, engin akyurt, Laura Chouette, Brando Makes Branding, Luis Quintero, Filipp Romanovski, Lea Øchel, SJ, Jia Ye, Husien Bisky, Noah Smith, Adrian Maximiliano Arellano, Zac Wolff, Debby Hudson, lilartsy, Mediamodifier, Federico Faccipieri, mockupbee, Md Salman, Or Hakim, Sincerely Media, Fauzan Fathullah, Maryam Nemati, K8, personalgraphic.com, Yang Deng, Benjamin R., Liam Davids.
 
-Color palette: "BEND FORCE" (Warm Paper `#F0E8D8`, Vermilion `#EF5B36`, Deep Indigo `#212A5E`) from [포스터에 바로 적용하는 3색 조합 15가지](https://subsequent-paw-3ac.notion.site/3-15-3edced0d5b028000844ee29895ea0f34), adjusted for contrast.
+Visual direction: fashion editorial, black and white. Sans-serif only (Pretendard). Buttons and emphasis are ink (`#0A0A0A`, white on dark surfaces), corners are near-square, and the agent panel is a dark block. Lime `#C8F03C` is the single accent and has one meaning, "a person decides here": the logo dot, your-turn cards and the on state of the design-notes switch. Lime is never used as text on white.

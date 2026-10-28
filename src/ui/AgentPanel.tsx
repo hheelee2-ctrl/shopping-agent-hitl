@@ -6,6 +6,7 @@ import { photoUrl } from '../store/photos';
 import { arrivalLabel, dateLabel, returnLabel, sellerOf } from '../store/sellers';
 import type { Store } from '../store/store';
 import { AuditLog } from './AuditLog';
+import { TestPay } from './TestPay';
 import { CostMeter } from './CostMeter';
 import { Scrubber } from './Scrubber';
 import { Seg } from './Seg';
@@ -534,6 +535,7 @@ function PayAsk({ lang, store, payment, onApprove, onReview, onReject }: {
   const gap = payment.limit - payment.total;
   return (
     <div className={`card ask-me pay ${payment.exceeded ? 'over' : ''}`} data-action="">
+      <TestPay lang={lang} />
       <h2 className="q">{t(TH.payAsk, lang)}</h2>
       <p className={`pay-total ${issues.length > 0 ? 'stale' : ''}`}><span>{t(TH.total, lang)}{groups.length > 1 ? ` · ${SV.orderCount[lang](groups.length)}` : ''}</span><b>{money(payment.total, lang)}</b></p>
       <ul className="split">
@@ -574,7 +576,7 @@ function PayAsk({ lang, store, payment, onApprove, onReview, onReject }: {
         <button className={`btn ${payment.exceeded || issues.length > 0 ? 'primary' : 'nod'}`} onClick={issues.length > 0 ? onReview : onApprove}>
           {issues.length > 0 ? t(SV.liveReview, lang) : payment.exceeded ? SV.approveOver[lang](money(payment.total, lang)) : SV.approvePayN[lang](money(payment.total, lang))}
         </button>
-        <button className="btn danger" onClick={onReject}>{t(C.declinePay, lang)}</button>
+        <button className="btn" onClick={onReject}>{t(C.declinePay, lang)}</button>
       </div>
     </div>
   );

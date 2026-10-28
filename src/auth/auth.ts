@@ -42,13 +42,16 @@ export interface Account {
   id: string;
   name: string;
   provider: string;
+  /** 구글 프로필 사진. 없으면 이름 첫 글자를 쓴다 */
+  avatar?: string;
 }
 
 export const accountOf = (u: User | null | undefined): Account | null => {
   if (!u) return null;
   const m = u.user_metadata ?? {};
   const name = (m.full_name || m.name || m.nickname || m.preferred_username || u.email || '').toString();
-  return { id: u.id, name: name || 'Nod 사용자', provider: (u.app_metadata?.provider ?? '').toString() };
+  const avatar = (m.avatar_url || m.picture || '').toString() || undefined;
+  return { id: u.id, name: name || 'Nod 사용자', provider: (u.app_metadata?.provider ?? '').toString(), avatar };
 };
 
 export type SignInResult = 'ok' | 'blocked' | 'unavailable' | 'failed';

@@ -197,18 +197,33 @@
 .tour-meter i.over { background: var(--danger); }
 
 /* 03 설계 원칙 */
-.play { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-10) var(--sp-8); counter-reset: none; }
-.play li { display: grid; gap: var(--sp-3); align-content: start; padding-top: var(--sp-5); border-top: 1px solid var(--line-strong); }
-.play-id { display: flex; justify-content: space-between; align-items: baseline; margin: 0; }
-.play-id .num { font-size: var(--t-sm); font-weight: var(--w-bold); color: var(--brand-deep); }
-:root[data-theme="dark"] .play-id .num { color: var(--brand-hi); }
-.play-tests { font-family: var(--font-mono); font-size: var(--t-2xs); letter-spacing: var(--tr-caps); color: var(--ink-3); }
-.play h3 { font-size: var(--t-xl); font-weight: var(--w-semi); letter-spacing: var(--tr-title); line-height: var(--lh-snug); word-break: keep-all; }
-.play-rule { font-size: var(--t-base); line-height: var(--lh-body); color: var(--ink-2); word-break: keep-all; }
-.play dl { display: grid; gap: var(--sp-2); margin: var(--sp-2) 0 0; }
-.play dl div { display: grid; grid-template-columns: 56px 1fr; gap: var(--sp-3); font-size: var(--t-sm); line-height: var(--lh-snug); }
-.play dt { color: var(--ink-3); }
-.play dd { margin: 0; color: var(--ink-2); word-break: keep-all; }
+/* 설계 원칙: 이름 목록 + 고른 하나의 상세 */
+.pb { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--sp-12); align-items: start; }
+.pb-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
+.pb-list li { border-bottom: 1px solid var(--line); }
+.pb-list button { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: baseline; gap: var(--sp-3); width: 100%; padding: var(--sp-4) 0; cursor: pointer; color: var(--ink-3); transition: color var(--dur-fast) var(--ease); }
+.pb-list button:hover, .pb-list li.on button { color: var(--ink); }
+.pb-list button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.pb-list .pb-id { font-size: var(--t-sm); font-weight: var(--w-semi); }
+.pb-list li.on .pb-id { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.pb-list li.on .pb-id::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 1px var(--ink); }
+.pb-name { font-size: var(--t-lg); font-weight: var(--w-medium); letter-spacing: var(--tr-ui); word-break: keep-all; }
+.pb-detail { position: sticky; top: 96px; display: grid; gap: var(--sp-5); padding-top: var(--sp-5); border-top: 1px solid var(--ink); animation: enter var(--dur) var(--ease) both; }
+.pb-detail .pb-id { margin: 0; font-size: var(--t-sm); font-weight: var(--w-semi); color: var(--ink-3); }
+.pb-detail h3 { margin: 0; font-size: var(--d-3); font-weight: var(--w-semi); letter-spacing: var(--tr-title); line-height: var(--lh-snug); word-break: keep-all; }
+.pb-rule { margin: 0; max-width: 52ch; font-size: var(--t-md); line-height: var(--lh-body); color: var(--ink); word-break: keep-all; }
+.pb-meta { display: grid; gap: var(--sp-3); margin: 0; padding-top: var(--sp-4); border-top: 1px solid var(--line); }
+.pb-meta div { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: var(--sp-3); font-size: var(--t-sm); line-height: var(--lh-snug); }
+.pb-meta dt { color: var(--ink-3); }
+.pb-meta dd { margin: 0; color: var(--ink-2); word-break: keep-all; }
+.pb-tests { margin: 0; font-size: var(--t-xs); color: var(--ink-3); }
+.pb-inline { display: none; }
+@media (max-width: 860px) {
+  .pb { grid-template-columns: 1fr; }
+  .pb-detail { display: none; }
+  .pb-inline { display: grid; gap: var(--sp-4); padding: 0 0 var(--sp-5) calc(44px + var(--sp-3)); animation: enter var(--dur) var(--ease) both; }
+  .pb-name { font-size: var(--t-md); }
+}
 .play-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4); margin-top: var(--sp-12); }
 .play-foot .note { margin: 0; }
 
@@ -233,11 +248,9 @@
   .bento, .facts { grid-template-columns: 1fr; gap: var(--sp-12); }
   .imap-track { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--sp-10); }
   .imap-step + .imap-step::before { display: none; }
-  .play { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .land-nav { display: none; }
-  .play { grid-template-columns: 1fr; gap: var(--sp-8); }
   .setup .land-top > span { display: none; }
   .land-top { grid-template-columns: 1fr auto; }
   .hero { padding-top: var(--sp-24); padding-bottom: var(--sp-16); }
@@ -264,3 +277,7 @@
   .chip-stock.b, .chip-alt, .price-new, .chip-ask { opacity: 1; }
   .chip-stock.a, .price-old { display: none; }
 }
+
+/* 먹색 무대(진열대 데모) 안의 강조는 라임: 사람이 고른 상품·담기 질문에만 */
+.band-in { --brand: var(--lime); --brand-deep: var(--lime); --brand-hi: var(--lime); --on-brand: var(--on-lime); }
+.band-in .btn.primary, .band-in .btn.primary:hover:not(:disabled) { background: var(--stage-ink); color: var(--stage); }

@@ -8,6 +8,7 @@ import { C, SV, money, payMethodOf, t } from './copy';
 import { Icon } from './Icon';
 import { Stepper } from './Shop';
 import { Spinner } from './Spinner';
+import { TestPay } from './TestPay';
 import { STAGES, clockOf, trackOf } from '../store/tracking';
 
 export type DrawerTab = 'cart' | 'orders';
@@ -176,6 +177,7 @@ export function CartDrawer({ lang, open, tab, onTab, state, now, issues, onClose
                 </button>
               ) : (
                 <>
+                  <TestPay lang={lang} />
                   <p className="note">{SV.willPlace[lang](groups.length)}</p>
                   <button className="btn nod block" disabled={readOnly || issues.length > 0} onClick={pay}>
                     {issues.length > 0 ? t(SV.payBlocked, lang) : SV.payN[lang](money(total, lang))}
