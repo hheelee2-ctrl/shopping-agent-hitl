@@ -22,10 +22,12 @@ const CATEGORIES: Dict<Category> = [
   ['shirt', ['셔츠', '블라우스', '남방', 'shirt', 'blouse']],
   ['skirt', ['스커트', '치마', 'skirt']],
   ['dress', ['원피스', '드레스', 'dress']],
-  ['cap', ['볼캡', '캡모자', '모자', '비니', 'cap', 'beanie', 'hat']],
+  ['cap', ['볼캡', '캡모자', '모자', '비니', '버킷햇', 'cap', 'beanie', 'hat', 'bucket hat']],
+  ['scarf', ['머플러', '스카프', '목도리', '장갑', '벙어리장갑', 'scarf', 'muffler', 'gloves', 'mittens']],
+  ['jewelry', ['주얼리', '쥬얼리', '목걸이', '귀걸이', '반지', 'jewelry', 'necklace', 'earrings']],
   ['pants', ['카고바지', '바지', '팬츠', '슬랙스', '청바지', '치노', '카고', 'pants', 'trousers', 'slacks', 'jeans', 'chinos', 'shorts', 'cargo']],
   ['bag', ['가방', '백팩', '토트', 'bag', 'backpack', 'tote']],
-  ['acc', ['액세서리', '악세사리', '선글라스', '안경', '시계', '워치', '목걸이', '귀걸이', '반지', '벨트', 'accessory', 'accessories', 'sunglasses', 'glasses', 'watch', 'necklace', 'earrings', 'belt']],
+  ['acc', ['액세서리', '악세사리', '선글라스', '안경', '시계', '워치', '벨트', '폰케이스', '휴대폰 케이스', '스크런치', '곱창밴드', '집게핀', '헤어핀', '양말', '삭스', 'accessory', 'accessories', 'sunglasses', 'glasses', 'watch', 'belt', 'phone case', 'scrunchie', 'hair clip', 'socks']],
 ];
 
 /** 묶음 표현. 구체적인 종류가 함께 오면 그쪽을 따른다("아우터 코트" → 코트). */

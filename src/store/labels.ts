@@ -28,7 +28,9 @@ export const CATEGORY_L: Record<Category, L> = {
   heels: { ko: '힐', en: 'Heels' },
   boots: { ko: '부츠', en: 'Boots' },
   bag: { ko: '가방', en: 'Bags' },
-  cap: { ko: '모자', en: 'Caps' },
+  cap: { ko: '모자', en: 'Hats' },
+  scarf: { ko: '머플러·장갑', en: 'Scarves & gloves' },
+  jewelry: { ko: '주얼리', en: 'Jewelry' },
   acc: { ko: '액세서리', en: 'Accessories' },
 };
 

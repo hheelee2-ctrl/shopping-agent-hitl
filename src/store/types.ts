@@ -2,7 +2,7 @@ import type { L } from '../engine/types';
 
 export type Category =
   | 'coat' | 'jacket' | 'knit' | 'sweat' | 'tee' | 'shirt' | 'pants' | 'skirt'
-  | 'dress' | 'sneakers' | 'loafers' | 'heels' | 'boots' | 'bag' | 'cap' | 'acc';
+  | 'dress' | 'sneakers' | 'loafers' | 'heels' | 'boots' | 'bag' | 'cap' | 'scarf' | 'jewelry' | 'acc';
 export type Color = 'black' | 'white' | 'navy' | 'beige' | 'gray' | 'brown' | 'khaki' | 'blue' | 'pink' | 'gold' | 'silver';
 export type Material = 'wool' | 'wool-blend' | 'cotton' | 'leather' | 'denim' | 'cashmere' | 'nylon' | 'canvas' | 'polyester' | 'metal';
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
@@ -30,7 +30,7 @@ export const SIZE_COMMON: Record<'top' | 'shoe' | 'bottom', string[]> = {
   bottom: ['28', '30', '32', '34'],
 };
 export const sizeKindOf = (c: Category): SizeKind =>
-  c === 'sneakers' || c === 'loafers' || c === 'heels' || c === 'boots' ? 'shoe' : c === 'pants' || c === 'skirt' ? 'bottom' : c === 'bag' || c === 'cap' || c === 'acc' ? 'free' : 'top';
+  c === 'sneakers' || c === 'loafers' || c === 'heels' || c === 'boots' ? 'shoe' : c === 'pants' || c === 'skirt' ? 'bottom' : c === 'bag' || c === 'cap' || c === 'scarf' || c === 'jewelry' || c === 'acc' ? 'free' : 'top';
 
 /**
  * 상품. 실제 가격·재고는 판매처별 오퍼(Offer)에 있고,
