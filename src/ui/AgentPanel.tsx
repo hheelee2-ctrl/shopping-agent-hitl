@@ -35,7 +35,9 @@ interface Props {
   running: boolean;
   request: string;
   onRequest: (s: string) => void;
-  onRun: () => void;
+  onRun: (text?: string) => void;
+  /** 머리 오른쪽에 둘 도구 (설계 보기 토글) */
+  tools?: ReactNode;
   onCompare: () => void;
   onOpen: (id: string) => void;
   onDial: (d: Dial) => void;
@@ -123,10 +125,10 @@ export function AgentPanel(p: Props) {
   }, [deciding, phase, question?.id, payment?.total, pendingCart?.id]);
   useEffect(() => { if (phase === 'planning') setOpen(true); }, [phase]);
 
+  // 추천 문구는 누르면 바로 찾기 시작한다
   const pick = (text: string) => {
-    if (p.locked) return;
-    p.onRequest(text);
-    window.requestAnimationFrame(() => { field.current?.focus(); field.current?.setSelectionRange(text.length, text.length); });
+    if (p.locked || p.running || p.readOnly) return;
+    p.onRun(text);
   };
 
   const paying = !result && phase === 'executing' && state.feed.some((f) => f.k === 'decided' && f.kind === 'pay' && f.ok && !f.review);
@@ -147,11 +149,14 @@ export function AgentPanel(p: Props) {
           <h1>{t(TH.title, lang)}</h1>
           <span className={`phase ${dotClass(phase)}`}><Mark size={10} phase={dotClass(phase) === "live" ? "busy" : dotClass(phase) === "ok" ? "done" : "idle"} />{phase === 'idle' && watching > 0 ? TH.watching[lang](watching) : t(PHASE[phase], lang)}</span>
         </div>
-        <button className="settings-sum" aria-expanded={openSet} onClick={toggleSet} disabled={p.running}>
-          <span>{t(DIAL[p.dial], lang)}</span>
-          <span>{TH.limitOf[lang](money(p.limit, lang))}</span>
-          <span>{sizeSum}</span>
-        </button>
+        <div className="agent-sub">
+          <button className="settings-sum" aria-expanded={openSet} onClick={toggleSet} disabled={p.running}>
+            <span>{t(DIAL[p.dial], lang)}</span>
+            <span>{TH.limitOf[lang](money(p.limit, lang))}</span>
+            <span>{sizeSum}</span>
+          </button>
+          {p.tools}
+        </div>
         {draft && !p.running && (
           <div className="settings">
             <div className="settings-body">

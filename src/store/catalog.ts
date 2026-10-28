@@ -161,6 +161,27 @@ export function summarize(p: Product, offers: Offer[]): Product {
   return { ...p, sizes, stock: Object.values(sizes).reduce((a, b) => a + b, 0), price };
 }
 
+/**
+ * 큰 사이즈(XL·XXL, 34·36, 285·290)가 어느 국내 판매처에도 없으면 사람이 고를 수가 없다.
+ * 종 모양 배분에서 비어 버린 사이즈는 가장 많이 쌓인 사이즈에서 하나 옮겨 온다. 옮길 데가 없으면 공식몰에 하나 더한다.
+ * 판매처마다 있고 없음은 그대로 갈린다(상품 전체로 한 곳 이상만 보장).
+ */
+function fillSizes(mine: Offer[], set: string[]) {
+  if (!mine.length || set.length < 2) return;
+  for (const z of set) {
+    if (mine.some((o) => (o.sizes[z] ?? 0) > 0)) continue;
+    let from: { o: Offer; k: string } | null = null;
+    for (const o of mine) for (const [k, n] of Object.entries(o.sizes)) if (n >= 2 && (!from || n > from.o.sizes[from.k])) from = { o, k };
+    if (from) {
+      from.o.sizes[from.k]--;
+      from.o.sizes[z] = 1;
+    } else {
+      mine[0].sizes[z] = 1;
+      mine[0].stock++;
+    }
+  }
+}
+
 export function buildCatalog(): { products: Record<string, Product>; offers: Record<string, Offer> } {
   const offers: Offer[] = [];
   const products: Product[] = [];
@@ -179,6 +200,7 @@ export function buildCatalog(): { products: Record<string, Product>; offers: Rec
     if (shelf) mk('shelf', ov.shelf ?? r1k(price * 1.02), nShelf);
     mk('daero', ov.daero ?? r1k(price * 1.05) - 100, nDaero);
     if (ABROAD.has(brand)) mk('abroad', ov.abroad ?? r100(price * 0.86), 3);
+    if (listed > 1) fillSizes(offers.filter((o) => o.productId === id && o.sellerId !== 'abroad'), SIZE_SETS[sizeKindOf(category)]);
     products.push({ id, category, name: { ko, en }, brand, price, sizes: {}, stock: 0, colors, materials, seasons, styles });
   }
   return {

@@ -43,10 +43,10 @@ export function RuleMark({ ids, lang }: { ids: RuleId[]; lang: Lang }) {
   );
 }
 
-/** 헤더의 '설계 보기' 토글 */
+/** 에이전트 패널 머리의 '설계 보기' 토글 */
 export function ReviewToggle({ on, onToggle, lang }: { on: boolean; onToggle: () => void; lang: Lang }) {
   return (
-    <button className={`top-btn review-btn ${on ? 'on' : ''}`} aria-pressed={on} onClick={onToggle} title={lang === 'ko' ? '화면마다 지키는 승인 규칙과 테스트를 보여줘요' : 'Show the approval rules and tests behind each part'}>
+    <button type="button" className={`review-btn ${on ? 'on' : ''}`} aria-pressed={on} onClick={onToggle} title={lang === 'ko' ? '화면마다 지키는 승인 규칙과 테스트를 보여줘요' : 'Show the approval rules and tests behind each part'}>
       <span className="review-dot" aria-hidden />{lang === 'ko' ? '설계 보기' : 'Design notes'}
     </button>
   );

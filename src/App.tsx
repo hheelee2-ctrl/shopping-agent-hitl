@@ -127,12 +127,14 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
   }, [vProducts, criteria, category]);
 
 
-  const run = useCallback(() => {
+  // text: 추천 문구를 누르면 그 문구로 바로 시작한다 (입력창을 거치지 않는다)
+  const run = useCallback((text?: string) => {
+    const req = text ?? request;
     setCmpClosed(false);
     emit({ type: 'start' }, 'user');
-    setAsked(request);
+    setAsked(req);
     setRequest('');
-    agent.start({ request, dial, limit, sizes, style }, (event) => {
+    agent.start({ request: req, dial, limit, sizes, style }, (event) => {
       emit({ type: 'event', event });
       // 에이전트가 실제로 담은 순간을 사람이 놓치지 않게 알린다
       if (event.type === 'tool_call' && event.tool === 'cart_add' && event.status === 'done' && event.undoable && event.itemIds?.[0]) {
@@ -350,7 +352,6 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         <div className="top-r">
           <button className="top-btn" onClick={() => { setDrawerTab('orders'); setCartOpen(true); }}>{t(SV.ordersTab, lang)}{shop.orders.length > 0 && <span className="cnt">{shop.orders.length}</span>}</button>
           <button className="top-btn" data-cart-btn onClick={() => { setDrawerTab('cart'); setCartOpen(true); }}>{t(C.cart, lang)}{cartCount > 0 && <span className="cnt">{cartCount}</span>}</button>
-          <ReviewToggle on={review} onToggle={() => setReview((v) => !v)} lang={lang} />
           {login && (auth.account ? (
             <button className="top-btn top-account" title={lang === 'ko' ? `${auth.account.name} 로그아웃` : `Sign out ${auth.account.name}`} onClick={() => void auth.signOut()}>
               <span className="top-account-n">{auth.account.name}</span>{lang === 'ko' ? '로그아웃' : 'Sign out'}
@@ -377,7 +378,8 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
           lang={lang} store={store} state={vState} cartIds={cartIds}
           readOnly={replaying} frames={frames} cursor={cursor} onCursor={setCursor}
           asked={asked} dial={dial} limit={limit} sizes={sizes} onSizes={setSizes} style={style} onStyle={setStyle} running={running}
-          request={request} onRequest={setRequest} onRun={run} onCompare={() => setCmpClosed(false)} onOpen={setSheet}
+          request={request} onRequest={setRequest} onRun={run}
+          tools={<ReviewToggle on={review} onToggle={() => setReview((v) => !v)} lang={lang} />} onCompare={() => setCmpClosed(false)} onOpen={setSheet}
           onDial={setDial} onLimit={setLimit}
           onReset={reset} onOrders={() => { setDrawerTab('orders'); setCartOpen(true); }}
           onApprove={() => (phase === 'payment-gate' ? needLogin(ack(() => agent.approve(), 'approve')) : ack(() => agent.approve(), 'approve')())} onReview={ack(() => agent.approve(), 'review')} onReject={ack(() => agent.reject(), 'reject')} onAnswer={(id) => ack(() => agent.answer(id), { option: id })()}

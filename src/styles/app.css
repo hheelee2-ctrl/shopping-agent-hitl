@@ -1159,3 +1159,11 @@ button.pb-row:focus-visible { outline: 2px solid var(--brand); }
 .login-gate h2 { margin: 0; }
 .login-gate .row { flex-wrap: wrap; }
 .lg-as { margin: 0; font-weight: 600; color: var(--brand-ink); }
+
+/* 에이전트 패널 머리: 설정 요약 + 설계 보기 토글 */
+.agent-sub { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.agent-sub .settings-sum { flex: 1; min-width: 0; }
+.review-btn { display: inline-flex; align-items: center; gap: var(--sp-2); flex: none; min-height: 32px; padding: 0 var(--sp-3); border: 0; border-radius: var(--r-pill); background: transparent; font-size: var(--t-sm); font-weight: var(--w-semi); white-space: nowrap; cursor: pointer; }
+.review-btn:hover { background: var(--hover); }
+.review-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (max-width: 1100px) { .agent:not(.open) .agent-sub { display: none; } }
