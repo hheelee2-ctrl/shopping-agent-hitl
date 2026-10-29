@@ -71,7 +71,7 @@ src/auth/     로그인(카카오·구글, Supabase)과 사전 승인 기록
 src/pay/      토스 테스트 결제: 서명·대조(contract), 결제 창구(gateway), 팝업 결제 창(window, pay.html)
 src/study/    사용성 테스트 모드: 과제, 자율도 순서, 타임라인 → 지표, CSV
 src/rules.ts  승인 설계 규칙 R1–R10 (리뷰 모드·플레이북이 읽는다)
-src/ui/       랜딩(히어로 진열대 HeroPicks), 쇼핑몰 화면, 에이전트 패널, 장바구니·주문 상세, 모션 엔진(motion.ts)
+src/ui/       랜딩(히어로 '누가 정하나요' Decides, 상품 사진 띠 Strip, 진열대 HeroPicks), 쇼핑몰 화면, 에이전트 패널, 장바구니·주문 상세, 모션 엔진(motion.ts)
 ```
 
 ## 요청 해석: Claude ↔ 규칙 파서

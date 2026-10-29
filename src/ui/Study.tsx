@@ -8,7 +8,7 @@ import { DIAL, t } from './copy';
 const X = {
   tag: { ko: '사용성 테스트', en: 'Usability test' },
   task: { ko: (i: number, n: number) => `과제 ${i}/${n}`, en: (i: number, n: number) => `Task ${i}/${n}` },
-  dial: { ko: '이번 자율도', en: 'Autonomy this time' },
+  dial: { ko: '이번 맡기는 정도', en: 'Autonomy this time' },
   start: { ko: '과제 시작', en: 'Start task' },
   done: { ko: '과제 끝내기', en: 'End task' },
   doneNote: { ko: '샀거나, 그만두기로 했으면 눌러 주세요.', en: 'Press when you bought it or decided to stop.' },

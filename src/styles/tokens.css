@@ -90,8 +90,8 @@
   --dur-slow: 560ms;
 }
 
-/* 밝은 테마에서도 에이전트 패널은 먹색 블록으로 둔다: 쇼핑몰(흰 갤러리)과 에이전트가 말하는 자리를 면으로 가른다 */
-:root, :root[data-theme='dark'], :root[data-theme='light'] .agent {
+/* 어두운 테마. 에이전트 패널도 테마를 따른다(밝은 테마에서는 밝게) */
+:root, :root[data-theme='dark'] {
   color-scheme: dark;
   --bg: #0b0b0b;
   --bg-2: #141414;

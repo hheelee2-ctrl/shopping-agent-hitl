@@ -424,7 +424,7 @@ describe('[R8] 판매처·배송', () => {
     }
     expect(h.store.getState().cart[0]).toMatchObject({ productId: 'sh1', sellerId: 'daero', priceAtAdd: 69900 });
     const cmp = [...h.events].reverse().find((e) => e.type === 'tool_call' && e.id.startsWith('t-seller'));
-    expect(cmp && cmp.type === 'tool_call' && cmp.note?.ko).toMatch(/표시가는 선반 셀렉트/);
+    expect(cmp && cmp.type === 'tool_call' && cmp.note?.ko).toMatch(/판매가는 선반 셀렉트/);
   });
 
   it('도착 마감이 있으면 그 안에 오는 판매처를 고른다', async () => {

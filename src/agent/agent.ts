@@ -248,19 +248,19 @@ export class RuleAgent implements AgentAdapter {
           { id: 'p3', tool: 'cart_add', label: ctx.budget !== undefined
             ? multiLabel(`합계 ${won(ctx.budget).ko} 안에서 담기. 넘으면 멈추고 묻기`, `Add within ${won(ctx.budget).en} total — stop and ask if it would go over`)
             : multiLabel('추천 상품을 차례로 장바구니에 담기', 'Add the picks to cart one by one') },
-          { id: 'p4', tool: 'pay', label: { ko: '결제 직전 승인 요청 (결제는 승인 전까지 실행하지 않음)', en: 'Request approval before payment (nothing is paid until you approve)' } },
+          { id: 'p4', tool: 'pay', label: { ko: '결제 전에 물어보기 (승인 전에는 결제하지 않아요)', en: 'Ask before paying (nothing is paid until you approve)' } },
         ]
       : [
-          { id: 'p1', tool: 'search', label: { ko: '조건에 맞는 상품 검색', en: 'Search products matching your criteria' } },
-          { id: 'p2', tool: 'compare', label: { ko: '후보 비교 및 추천', en: 'Compare candidates and recommend' } },
+          { id: 'p1', tool: 'search', label: { ko: '조건에 맞는 상품 찾기', en: 'Find products that match' } },
+          { id: 'p2', tool: 'compare', label: { ko: '후보를 비교해 하나 추천하기', en: 'Compare and recommend one' } },
           { id: 'p3', tool: 'cart_add', label: { ko: '추천 상품을 장바구니에 담기', en: 'Add the pick to cart' } },
-          { id: 'p4', tool: 'pay', label: { ko: '결제 직전 승인 요청 (결제는 승인 전까지 실행하지 않음)', en: 'Request approval before payment (nothing is paid until you approve)' } },
+          { id: 'p4', tool: 'pay', label: { ko: '결제 전에 물어보기 (승인 전에는 결제하지 않아요)', en: 'Ask before paying (nothing is paid until you approve)' } },
         ];
     this.emit({ type: 'plan', steps, requiresApproval });
     if (requiresApproval) {
       const a = await this.wait();
       if (!ok()) return;
-      if (a === 'reject') return this.finish('cancelled', { ko: '계획을 승인하지 않아 아무것도 실행하지 않았어요.', en: 'Plan not approved — nothing was executed.' });
+      if (a === 'reject') return this.finish('cancelled', { ko: '계획을 취소해서 아무것도 하지 않았어요.', en: 'Plan cancelled. Nothing was done.' });
     }
 
     let added = 0;
@@ -332,22 +332,22 @@ export class RuleAgent implements AgentAdapter {
       this.emit({
         type: 'needs_input', id: `q-payfix${round}`,
         question: {
-          ko: `결제 직전에 판매처 조건이 바뀌었어요. ${said.map((x) => x.ko).join(', ')}. 결제하지 않았어요.`,
-          en: `Seller terms changed right before payment: ${said.map((x) => x.en).join('; ')}. Nothing was charged.`,
+          ko: `결제하려는 순간 가격이나 재고가 바뀌었어요. ${said.map((x) => x.ko).join(', ')}. 그래서 결제하지 않았어요.`,
+          en: `The price or stock changed right before payment: ${said.map((x) => x.en).join('; ')}. Nothing was charged.`,
         },
         options: [
-          { id: 'refresh', label: { ko: '바뀐 내용으로 다시 확인', en: 'Review with the new terms' } },
+          { id: 'refresh', label: { ko: '바뀐 내용으로 다시 확인', en: 'Review the changes' } },
           { id: 'stop', label: { ko: '결제하지 않고 중단', en: 'Stop without paying' } },
         ],
       });
       const f = await this.wait();
       if (!ok()) return;
-      if (f !== 'refresh') return this.finish('cancelled', { ko: '판매처 조건이 바뀌어 결제하지 않았어요. 장바구니는 그대로예요.', en: 'Terms changed, so nothing was paid. Your cart is unchanged.' });
+      if (f !== 'refresh') return this.finish('cancelled', { ko: '가격이나 재고가 바뀌어 결제하지 않았어요. 장바구니는 그대로예요.', en: 'The price or stock changed, so nothing was paid. Your cart is unchanged.' });
       this.store.refreshCart();
       if (this.store.getState().cart.length === 0) return this.finish('cancelled', { ko: '담은 상품이 모두 품절돼 결제하지 않았어요.', en: 'Everything sold out, so nothing was paid.' });
       this.emit({
         type: 'tool_call', id: `t-refresh${round}`, tool: 'pay', status: 'done',
-        label: { ko: '장바구니를 지금 조건으로 고침', en: 'Cart updated to current terms' },
+        label: { ko: '장바구니를 바뀐 가격·재고로 바꿈', en: 'Cart updated to the new price and stock' },
         note: { ko: `합계 ${won(before).ko}에서 ${won(this.store.cartTotal()).ko}으로`, en: `Total ${won(before).en} to ${won(this.store.cartTotal()).en}` },
       });
     }
@@ -585,10 +585,10 @@ export class RuleAgent implements AgentAdapter {
     this.emit({
       type: 'tool_call', id: cid, tool: 'compare', label: clab, status: 'done',
       note: needsHuman
-        ? { ko: tied ? '상위 후보의 차이가 작아 확신할 수 없어요' : '조건 일치도가 낮아 확신할 수 없어요', en: tied ? 'Top candidates are too close to call' : 'Match is too weak to be sure' }
+        ? { ko: tied ? '비슷한 후보가 있어 하나로 고르기 어려워요' : '요청에 딱 맞는 상품이 아니라 고르기 어려워요', en: tied ? 'Top candidates are too close to call' : 'Nothing matches closely enough to pick' }
         : liked
-          ? { ko: `조건에 맞고 내 스타일에 가까운 ${name(top).ko} 추천`, en: `Recommending ${name(top).en} — matches and fits your style` }
-          : { ko: `조건 일치도가 가장 높은 ${name(top).ko} 추천`, en: `Recommending ${name(top).en} — best match` },
+          ? { ko: `추천: ${name(top).ko} · 요청에 맞고 내 스타일에 가까워요`, en: `Recommending ${name(top).en} — matches and fits your style` }
+          : { ko: `추천: ${name(top).ko} · 요청에 가장 잘 맞아요`, en: `Recommending ${name(top).en} — best match` },
     });
 
     let pick = top;
@@ -596,7 +596,7 @@ export class RuleAgent implements AgentAdapter {
       const options = eligible.slice(0, 3);
       this.emit({
         type: 'needs_input', id: `q-pick${sfx}`,
-        question: { ko: '후보 간 차이가 작아 제가 고를 수 없어요. 어느 쪽으로 할까요?', en: "The candidates are too close for me to choose. Which one?" },
+        question: { ko: '후보들이 비슷해서 제가 하나로 고르기 어려워요. 어느 쪽으로 할까요?', en: "The candidates are too close for me to choose. Which one?" },
         options: options.map((s) => ({ id: s.product.id, label: priced(s) })),
       });
       const a = await this.wait();
@@ -902,7 +902,7 @@ export class RuleAgent implements AgentAdapter {
     const sticker = [...domestic].sort((a, b) => a.offer.price - b.offer.price)[0];
     if (sticker && sticker.offer.sellerId !== chosen.offer.sellerId && sticker.offer.price < chosen.offer.price && sticker.landed > chosen.landed) {
       parts.push({
-        ko: `표시가는 ${sticker.seller.name.ko}가 ${won(sticker.offer.price).ko}으로 가장 낮지만, 배송비를 더하면 ${chosen.seller.name.ko}가 ${won(sticker.landed - chosen.landed).ko} 덜 들어요`,
+        ko: `판매가는 ${sticker.seller.name.ko}가 ${won(sticker.offer.price).ko}으로 가장 낮지만, 배송비를 더하면 ${chosen.seller.name.ko}가 ${won(sticker.landed - chosen.landed).ko} 덜 들어요`,
         en: `${sticker.seller.name.en} lists the lowest price (${won(sticker.offer.price).en}), but with shipping ${chosen.seller.name.en} costs ${won(sticker.landed - chosen.landed).en} less`,
       });
     } else if (c.deliverBy && domestic[0] && domestic[0].offer.sellerId !== chosen.offer.sellerId) {

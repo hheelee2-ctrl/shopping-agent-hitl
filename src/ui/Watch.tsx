@@ -52,7 +52,7 @@ const X = {
     expired: { ko: () => '기한 끝', en: () => 'Expired' },
     cancelled: { ko: () => '그만둠', en: () => 'Stopped' },
   },
-  preTag: { ko: '사전 승인', en: 'Pre-approved' },
+  preTag: { ko: '미리 승인함', en: 'Pre-approved' },
   askTag: { ko: '맞으면 물어봄', en: 'Asks first' },
   day: { ko: '하루 지나가기', en: 'Next day' },
   run: { ko: '결과까지 빨리 보기', en: 'Fast-forward' },
@@ -70,7 +70,7 @@ const X = {
     waiting: { ko: '로그인 창에서 계속해 주세요.', en: 'Continue in the sign-in window.' },
   },
   saveFail: { ko: '미리 승인 기록을 남기지 못해 시작하지 않았어요. 다시 해 주세요.', en: 'Could not record the pre-approval, so nothing started. Try again.' },
-  preBy: { ko: (n: string) => `사전 승인 · ${n}`, en: (n: string) => `Pre-approved · ${n}` },
+  preBy: { ko: (n: string) => `미리 승인 · ${n}`, en: (n: string) => `Pre-approved · ${n}` },
 };
 
 /** 미리 승인할 때만 쓰는 로그인. 로그인 설정이 없는 환경(사용성 테스트 등)에서는 넘기지 않는다. */

@@ -34,7 +34,7 @@ export interface Snapshot {
 }
 
 export const baseline = (at: number, snap: Snapshot): Frame => ({
-  at, label: { ko: '초기 상태', en: 'Initial state' }, actor: 'system', actions: [], ...snap,
+  at, label: { ko: '처음 상태', en: 'Initial state' }, actor: 'system', actions: [], ...snap,
 });
 
 export function viewAt(frames: Frame[], index: number): View {
@@ -52,16 +52,16 @@ export function describe(a: Action): L {
   switch (a.type) {
     case 'start': return { ko: '요청 시작', en: 'Request started' };
     case 'reset': return { ko: '초기화', en: 'Reset' };
-    case 'user_ack': return { ko: '사람이 응답', en: 'Human responded' };
+    case 'user_ack': return { ko: '내가 답함', en: 'Human responded' };
     case 'event': {
       const e = a.event;
       switch (e.type) {
-        case 'understood': return { ko: '요청 해석', en: 'Request understood' };
-        case 'plan': return { ko: '계획 수립', en: 'Plan drafted' };
+        case 'understood': return { ko: '요청 이해', en: 'Request understood' };
+        case 'plan': return { ko: '계획 세움', en: 'Plan drafted' };
         case 'tool_call': return e.label;
-        case 'confidence': return { ko: '확신도 계산', en: 'Confidence scored' };
-        case 'needs_input': return { ko: '사람에게 질문', en: 'Asked the human' };
-        case 'payment_gate': return { ko: '결제 직전 승인 요청', en: 'Payment approval requested' };
+        case 'confidence': return { ko: '맞는 정도 판단', en: 'Confidence scored' };
+        case 'needs_input': return { ko: '나에게 질문', en: 'Asked the human' };
+        case 'payment_gate': return { ko: '결제 전 확인 요청', en: 'Payment approval requested' };
         case 'result': return e.summary;
         case 'undo': return e.status === 'done' ? { ko: '되돌리기', en: 'Undone' } : { ko: '되돌리기 차단', en: 'Undo blocked' };
       }

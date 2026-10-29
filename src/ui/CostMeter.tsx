@@ -4,12 +4,12 @@ import { interventionCost, type Cost } from '../agent/cost';
 import { DIAL, t } from './copy';
 
 const X = {
-  title: { ko: '자율도별 개입 비용', en: 'Human effort by autonomy' } satisfies L,
-  go: { ko: '같은 요청을 세 단계로 돌려보기', en: 'Run this request at all three levels' } satisfies L,
+  title: { ko: '맡기는 정도별로 묻는 횟수', en: 'How often it asks, by setting' } satisfies L,
+  go: { ko: '같은 요청을 세 가지 설정으로 돌려 보기', en: 'Run this request at all three settings' } satisfies L,
   busy: { ko: '계산 중', en: 'Running' } satisfies L,
   times: { ko: '회', en: '×' } satisfies L,
   note: {
-    ko: '승인은 모두 수락하고, 질문은 첫 번째 선택지로 답한다고 가정해 시장이 잠잠하다고 보고 별도 쇼핑몰에서 끝까지 돌린 횟수예요. 결제 승인은 어느 단계에서도 1번이에요.',
+    ko: '가격·재고가 움직이지 않는 연습용 쇼핑몰에서, 묻는 건 모두 승인하고 질문에는 첫 번째 답을 고른다고 치고 끝까지 돌려 센 횟수예요. 결제 승인은 어느 설정이든 1번이에요.',
     en: 'Counted on a separate, quiet shop, accepting every approval and picking the first option on questions. Payment approval is 1 at every level.',
   } satisfies L,
   plan: { ko: '계획 승인', en: 'Plan approval' } satisfies L,

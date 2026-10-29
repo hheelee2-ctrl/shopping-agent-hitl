@@ -193,19 +193,19 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
         line('ok', describeWatch(v, cur.w, day));
         next = { ...next, status: 'asked', auto: false, pending: v };
         pushToast({ tone: 'ok', pid: cur.w.productId, title: lang === 'ko' ? '조건이 맞았어요. 결제할까요?' : 'Everything fits. Pay now?', sub: `${pname}, ${money(v.total, lang)}` });
-        note({ ko: `가격 대기 조건 충족, 결제 승인 요청: ${p?.name.ko ?? ''}`, en: `Price watch matched, asking to pay: ${p?.name.en ?? ''}` });
+        note({ ko: `가격 대기: 조건이 맞아 결제를 물어봄 · ${p?.name.ko ?? ''}`, en: `Price watch matched, asking to pay: ${p?.name.en ?? ''}` });
         break;
       }
       case 'buy': {
         if (v.kind !== 'match') break;
         const order = store.buyNow(cur.w.productId, cur.w.size, v.sellerId, 'agent', cur.w.id);
-        if (!order) { line('hold', { ko: `${day}일째: 결제 직전에 재고가 빠져 사지 않았어요.`, en: `Day ${day}: stock ran out right before paying; nothing bought.` }); break; }
+        if (!order) { line('hold', { ko: `${day}일째: 결제하려는 순간 재고가 떨어져 사지 않았어요.`, en: `Day ${day}: stock ran out right before paying; nothing bought.` }); break; }
         line('ok', describeWatch(v, cur.w, day));
         line('ok', { ko: `미리 승인한 조건으로 결제했어요. 주문 ${order.id}`, en: `Paid under your preset terms. Order ${order.id}` });
         next = { ...next, status: 'bought', auto: false, orderId: order.id };
         closeRecord(cur.w, 'used', order.id);
         pushToast({ tone: 'ok', pid: cur.w.productId, title: lang === 'ko' ? '자리에 없는 동안 샀어요' : 'Bought while you were away', sub: `${pname}, ${t(sellerOf(v.sellerId).name, lang)}, ${money(v.total, lang)}`, action: { label: t(SV.ordersTab, lang), run: () => { setDrawerTab('orders'); setCartOpen(true); } } });
-        note({ ko: `가격 대기 사전 승인으로 결제: ${p?.name.ko ?? ''} ${order.total.toLocaleString('ko-KR')}원`, en: `Paid by price-watch pre-approval: ${p?.name.en ?? ''}` });
+        note({ ko: `가격 대기: 미리 승인한 대로 결제 · ${p?.name.ko ?? ''} ${order.total.toLocaleString('ko-KR')}원`, en: `Paid by price-watch pre-approval: ${p?.name.en ?? ''}` });
         break;
       }
     }
@@ -238,7 +238,7 @@ export default function App({ lang, onLang, theme, onTheme, initial }: AppProps)
       ? { by: login.account.name, mandateId: await recordMandate(sb, spec, p?.name.ko ?? spec.productId) }
       : {};
     const w: Watch = { ...spec, ...mandate, id: `w${Date.now().toString(36)}` };
-    note({ ko: `가격 대기 시작: ${p?.name.ko ?? ''}, 배송비 포함 ${w.maxTotal.toLocaleString('ko-KR')}원 이하${w.preapproved ? ', 사전 승인' : ''}`, en: `Price watch started: ${p?.name.en ?? ''}` });
+    note({ ko: `가격 대기 시작: ${p?.name.ko ?? ''}, 배송비 포함 ${w.maxTotal.toLocaleString('ko-KR')}원 이하${w.preapproved ? ', 미리 승인' : ''}`, en: `Price watch started: ${p?.name.en ?? ''}` });
     const first = evaluate({ w, day: 0, seed: Math.floor(Math.random() * 1e6), status: 'watching', auto: false, trail: [], log: [] }, 0);
     putWatches([first, ...watchRef.current]);
     setWatchFor(null);

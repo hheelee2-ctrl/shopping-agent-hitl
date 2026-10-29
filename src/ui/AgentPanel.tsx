@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { PaperPlaneTilt } from '@phosphor-icons/react';
 import type { Dial, L, Lang, SizeProfile, StyleProfile } from '../engine/types';
 import type { ConsoleState, LogEntry, Phase } from '../state/console';
 import { Icon } from './Icon';
@@ -359,9 +360,9 @@ export function AgentPanel(p: Props) {
               }
             }}
           />
-          <button type="submit" className="btn nod send" disabled={!p.request.trim() || p.running || p.readOnly || !!p.locked}>{t(C.send, lang)}</button>
+          <button type="submit" className="btn nod send" disabled={!p.request.trim() || p.running || p.readOnly || !!p.locked}>{t(C.send, lang)}<PaperPlaneTilt className="ic ic-fly" size={16} weight="regular" aria-hidden /></button>
         </div>
-        {p.running && <p className="composer-hint">{t(C.busyHint, lang)}</p>}
+        {p.running && <p className="composer-hint">{t(deciding ? C.waitHint : C.busyHint, lang)}</p>}
       </form>
     </aside>
   );

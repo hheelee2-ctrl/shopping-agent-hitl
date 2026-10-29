@@ -443,13 +443,6 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   .sq { animation: none; }
 }
 /* ============ 브랜드 면 · 장면 · 카드 ============ */
-/* 랜딩 장면: 칩이 바뀌고, 다시 묻는다 */
-@keyframes stockA { 0%, 38% { opacity: 1; transform: translateX(-50%) scale(1); } 46%, 100% { opacity: 0; transform: translateX(-50%) translateY(-14px) scale(0.9); } }
-@keyframes stockB { 0%, 40% { opacity: 0; transform: translateX(-50%) translateY(14px) scale(0.9); } 50%, 92% { opacity: 1; transform: translateX(-50%) scale(1); } 100% { opacity: 0; } }
-@keyframes altIn { 0%, 56% { opacity: 0; transform: translateX(-50%) translateY(14px) scale(0.92); } 66%, 92% { opacity: 1; transform: translateX(-50%) scale(1); } 100% { opacity: 0; } }
-/* 장면 3: 승인한 가격이 달라지면 다시 묻는다 */
-@keyframes priceOld { 0%, 36% { opacity: 1; transform: translateX(-50%); } 46%, 100% { opacity: 0; transform: translateX(-50%) translateY(-16px); } }
-@keyframes priceNew { 0%, 38% { opacity: 0; transform: translateX(-50%) translateY(16px); } 48%, 92% { opacity: 1; transform: translateX(-50%); } 100% { opacity: 0; } }
 /* 나머지 섹션: 카드 */
 /* ── 앱 안의 브랜드: 인트로 면 · 기본 버튼 · 패널 헤더 ── */
 .land-top .btn.primary, .cta.primary { background: var(--brand-deep); color: var(--on-brand); }
@@ -678,7 +671,13 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .terms li { display: inline-flex; align-items: center; gap: var(--sp-1); }
 .terms li.bad { color: var(--warn); }
 .terms.compact { font-size: var(--t-xs); margin-top: 2px; }
-.ic { flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ic { flex: none; vertical-align: -0.125em; transition: transform 420ms cubic-bezier(0.3, 0.7, 0.2, 1); }
+/* 움직이는 아이콘: 누를 수 있는 것 안에서만, 무엇을 할지 방향으로 움직인다 */
+a:hover > .ic-r, button:hover > .ic-r { transform: translateX(4px); }
+button:not(:disabled):hover > .ic-fly { transform: translate(3px, -3px) rotate(-8deg); }
+button:not(:disabled):active > .ic-fly { transform: translate(14px, -14px) rotate(-12deg); opacity: 0; transition-duration: 260ms; }
+.btn > .ic, .link > .ic { margin-left: 8px; }
+@media (prefers-reduced-motion: reduce) { .ic { transition: none; } }
 .terms .ic { color: var(--ink-3); }
 /* 판매처 가격 비교 막대 */
 .pbars { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); }
@@ -725,7 +724,6 @@ button.pb-row:focus-visible { outline: 2px solid var(--brand); }
 .si { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--t-sm); }
 .si-ph { position: relative; display: block; width: 28px; height: 34px; border-radius: var(--r-sm); overflow: hidden; flex: none; }
 .done-ok { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--brand); color: var(--on-brand); animation: enter var(--dur-slow) var(--ease) both; }
-.done-ok .ic { stroke-width: 2.2; }
 @media (max-width: 560px) {
   .price-row { flex-wrap: wrap; }
   .pb-row { grid-template-columns: minmax(0, 96px) 1fr auto; }
@@ -1236,3 +1234,6 @@ button.pb-row:focus-visible { outline: 2px solid var(--brand); }
 .test-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 2147483647; display: flex; justify-content: center; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); background: var(--lime); color: var(--on-lime); font-size: var(--t-sm); font-weight: var(--w-semi); text-align: center; pointer-events: none; }
 .test-banner b { padding: 2px var(--sp-2); background: var(--on-lime); color: var(--lime); font-size: var(--t-2xs); letter-spacing: var(--tr-caps); }
 .buy .btn.primary { width: auto; justify-content: flex-start; }
+
+/* 브라우저 기본면도 팔레트로: 텍스트 선택 */
+::selection { background: var(--lime); color: var(--on-lime); }

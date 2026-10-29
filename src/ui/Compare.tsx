@@ -17,7 +17,7 @@ const X = {
   price: { ko: '가격', en: 'Price' } satisfies L,
   color: { ko: '색상', en: 'Color' } satisfies L,
   material: { ko: '소재', en: 'Material' } satisfies L,
-  conf: { ko: '확신', en: 'Confidence' } satisfies L,
+  conf: { ko: '맞는 정도', en: 'Confidence' } satisfies L,
 };
 
 interface Props { lang: Lang; store: Store; state: ConsoleState; onPick: (id: string) => void; onClose: () => void }
