@@ -7,7 +7,6 @@ import { ColorPicker, EMPTY_STYLE, loadStyle, MaterialPicker, MoodPicker, saveSt
 import { SETUP } from './landCopy';
 import { studyId } from '../study/study';
 import { LimitSlider } from './LimitSlider';
-import { Magnetic } from './Magnetic';
 import { Wordmark } from './Wordmark';
 import type { MarkPhase } from './Mark';
 import { Rise } from './Rise';
@@ -139,11 +138,9 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
         )}
 
         <div className="setup-actions">
-          <Magnetic>
-            <button className={`btn primary cta ${phase === 'done' ? 'ok' : ''}`} onClick={start} disabled={leaving}>
-              <span key={`${leaving}-${phase}-${editStyle}-${lang}`} className="swap">{editStyle ? t(ST.next, lang) : label}</span>
-            </button>
-          </Magnetic>
+          <button className={`btn primary cta ${phase === 'done' ? 'ok' : ''}`} onClick={start} disabled={leaving}>
+            <span key={`${leaving}-${phase}-${editStyle}-${lang}`} className="swap">{editStyle ? t(ST.next, lang) : label}</span>
+          </button>
           <a className="link" href="#/">{t(SETUP.back, lang)}</a>
         </div>
       </main>
@@ -162,11 +159,9 @@ export function Setup({ lang, onLang, theme, onTheme, onConfirm }: Props) {
         </section>
 
         <div className="setup-actions">
-          <Magnetic>
-            <button className={`btn primary cta ${phase === 'done' ? 'ok' : ''}`} onClick={nextStep} disabled={leaving}>
-              <span key={`${leaving}-${phase}-${stage}-${lang}`} className="swap">{stage === 2 ? label : t(ST.next, lang)}</span>
-            </button>
-          </Magnetic>
+          <button className={`btn primary cta ${phase === 'done' ? 'ok' : ''}`} onClick={nextStep} disabled={leaving}>
+            <span key={`${leaving}-${phase}-${stage}-${lang}`} className="swap">{stage === 2 ? label : t(ST.next, lang)}</span>
+          </button>
           <button className="btn ghost" onClick={skip} disabled={leaving}>{t(ST.skip, lang)}</button>
           <button className="link-btn" onClick={() => { setStage(stage === 0 ? 'base' : ((stage - 1) as 0 | 1)); toTop(); }} disabled={leaving}>{t(ST.prev, lang)}</button>
         </div>

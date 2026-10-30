@@ -4,7 +4,6 @@ import type { Lang } from '../engine/types';
 import { t } from './copy';
 import { HeroPicks } from './HeroPicks';
 import { LAND } from './landCopy';
-import { Magnetic } from './Magnetic';
 import { Decides } from './Decides';
 import { KineticTitle } from './KineticTitle';
 import { Wordmark } from './Wordmark';
@@ -36,12 +35,10 @@ const goTo = (id: string) => (e: React.MouseEvent) => {
 
 function Cta({ lang }: { lang: Lang }) {
   return (
-    <Magnetic>
-      <a className="btn primary cta" href="#/app">
-        <span>{t(LAND.start, lang)}</span>
-        <ArrowRight className="ic ic-r" size={18} weight="regular" aria-hidden />
-      </a>
-    </Magnetic>
+    <a className="btn primary cta" href="#/app">
+      <span>{t(LAND.start, lang)}</span>
+      <ArrowRight className="ic ic-r" size={18} weight="regular" aria-hidden />
+    </a>
   );
 }
 
@@ -111,9 +108,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
           <KineticTitle lines={[t(LAND.heroA, lang), t(LAND.heroB, lang)]} />
             <p className="hero-sub">{t(LAND.heroSub, lang)}</p>
             <div className="hero-actions">
-              <Magnetic>
-                <a className="btn primary cta" href="#/app"><span>{t(LAND.start, lang)}</span><ArrowRight className="ic ic-r" size={18} weight="regular" aria-hidden /></a>
-              </Magnetic>
+              <a className="btn primary cta" href="#/app"><span>{t(LAND.start, lang)}</span><ArrowRight className="ic ic-r" size={18} weight="regular" aria-hidden /></a>
             </div>
             </div>
             <figure className="hx-demo">

@@ -357,7 +357,6 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 /* ---- demo cursor / swap / press ---- */
 .swap { display: inline-block; animation: swapIn 360ms var(--ease) both; }
 @keyframes swapIn { from { opacity: 0; filter: blur(5px); transform: translateY(5px); } to { opacity: 1; filter: none; transform: none; } }
-.mag { display: inline-block; will-change: transform; }
 /* ---- mask rise typography ---- */
 .rise .rw { display: inline-block; overflow: hidden; vertical-align: top; white-space: nowrap; padding: 0 0.03em 0.18em; margin-bottom: -0.18em; }
 .rise .rc { display: inline-block; transform: translateY(115%); transition: transform 1000ms var(--ease); transition-delay: calc(var(--d, 0ms) + var(--i) * 34ms); }
