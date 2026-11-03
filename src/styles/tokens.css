@@ -14,6 +14,10 @@
   --r-xl: 4px;
   --r-glass: var(--r-lg);
   --r-pill: 2px;
+  /* 랜딩만: 애플 상세페이지처럼 큰 판은 크게 둥글고, 버튼과 선택기는 알약 모양 */
+  --r-tile: 28px;
+  --r-tile-sm: 18px;
+  --r-round: 999px;
 
   /* brand accent: 승인(Nod) 순간에 쓴다 */
   --accent: var(--brand);

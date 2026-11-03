@@ -1,25 +1,20 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight } from '@phosphor-icons/react';
 import type { Lang } from '../engine/types';
+import { RULES, RULE_TESTS } from '../rules';
 import { t } from './copy';
 import { HeroPicks } from './HeroPicks';
 import { LAND } from './landCopy';
 import { Decides } from './Decides';
-import { KineticTitle } from './KineticTitle';
+import { DialTable } from './DialTable';
+import { Highlights } from './Highlights';
 import { Wordmark } from './Wordmark';
-import { reducedMotion } from './motion';
 import { Rise } from './Rise';
+import { Scenes } from './Scenes';
 import { Stages } from './Stages';
-import { Strip } from './Strip';
-import { photoUrl } from '../store/photos';
 import { Tour } from './Tour';
 import { ThemeButton } from './ThemeButton';
 import { useReveal } from './useReveal';
-
-/** 장면마다 깔리는 실제 상품 사진: 178,000원 코트(투어와 같은 상품), 비슷한 두 운동화, 가격 대기 중인 니트 */
-const SCENE_PH = [['c1'], ['s3', 's6'], ['k3']];
-/** 사진 아래 한 줄: 무슨 일이 있었고(앞), 에이전트가 어떻게 했는지(끝) */
-const SCENE_TAG: (keyof typeof LAND.vis)[][] = [['priceA', 'priceB', 'ask'], ['candA', 'candB', 'pick'], ['target', 'dropped', 'held']];
 
 interface Props {
   lang: Lang;
@@ -28,38 +23,38 @@ interface Props {
   onTheme: () => void;
 }
 
-const goTo = (id: string) => (e: React.MouseEvent) => {
-  e.preventDefault();
-  document.getElementById(id)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth' });
-};
+/** 원칙에 묶인 테스트 수(scripts/rules.mjs가 센 값) */
+const TESTS = Object.values(RULE_TESTS).reduce((a, b) => a + b, 0);
 
-function Cta({ lang }: { lang: Lang }) {
+function Cta({ lang, sm }: { lang: Lang; sm?: boolean }) {
   return (
-    <a className="btn primary cta" href="#/app">
-      <span>{t(LAND.start, lang)}</span>
-      <ArrowRight className="ic ic-r" size={18} weight="regular" aria-hidden />
+    <a className={`go-pill${sm ? ' sm' : ''}`} href="#/app">
+      <span>{t(sm ? LAND.startShort : LAND.start, lang)}</span>
+      <ArrowRight className="ic ic-r" size={sm ? 14 : 18} weight="bold" aria-hidden />
     </a>
   );
 }
 
-/** 섹션 머리: 번호 · 라벨 한 줄, 그 아래 큰 제목 */
-function Head({ n, label, title, sub }: { n: string; label: string; title: string; sub?: string }) {
+/** 섹션 머리: 회색 작은 이름, 그 아래 큰 제목(줄바꿈은 문구의 \n), 짧은 설명 */
+function Head({ label, title, sub }: { label?: string; title: string; sub?: string }) {
   return (
     <header className="sec-head">
-      <p className="eyebrow"><span className="num">{n}</span>{label}</p>
-      <h2 className="sec-title"><Rise text={title} /></h2>
+      {label && <p className="sec-label">{label}</p>}
+      <h2 className="sec-title">{title.split('\n').map((l, i) => <span key={i} className="ln"><Rise text={l} delay={i * 120} /></span>)}</h2>
       {sub && <p className="sec-sub">{sub}</p>}
     </header>
   );
 }
 
+/**
+ * 랜딩. 애플 제품 상세페이지의 흐름을 따른다:
+ * 제품 이름과 한 줄 → 제품(실제 화면) → 편해지는 것 → 물어보는 순간 → 눌러 보는 선택기와 비교 → 직접 해 보기 → 약속 → 만든 이야기 → 마지막 행동.
+ * 말은 토스처럼: 제목은 사용자가 얻는 것, 작동 방식은 그 아래 작게.
+ * 섹션은 바탕과 한 단계 짙은 바탕이 번갈아 나온다.
+ */
 export function Landing({ lang, onLang, theme, onTheme }: Props) {
-  const r1 = useReveal<HTMLDivElement>();
-  const r2 = useReveal<HTMLDivElement>();
-  const r3 = useReveal<HTMLDivElement>();
-  const r5 = useReveal<HTMLDivElement>();
-  const nav = (id: string) => t(LAND.nav.find((n) => n.id === id)!.l, lang);
-  // 헤더가 어두운 히어로 위에 있는 동안은 헤더도 무대색으로
+  const r = [useReveal<HTMLDivElement>(), useReveal<HTMLDivElement>(), useReveal<HTMLDivElement>(), useReveal<HTMLDivElement>(), useReveal<HTMLDivElement>(), useReveal<HTMLDivElement>(), useReveal<HTMLDivElement>()];
+  // 상단 바가 어두운 히어로 위에 있는 동안은 바도 무대색으로
   const [onDark, setOnDark] = useState(true);
   useEffect(() => {
     const hero = document.querySelector('.hero.hx');
@@ -69,7 +64,7 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
     return () => io.disconnect();
   }, []);
 
-  // 앱의 규칙 칩에서 #/playbook으로 오면 플레이북으로 바로 내려간다
+  // 앱의 규칙 칩에서 #/playbook으로 오면 원칙 섹션으로 바로 내려간다
   useEffect(() => {
     let id = 0;
     const go = () => {
@@ -85,100 +80,100 @@ export function Landing({ lang, onLang, theme, onTheme }: Props) {
     <div className="land">
       <header className={`land-top${onDark ? ' on-dark' : ''}`}>
         <a className="logo" href="#/" aria-label="Nod">
-          <Wordmark size={22} />
+          <Wordmark size={20} />
         </a>
-        <nav className="land-nav" aria-label="sections">
-          {LAND.nav.map((n) => <a key={n.id} href={`#${n.id}`} onClick={goTo(n.id)}>{t(n.l, lang)}</a>)}
-        </nav>
         <div className="top-r">
           <ThemeButton theme={theme} onToggle={onTheme} lang={lang} />
           <div className="lang" role="group" aria-label="language">
             <button aria-pressed={lang === 'ko'} onClick={() => onLang('ko')}>KO</button>
             <button aria-pressed={lang === 'en'} onClick={() => onLang('en')}>EN</button>
           </div>
-          <a className="btn sm primary land-start" href="#/app">{t(LAND.startShort, lang)}<ArrowRight className="ic ic-r" size={14} weight="regular" aria-hidden /></a>
+          <Cta lang={lang} sm />
         </div>
       </header>
 
-      {/* 히어로: 어두운 무대. 왼쪽 커서에 반응하는 제목·설명·버튼, 오른쪽 진열대 데모(서비스가 일하는 모습), 아래 띠에 누가 정하나요 */}
+      {/* 히어로: 어두운 무대. 이름과 한 줄, 가운데 실제 화면, 아래 한 줄과 시작 버튼 */}
       <section className="hero hx">
         <div className="hx-in">
-          <div className="hx-top">
-            <div className="hx-copy">
-          <KineticTitle lines={[t(LAND.heroA, lang), t(LAND.heroB, lang)]} />
-            <p className="hero-sub">{t(LAND.heroSub, lang)}</p>
-            <div className="hero-actions">
-              <a className="btn primary cta" href="#/app"><span>{t(LAND.start, lang)}</span><ArrowRight className="ic ic-r" size={18} weight="regular" aria-hidden /></a>
+          <hgroup className="hx-head">
+            <p className="hx-name">{t(LAND.heroName, lang)}</p>
+            <h1 className="hx-title">{t(LAND.heroTitle, lang)}</h1>
+          </hgroup>
+          <figure className="hx-demo">
+            <div className="window">
+              <div className="window-bar" aria-hidden><i /><i /><i /><span>nod.shop</span></div>
+              <div className="window-body"><HeroPicks lang={lang} /></div>
             </div>
-            </div>
-            <figure className="hx-demo">
-              <div className="window">
-                <div className="window-bar" aria-hidden><i /><i /><i /><span>nod.shop</span></div>
-                <div className="window-body"><HeroPicks lang={lang} /></div>
-              </div>
-              <figcaption>{t(LAND.agentSub, lang)}</figcaption>
-            </figure>
+            <figcaption className="sr-only">{t(LAND.agentSub, lang)}</figcaption>
+          </figure>
+          <div className="hx-bar">
+            <p>{t(LAND.heroBar, lang)}</p>
+            <Cta lang={lang} />
           </div>
+        </div>
+      </section>
+
+      {/* 핵심만 먼저 */}
+      <section className="sec alt" id="highlights">
+        <div className="sec-in wide" ref={r[0]}>
+          <Head title={t(LAND.hl.title, lang)} />
+          <Highlights lang={lang} />
+        </div>
+      </section>
+
+      {/* 멈추는 순간 */}
+      <section className="sec" id="scenes">
+        <div className="sec-in" ref={r[1]}>
+          <Head label={t(LAND.label.scenes, lang)} title={t(LAND.sceneTitle, lang)} sub={t(LAND.sceneSub, lang)} />
+          <Scenes lang={lang} />
+        </div>
+      </section>
+
+      {/* 맡기는 정도: 눌러 보는 선택기, 바로 아래 세 단계 비교 */}
+      <section className="sec alt" id="dial">
+        <div className="sec-in" ref={r[2]}>
+          <Head label={t(LAND.label.dial, lang)} title={t(LAND.dialTitle, lang)} sub={t(LAND.dialSub, lang)} />
           <Decides lang={lang} />
-        </div>
-      </section>
-
-      <Strip lang={lang} />
-
-      {/* 01 문제 */}
-      <section className="sec" id="problem">
-        <div className="sec-in" ref={r1}>
-          <Head n="01" label={nav('problem')} title={t(LAND.probTitle, lang)} sub={t(LAND.probSub, lang)} />
-          <ol className="facts rv">
-            {LAND.facts.map((f, i) => (
-              <li key={i}>
-                <span className="facts-k">{t(f.k, lang)}</span>
-                <h3>{t(f.t, lang)}</h3>
-                <p>{t(f.d, lang)}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* 02 멈추는 장면 */}
-      <section className="sec why" id="scenes">
-        <div className="sec-in" ref={r2}>
-          <Head n="02" label={nav('scenes')} title={t(LAND.sceneTitle, lang)} sub={t(LAND.sceneSub, lang)} />
-          <div className="bento rv">
-            {LAND.scenes.map((s, i) => (
-              <article key={i} className={`scene s${i + 1}`}>
-                <div className="scene-v" aria-hidden>
-                  <div className="scene-ph">{SCENE_PH[i].map((id) => <img key={id} src={photoUrl(id, 480) ?? ''} alt="" loading="lazy" decoding="async" />)}</div>
-                </div>
-                <p className="scene-tag">{SCENE_TAG[i].map((k, j) => <span key={j} className={j === SCENE_TAG[i].length - 1 ? 'end' : undefined}>{t(LAND.vis[k], lang)}</span>)}</p>
-                <p className="scene-n"><span className="num">{String(i + 1).padStart(2, '0')}</span><i className="scene-r">{s.r}</i></p>
-                <h3>{t(s.t, lang)}</h3>
-                <p>{t(s.d, lang)}</p>
-              </article>
-            ))}
+          <div className="dial-cmp" id="compare">
+            <h3 className="dial-cmp-title">{t(LAND.cmpTitle, lang)}</h3>
+            <DialTable lang={lang} />
           </div>
         </div>
       </section>
 
-      {/* 03 설계 원칙 */}
-      <section className="sec" id="playbook">
-        <div className="sec-in" ref={r3}>
-          <Head n="03" label={nav('playbook')} title={t(LAND.playTitle, lang)} sub={t(LAND.playSub, lang)} />
+      {/* 직접 해 보기: 투어 */}
+      <section className="sec" id="try">
+        <div className="sec-in" ref={r[3]}>
+          <Head label={t(LAND.label.try, lang)} title={t(LAND.tryTitle, lang)} sub={t(LAND.trySub, lang)} />
+          <div className="rv"><Tour lang={lang} /></div>
+        </div>
+      </section>
+
+      {/* 약속: 앞에는 쉬운 말 네 개, 작동 방식(원칙·테스트)은 작은 회색 한 줄로 */}
+      <section className="sec alt" id="playbook">
+        <div className="sec-in" ref={r[4]}>
+          <Head label={t(LAND.label.rules, lang)} title={t(LAND.playTitle, lang)} />
           <Stages lang={lang} />
           <div className="play-foot rv">
-            <a className="btn" href="#/app?review=1">{t(LAND.playOpen, lang)}</a>
-            <p className="note">{t(LAND.playNote, lang)}</p>
+            <p className="play-total">{LAND.playTotal[lang](RULES.length, TESTS)}. {t(LAND.playSub, lang)}</p>
+            <a className="link-arrow" href="#/app?review=1">{t(LAND.playOpen, lang)}<ArrowRight className="ic ic-r" size={14} weight="bold" aria-hidden /></a>
           </div>
         </div>
       </section>
 
-      {/* 04 직접 맡겨 보기: 투어 */}
-      <section className="sec" id="try">
-        <div className="sec-in" ref={r5}>
-          <Head n="04" label={nav('try')} title={t(LAND.tryTitle, lang)} sub={t(LAND.trySub, lang)} />
-          <div className="rv"><Tour lang={lang} /></div>
-          <div className="try-end"><Cta lang={lang} /></div>
+      {/* 만든 이야기: 포트폴리오를 보는 사람을 위한 배경 */}
+      <section className="sec story" id="story">
+        <div className="sec-in" ref={r[5]}>
+          <Head label={t(LAND.label.story, lang)} title={t(LAND.storyTitle, lang)} sub={t(LAND.storySub, lang)} />
+        </div>
+      </section>
+
+      {/* 마지막 행동 */}
+      <section className="sec alt end">
+        <div className="sec-in" ref={r[6]}>
+          <h2 className="end-title">{t(LAND.endTitle, lang).split('\n').map((l, i) => <span key={i} className="ln">{l}</span>)}</h2>
+          <Cta lang={lang} />
+          <p className="end-sub">{t(LAND.endSub, lang)}</p>
         </div>
       </section>
 
