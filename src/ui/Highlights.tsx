@@ -90,11 +90,11 @@ function Photo({ id, w = 480 }: { id: string; w?: number }) {
 function Understand({ lang }: { lang: Lang }) {
   return (
     <div className="hv hv-ask">
-      <div className="hv-ph"><Photo id="c1" /></div>
+      <div className="hv-ph"><Photo id="c7" /></div>
       <div className="hv-ui">
-        <p className="hv-req">{t(TOUR.request, lang)}</p>
+        <p className="hv-req">{t(H.request, lang)}</p>
         <div className="hv-chips">
-          {TOUR.chips.map((c, i) => <span key={i} className="chip"><i>{t(c.l, lang)}</i>{t(c.v, lang)}</span>)}
+          {H.chips.map((c, i) => <span key={i} className="chip"><i>{t(c.l, lang)}</i>{t(c.v, lang)}</span>)}
         </div>
       </div>
     </div>
@@ -139,20 +139,20 @@ function Approve({ lang }: { lang: Lang }) {
 }
 
 function Pay({ lang }: { lang: Lang }) {
-  const p = useShop()['c1'];
-  const limit = 150000;
+  const p = useShop()['c7'];
+  const limit = H.limit;
   return (
     <div className="hv hv-pay">
       <div className="hv-pay-in">
         <p className="hv-q">{t(TOUR.payLabel, lang)}</p>
         <div className="hv-pay-item">
-          <div className="hv-ph"><Photo id="c1" w={200} /></div>
+          <div className="hv-ph"><Photo id="c7" w={200} /></div>
           <div>
             <p className="hv-n">{t(p.name, lang)}</p>
-            <p className="hv-price num">{money(TOUR.price, lang)}</p>
+            <p className="hv-price num">{money(p.price, lang)}</p>
           </div>
         </div>
-        <div className="hv-meter" aria-hidden><i style={{ width: `${Math.min(100, (limit / TOUR.price) * 100)}%` }} /></div>
+        <div className="hv-meter" aria-hidden><i style={{ width: `${Math.min(100, (limit / p.price) * 100)}%` }} /></div>
         <p className="hv-s num">{t(TOUR.limitLabel, lang)} {money(limit, lang)}</p>
         <p className="hv-warn">{t(TOUR.over, lang)}</p>
       </div>

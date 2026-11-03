@@ -3,16 +3,17 @@ import type { L, Lang } from '../engine/types';
 import { buildCatalog } from '../store/catalog';
 import { photoUrl } from '../store/photos';
 import { money, t } from './copy';
+import { LAND } from './landCopy';
 import { Mark } from './Mark';
 import { reducedMotion } from './motion';
 
 /** 진열대 9칸. 요청에 맞는 건 카멜·베이지 코트 셋, 그중 하나는 예산을 넘는다. 사진에 덧댄 자국이 없는 상품만 쓴다. */
-const SHELF = ['k5', 'c6', 'a5', 'c7', 's3', 'sh2', 'l2', 'c4', 'pt3'];
+const SHELF = ['k5', 'c6', 'wt3', 'c7', 's3', 'h2', 'l2', 'c4', 'sc2'];
 const MATCH = new Set(['c7', 'c6', 'c4']);
 const OVER = 'c4';
 const PICK = 'c7';
 
-const REQ: L = { ko: '카멜·베이지 코트, 25만원 이하', en: 'Camel or beige coat under 250000' };
+const REQ: L = LAND.hl.request;
 const TXT = {
   match: { ko: '요청에 맞음', en: 'Match' },
   over: { ko: '예산 초과', en: 'Over budget' },

@@ -15,7 +15,7 @@ export const LAND = {
   },
   heroName: { ko: 'Nod', en: 'Nod' },
   heroTitle: { ko: '말만 하면,\n찾아서 담아 줘요.', en: 'Say it. It finds it and adds it.' },
-  heroBar: { ko: '결제는 언제나 내가 해요.', en: 'You always do the paying.' },
+  heroBar: { ko: '결제는 언제나 내가 승인해요.', en: 'Every payment waits for your OK.' },
   start: { ko: '직접 맡겨 보기', en: 'Hand one off' },
   startShort: { ko: '써 보기', en: 'Try it' },
 
@@ -27,8 +27,8 @@ export const LAND = {
     go: { ko: (n: number) => `${n}번째 카드 보기`, en: (n: number) => `Show card ${n}` },
     cards: [
       {
-        t: { ko: '"검정 울 코트, 20만원 이하"\n이렇게만 말하면 돼요.', en: '"Black wool coat under 200k."\nThat is all you say.' },
-        d: { ko: '색상·소재·종류·예산으로 알아들은 걸 먼저 보여줘요.', en: 'It shows what it understood first: color, material, type, budget.' },
+        t: { ko: '"카멜·베이지 코트, 25만원 이하"\n이렇게만 말하면 돼요.', en: '"Camel or beige coat under 250k."\nThat is all you say.' },
+        d: { ko: '색상·종류·예산으로 알아들은 걸 먼저 보여줘요.', en: 'It shows what it understood first: color, type, budget.' },
       },
       {
         t: { ko: '사이트를 오가며\n비교하지 않아도 돼요.', en: 'No more hopping\nbetween sites to compare.' },
@@ -40,13 +40,21 @@ export const LAND = {
       },
       {
         t: { ko: '생각보다 비싸게\n결제될 일 없어요.', en: 'No paying more\nthan you meant to.' },
-        d: { ko: '정해 둔 한도를 넘으면 결제 전에 알려줘요. 결제는 언제나 내가 해요.', en: 'Over your limit, it tells you before paying. You always pay yourself.' },
+        d: { ko: '정해 둔 한도를 넘으면 결제 전에 알려줘요. 결제는 언제나 내가 승인해요.', en: 'Over your limit, it tells you before paying. Every payment waits for your OK.' },
       },
       {
         t: { ko: '뭘 했는지 다 보이고,\n되돌릴 수도 있어요.', en: 'You see everything it did,\nand can undo it.' },
         d: { ko: '찾고, 빼고, 묻고, 담은 기록이 모두 남아요.', en: 'Every find, drop, question and add is logged.' },
       },
     ] satisfies { t: L; d: L }[],
+    /** 카드 다섯 장은 히어로와 같은 요청 하나를 따라간다 */
+    request: { ko: '카멜·베이지 코트, 25만원 이하', en: 'Camel or beige coat under 250,000' },
+    chips: [
+      { l: { ko: '색상', en: 'Color' }, v: { ko: '카멜·베이지', en: 'camel, beige' } },
+      { l: { ko: '종류', en: 'Type' }, v: { ko: '코트', en: 'coat' } },
+      { l: { ko: '예산', en: 'Budget' }, v: { ko: '25만원 이하', en: 'under 250,000' } },
+    ] satisfies { l: L; v: L }[],
+    limit: 200000,
     match: { ko: '요청에 맞음', en: 'Match' },
     over: { ko: '예산 초과', en: 'Over budget' },
     budget: { ko: '예산 25만원', en: 'Budget KRW 250,000' },
@@ -70,7 +78,6 @@ export const LAND = {
     you: { ko: '내가 정함', en: 'You decide' },
     agent: { ko: '알아서 진행', en: 'Goes ahead' },
     touches: { ko: (n: number) => `내가 확인하는 순간 ${n}번`, en: (n: number) => `${n} moment${n > 1 ? 's' : ''} you check` },
-    touchNote: { ko: '더 많이 맡겨도 결제는 항상 내가 해요.', en: 'Hand off more, and you still pay yourself.' },
     steps: [
       { t: { ko: '요청', en: 'Ask' }, d: { ko: '무엇을, 얼마까지', en: 'What, and how much' } },
       { t: { ko: '계획', en: 'Plan' }, d: { ko: '할 일을 먼저 보여줘요', en: 'Shows the plan first' } },
@@ -84,7 +91,7 @@ export const LAND = {
   scenes: [
     { r: 'R4', t: { ko: '가격이 바뀌었을 때', en: 'When the price changes' }, d: { ko: '담기로 한 뒤 가격이 바뀌면, 담지도 결제하지도 않고 바뀐 가격으로 다시 물어봐요.', en: 'If the price moves after you said yes, it neither adds nor pays. It asks again at the new price.' } },
     { r: 'R5', t: { ko: '뭐가 나을지 애매할 때', en: 'When it is a close call' }, d: { ko: '두 상품이 비슷하게 맞으면 혼자 고르지 않고 나란히 보여줘요. "알아서"로 맡겨도 이건 물어봐요.', en: 'When two items fit about the same, it lays them side by side. Even on "Auto", it asks.' } },
-    { r: 'R10', t: { ko: '자리 비운 사이 가격이 내려왔을 때', en: 'When the price drops while you are away' }, d: { ko: '미리 정한 사이즈·총액·판매처·기한 안에서만 움직여요. 하나라도 안 맞으면 멈추고 이유를 남겨요.', en: 'It moves only inside the size, total, seller and deadline you set. If one does not fit, it stops and notes why.' } },
+    { r: 'R10', t: { ko: '자리 비운 사이 가격이 내려왔을 때', en: 'When the price drops while you are away' }, d: { ko: '미리 정하고 승인해 둔 사이즈·총액·판매처·기한이 모두 맞을 때만 사요. 하나라도 어긋나면 사지 않고 이유를 남겨요.', en: 'It buys only if the size, total, seller and deadline you set and approved ahead all fit. If one is off, it does not buy and notes why.' } },
   ] satisfies { r: string; t: L; d: L }[],
   vis: {
     priceA: { ko: '178,000원', en: 'KRW 178,000' },
@@ -95,7 +102,7 @@ export const LAND = {
     pick: { ko: '직접 골라 주세요', en: 'You choose' },
     target: { ko: '목표 150,000원', en: 'Target KRW 150,000' },
     dropped: { ko: '149,000원, M 품절', en: 'KRW 149,000 · M sold out' },
-    held: { ko: '사이즈가 없어 멈춤', en: 'Size gone, stopped' },
+    held: { ko: '사이즈가 없어 사지 않음', en: 'Size gone, not bought' },
   },
   steps: [
     { t: { ko: '요청', en: 'Ask' }, d: { ko: '찾을 걸 말해요', en: 'Say what you want' } },
@@ -105,7 +112,7 @@ export const LAND = {
   ] satisfies { t: L; d: L }[],
 
   dialTitle: { ko: '얼마나 맡길지는\n내가 정해요.', en: 'You decide\nhow much to hand off.' },
-  dialSub: { ko: '세 단계 중에 고르면 돼요. 어떤 단계든 결제는 내가 해요.', en: 'Pick one of three. At every level, you pay yourself.' },
+  dialSub: { ko: '세 단계 중에 고르면 돼요. 나중에 언제든 바꿀 수 있어요.', en: 'Pick one of three. You can change it any time.' },
 
   cmpTitle: { ko: '나에게 맞는 단계는?', en: 'Which level fits you?' },
   cmp: [
@@ -118,7 +125,7 @@ export const LAND = {
   cmpYes: { ko: '해당', en: 'Yes' },
   cmpNo: { ko: '해당 없음', en: 'No' },
 
-  tryTitle: { ko: '직접 맡겨 보세요', en: 'Hand one off yourself' },
+  tryTitle: { ko: '코트 하나,\n직접 따라가 보세요.', en: 'One coat,\nfollow it through.' },
   trySub: { ko: '요청부터 결제 전까지, 어떻게 움직이는지 한 번 따라가 보세요.', en: 'Follow one request all the way to payment.' },
   agentSub: {
     ko: '조건에 안 맞는 상품은 흐려지고, 예산을 넘는 후보는 빠져요. "담기만 확인"으로 두면 담기 전에 물어봐요.',
@@ -144,10 +151,10 @@ export const LAND = {
   playNote: { ko: '앱에서 "설계 보기"를 켜면 카드마다 해당 원칙이 표시돼요.', en: 'Switch on "Design notes" in the app to tag each card with its rule.' },
 
   /** 만든 이야기: 포트폴리오를 보는 사람을 위한 배경. 아래쪽에 작게 */
-  storyTitle: { ko: '할 수 있는 AI를,\n맡겨도 되는 AI로.', en: 'From an agent that can,\nto an agent you can trust.' },
+  storyTitle: { ko: '할 수 있는 AI를,\n맡겨도 되는 AI로.', en: 'From an AI that can,\nto an AI you can trust.' },
   storySub: {
-    ko: '가격 알림과 최저가 비교가 핵심인 쇼핑 서비스에서 일하며 본 장면에서 시작했어요. AI가 대신 결제하는 방식은 이미 표준이 되고 있지만(OpenAI·Stripe의 ACP, Google의 AP2), 사람이 고를 수 있는 건 "매번 확인"과 "다 알아서" 둘뿐이었어요. 그래서 "얼마나 자동으로 할까"보다 "언제 멈추고 무엇을 보고 물을까"를 먼저 정하고, 직접 만든 쇼핑몰에서 시험했어요.',
-    en: 'It starts from what I saw working on a commerce aggregator built on price alerts and lowest-price tracking. Agent payments are standardizing (ACP, AP2), yet people get two options: "always ask" or "do it all". So I decided when to stop and ask before deciding how much to automate, and tested it in a shop I built.',
+    ko: '가격 알림과 최저가 비교가 핵심인 쇼핑 서비스에서 일하며 본 장면에서 시작했어요. AI가 대신 결제하는 표준(ACP, AP2)은 나왔지만, 고를 수 있는 건 "매번 확인"과 "다 알아서" 둘뿐이었어요. 그래서 "언제 멈추고 물을까"부터 정하고, 직접 만든 쇼핑몰에서 시험했어요.',
+    en: 'It started at a shopping service built on price alerts and lowest-price tracking. Standards for agent payments (ACP, AP2) exist, yet people get two options: "always ask" or "do it all". So I decided first when it should stop and ask, then tested it in a shop I built.',
   },
 
   endTitle: { ko: '쇼핑 하나,\n맡겨 보세요.', en: 'Hand off\none shopping trip.' },
@@ -198,7 +205,7 @@ export const TOUR = {
   limitShort: { ko: '한도', en: 'Limit' },
   limitLabel: { ko: '결제 한도', en: 'Payment limit' },
   over: { ko: '결제 한도를 넘었어요. 얼마나 맡겼든 직접 확인해야 해요.', en: 'Over your payment limit. However much you handed off, you check this one.' },
-  payNote: { ko: '한도를 바꿔 보세요. Nod는 결제를 대신하지 않아요.', en: 'Change the limit. Nod never pays for you.' },
+  payNote: { ko: '한도를 바꿔 보세요. 결제는 언제나 내가 승인해요.', en: 'Change the limit. Every payment waits for your OK.' },
 } as const;
 
 export const SETUP = {

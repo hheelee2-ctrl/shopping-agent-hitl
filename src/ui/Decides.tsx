@@ -39,7 +39,7 @@ export function Decides({ lang }: { lang: Lang }) {
         <Seg options={(Object.keys(DIAL) as Dial[]).map((d) => ({ value: d, label: t(DIAL[d], lang) }))} value={dial} onChange={setDial} label={t(M.dial, lang)} />
       </div>
       <figcaption className="lane-foot" key={dial}>
-        <b>{t(DIAL[dial], lang)}.</b> {t(SETUP.dialDesc[dial], lang)}. {M.touches[lang](touches)}. {t(M.touchNote, lang)}
+        <b>{t(DIAL[dial], lang)}.</b> {t(SETUP.dialDesc[dial], lang)}. {M.touches[lang](touches)}.
       </figcaption>
     </figure>
   );
