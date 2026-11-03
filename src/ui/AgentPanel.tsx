@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { PaperPlaneTilt } from '@phosphor-icons/react';
+import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
+import { ArrowUp, PaperPlaneTilt } from '@phosphor-icons/react';
 import type { Dial, L, Lang, SizeProfile, StyleProfile } from '../engine/types';
 import type { ConsoleState, LogEntry, Phase } from '../state/console';
 import { Icon } from './Icon';
@@ -127,6 +127,49 @@ export function AgentPanel(p: Props) {
   }, [deciding, phase, question?.id, payment?.total, pendingCart?.id]);
   useEffect(() => { if (phase === 'planning') setOpen(true); }, [phase]);
 
+  // 모바일 시트가 펼쳐져 있는 동안은 뒤 페이지가 같이 스크롤되지 않게 막는다(가로 폭 조건은 CSS가 정한다)
+  useEffect(() => {
+    document.documentElement.classList.toggle('agent-sheet-open', open);
+    return () => document.documentElement.classList.remove('agent-sheet-open');
+  }, [open]);
+
+  // 키보드가 올라오면 그 높이만큼 시트를 올린다. iOS 사파리는 키보드가 화면을 줄이지 않고 덮기 때문에 visualViewport로 잰다.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const root = document.documentElement.style;
+    const fit = () => {
+      root.setProperty('--kb', `${Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))}px`);
+      root.setProperty('--vvt', `${Math.max(0, Math.round(vv.offsetTop))}px`);
+    };
+    fit();
+    vv.addEventListener('resize', fit);
+    vv.addEventListener('scroll', fit);
+    return () => { vv.removeEventListener('resize', fit); vv.removeEventListener('scroll', fit); root.removeProperty('--kb'); root.removeProperty('--vvt'); };
+  }, []);
+
+  // 시트 머리를 위아래로 끌면 펼치고 접는다. 끈 뒤에 따라오는 클릭은 무시한다.
+  const drag = useRef<{ y: number; moved: boolean } | null>(null);
+  const dragStart = (e: RPointerEvent) => { drag.current = { y: e.clientY, moved: false }; };
+  const dragEnd = (e: RPointerEvent) => {
+    const d = drag.current;
+    if (!d) return;
+    const dy = e.clientY - d.y;
+    if (Math.abs(dy) > 40) { d.moved = true; setOpen(dy < 0); }
+  };
+  const tapToggle = () => {
+    if (drag.current?.moved) { drag.current = null; return; }
+    drag.current = null;
+    setOpen((o) => !o);
+  };
+
+  // 결정을 기다리는 동안 입력칸 자리의 버튼: 시트를 펼치고 결정할 카드로 데려간다
+  const goCard = () => {
+    setOpen(true);
+    window.setTimeout(() => panel.current?.querySelector('[data-action]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 60);
+  };
+  const waiting = p.running && deciding && !p.readOnly;
+
   // 추천 문구는 누르면 바로 찾기 시작한다
   const pick = (text: string) => {
     if (p.locked || p.running || p.readOnly) return;
@@ -144,10 +187,10 @@ export function AgentPanel(p: Props) {
   return (
     <aside className={`agent ${p.readOnly ? 'replay' : ''} ${open ? 'open' : ''} ${deciding ? 'deciding' : ''}`} ref={panel} aria-label={t(C.agent, lang)}>
       <header className="agent-head">
-        <button className="sheet-handle" aria-expanded={open} aria-label={open ? t(C.fold, lang) : t(C.open, lang)} onClick={() => setOpen((o) => !o)}>
+        <button className="sheet-handle" aria-expanded={open} aria-label={open ? t(C.fold, lang) : t(C.open, lang)} onPointerDown={dragStart} onPointerUp={dragEnd} onClick={tapToggle}>
           <span aria-hidden />
         </button>
-        <div className="agent-title" onClick={() => setOpen(true)}>
+        <div className="agent-title" onPointerDown={dragStart} onPointerUp={dragEnd} onClick={tapToggle}>
           <h1>{t(TH.title, lang)}</h1>
           <span className={`phase ${dotClass(phase)}`}><Mark size={10} phase={dotClass(phase) === "live" ? "busy" : dotClass(phase) === "ok" ? "done" : "idle"} />{phase === 'idle' && watching > 0 ? TH.watching[lang](watching) : t(PHASE[phase], lang)}</span>
         </div>
@@ -347,6 +390,11 @@ export function AgentPanel(p: Props) {
       </div>
 
       <form className="composer" onSubmit={(e) => { e.preventDefault(); if (p.request.trim() && !p.running) p.onRun(); }}>
+        {waiting ? (
+          <button type="button" className="composer-go" onClick={goCard}>
+            <ArrowUp size={16} weight="bold" aria-hidden />{t(C.goCard, lang)}
+          </button>
+        ) : (
         <div className="composer-box">
           <textarea
             ref={field} rows={1} value={p.request} disabled={p.running || p.readOnly || !!p.locked}
@@ -362,7 +410,8 @@ export function AgentPanel(p: Props) {
           />
           <button type="submit" className="btn nod send" disabled={!p.request.trim() || p.running || p.readOnly || !!p.locked}>{t(C.send, lang)}<PaperPlaneTilt className="ic ic-fly" size={16} weight="regular" aria-hidden /></button>
         </div>
-        {p.running && <p className="composer-hint">{t(deciding ? C.waitHint : C.busyHint, lang)}</p>}
+        )}
+        {p.running && !waiting && <p className="composer-hint">{t(C.busyHint, lang)}</p>}
       </form>
     </aside>
   );
