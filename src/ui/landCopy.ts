@@ -27,7 +27,7 @@ export const LAND = {
     go: { ko: (n: number) => `${n}번째 카드 보기`, en: (n: number) => `Show card ${n}` },
     cards: [
       {
-        t: { ko: '"카멜·베이지 코트, 25만원 이하"\n이렇게만 말하면 돼요.', en: '"Camel or beige coat under 250k."\nThat is all you say.' },
+        t: { ko: '"카멜·베이지 코트, 25만원\u00a0이하"\n이렇게만 말하면 돼요.', en: '"Camel or beige coat under 250k."\nThat is all you say.' },
         d: { ko: '색상·종류·예산으로 알아들은 걸 먼저 보여줘요.', en: 'It shows what it understood first: color, type, budget.' },
       },
       {
@@ -126,7 +126,7 @@ export const LAND = {
   cmpNo: { ko: '해당 없음', en: 'No' },
 
   tryTitle: { ko: '코트 하나,\n직접 따라가 보세요.', en: 'One coat,\nfollow it through.' },
-  trySub: { ko: '요청부터 결제 전까지, 어떻게 움직이는지 한 번 따라가 보세요.', en: 'Follow one request all the way to payment.' },
+  trySub: { ko: '요청부터 결제 전까지, 어떻게 움직이는지 하나씩 볼 수 있어요.', en: 'See each step, from request to payment.' },
   agentSub: {
     ko: '조건에 안 맞는 상품은 흐려지고, 예산을 넘는 후보는 빠져요. "담기만 확인"으로 두면 담기 전에 물어봐요.',
     en: 'What does not match fades. What goes over budget drops out. On "Cart only", it asks before adding.',
@@ -139,7 +139,7 @@ export const LAND = {
     en: 'Each promise has its own rules and tests behind it.',
   },
   stages: [
-    { k: 'pay', t: { ko: '결제는 꼭 내가 해요', en: 'You always do the paying' }, d: { ko: '얼마나 맡겨도 결제는 사람이 승인해요. 한도를 넘으면 먼저 알려줘요.', en: 'However much you hand off, a person approves payment. Over the limit, you hear first.' }, ids: ['R1', 'R3', 'R2'] },
+    { k: 'pay', t: { ko: '결제는 꼭 내가 승인해요', en: 'You approve every payment' }, d: { ko: '얼마나 맡겨도 결제는 사람이 승인해요. 한도를 넘으면 먼저 알려줘요.', en: 'However much you hand off, a person approves payment. Over the limit, you hear first.' }, ids: ['R1', 'R3', 'R2'] },
     { k: 'ask', t: { ko: '애매하면 먼저 물어봐요', en: 'Unsure? It asks first' }, d: { ko: '무엇을 알아들었고 왜 골랐는지 보여주고, 비슷한 후보는 혼자 고르지 않아요.', en: 'It shows what it understood and why it chose, and never breaks a close tie alone.' }, ids: ['R6', 'R8', 'R9', 'R5'] },
     { k: 'change', t: { ko: '조건이 바뀌면 다시 물어봐요', en: 'Terms change? It asks again' }, d: { ko: '가격이나 재고가 바뀌면 예전 승인을 쓰지 않아요. 자리 비운 사이엔 정한 조건 안에서만 움직여요.', en: 'A changed price or stock voids the old OK. While you are away, it stays inside your terms.' }, ids: ['R4', 'R10'] },
     { k: 'after', t: { ko: '한 일은 다 남겨요', en: 'Everything is on record' }, d: { ko: '찾고 담은 기록이 모두 남고, 언제든 되돌릴 수 있어요.', en: 'Every step is logged, and you can undo it any time.' }, ids: ['R7'] },

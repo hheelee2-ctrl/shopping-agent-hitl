@@ -319,7 +319,7 @@
 
 .land .cta { min-height: 52px; padding: 0 var(--sp-6); font-size: var(--t-md); border-radius: var(--r-pill); }
 .land-foot { max-width: calc(var(--max) + 2 * var(--gutter)); margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: var(--sp-6); flex-wrap: wrap; padding: var(--sp-8) var(--gutter); color: var(--ink-3); font-size: var(--t-sm); border-top: 1px solid var(--line); }
-.land-foot p { margin: 0; }
+.land-foot p { margin: 0; word-break: keep-all; }
 .land-foot-link { color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; }
 
 /* ── 반응형 ── */
