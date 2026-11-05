@@ -119,6 +119,10 @@ fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .pill.high { background: var(--ok-soft); color: var(--ok); }
 .pill.medium { background: var(--wait-soft); color: var(--warn); }
 .pill.low { background: var(--danger-soft); color: var(--danger); }
+/* 사진 위 배지: 단계 색은 반투명이라 흰 사진 위에서 글자가 사라진다. 단색 면 위에 단계 색을 겹친다 */
+.sw .pill.high { background: linear-gradient(var(--ok-soft), var(--ok-soft)) var(--surface); }
+.sw .pill.medium { background: linear-gradient(var(--wait-soft), var(--wait-soft)) var(--surface); }
+.sw .pill.low { background: linear-gradient(var(--danger-soft), var(--danger-soft)) var(--surface); }
 /* ---- buttons ---- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2); min-height: 42px; border-radius: var(--r-pill); border: 0; box-shadow: inset 0 0 0 1px var(--line-strong); background: transparent; padding: 0 var(--sp-5); font-weight: var(--w-semi); font-size: var(--t-base); letter-spacing: var(--tr-ui); transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); }
 .btn:hover:not(:disabled) { background: var(--hover); }
@@ -1146,8 +1150,8 @@ button.pb-row:focus-visible { outline: 2px solid var(--brand); }
 .wl-t b { font-size: var(--t-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wl-c { font-size: var(--t-xs); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .wl-st { padding: var(--sp-1) var(--sp-2); border-radius: var(--r-pill); font-size: var(--t-2xs); font-weight: var(--w-bold); white-space: nowrap; color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-strong); }
-.st-bought .wl-st { background: var(--ok); color: var(--white); box-shadow: none; }
-.st-asked .wl-st { background: var(--warn); color: var(--white); box-shadow: none; }
+.st-bought .wl-st { background: var(--ok); color: var(--bg); box-shadow: none; }
+.st-asked .wl-st { background: var(--warn); color: var(--bg); box-shadow: none; }
 .wl-trail { width: 100%; height: 48px; overflow: visible; }
 .wl-trail polyline { fill: none; stroke: var(--brand); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
 .wl-target { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }

@@ -108,7 +108,7 @@ export const LAND = {
     { t: { ko: '요청', en: 'Ask' }, d: { ko: '찾을 걸 말해요', en: 'Say what you want' } },
     { t: { ko: '미리보기', en: 'Preview' }, d: { ko: '담기 전에 계획부터 보여줘요', en: 'The plan comes before the action' } },
     { t: { ko: '승인', en: 'Approve' }, d: { ko: '좋다고 하면 담고, 아니면 멈춰요', en: 'Approve and it adds. Otherwise it stops' } },
-    { t: { ko: '결제 전', en: 'Before payment' }, d: { ko: '결제는 내가 해요', en: 'You pay yourself' } },
+    { t: { ko: '결제 전', en: 'Before payment' }, d: { ko: '결제는 내가 승인해요', en: 'Every payment waits for your OK' } },
   ] satisfies { t: L; d: L }[],
 
   dialTitle: { ko: '얼마나 맡길지는\n내가 정해요.', en: 'You decide\nhow much to hand off.' },
@@ -120,7 +120,7 @@ export const LAND = {
     { k: 'add', t: { ko: '담기 전에 확인', en: 'Check before adding' } },
     { k: 'tie', t: { ko: '애매하면 물어봄', en: 'Asks on a close call' } },
     { k: 'limit', t: { ko: '한도를 넘으면 미리 알림', en: 'Warns over your limit' } },
-    { k: 'pay', t: { ko: '결제는 내가', en: 'You pay yourself' } },
+    { k: 'pay', t: { ko: '결제는 내가 승인', en: 'You approve every payment' } },
   ] satisfies { k: 'plan' | 'add' | 'tie' | 'limit' | 'pay'; t: L }[],
   cmpYes: { ko: '해당', en: 'Yes' },
   cmpNo: { ko: '해당 없음', en: 'No' },
@@ -216,7 +216,7 @@ export const SETUP = {
   dialDesc: {
     always: { ko: '할 일과 담기를 모두 내가 확인해요', en: 'You approve the plan and every add' },
     'cart-only': { ko: '할 일은 바로 진행하고, 담기 전에 물어봐요', en: 'Runs the plan, asks before adding' },
-    auto: { ko: '담기까지 알아서 해요. 결제는 내가 해요', en: 'Adds on its own. You still pay' },
+    auto: { ko: '담기까지 알아서 해요. 결제는 내가 승인해요', en: 'Adds on its own. You still approve payment' },
   } satisfies Record<Dial, L>,
   limit: { ko: '결제 한도', en: 'Payment limit' },
   limitNote: { ko: '결제 금액이 한도를 넘으면 결제 전에 알려 드려요.', en: 'If the total goes over this, you are told before paying.' },
