@@ -48,6 +48,15 @@ fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .layout { max-width: 1760px; margin: 0 auto; padding: var(--sp-2) var(--sp-6) var(--sp-32); }
 @media (min-width: 1101px) {
   .layout { padding-right: 488px; }
+  /* 데스크톱에서 패널을 접으면 오른쪽 아래 작은 막대만 남고, 진열대가 그 자리까지 넓어진다 */
+  html.agent-folded .layout { padding-right: var(--sp-6); }
+  .agent:not(.open) { top: auto; width: 320px; }
+  .agent:not(.open) > :not(.agent-head), .agent:not(.open) .agent-head > :not(.agent-title) { display: none; }
+  .agent:not(.open) .agent-head { padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-5); border-bottom: 0; }
+  .agent:not(.open) .agent-title { align-items: center; cursor: pointer; }
+  .agent:not(.open) .agent-title h1 { font-size: var(--t-lg); }
+  .agent .agent-title .phase { margin-left: auto; }
+  .agent .agent-title { justify-content: flex-start; align-items: center; }
 }
 @media (max-width: 560px) {
   .top-btn { padding: 0 var(--sp-3); font-size: var(--t-sm); }
@@ -147,7 +156,9 @@ fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .agent-head { display: grid; gap: var(--sp-3); padding: var(--sp-6) var(--sp-6) var(--sp-4); }
 .agent-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--sp-6); scrollbar-width: thin; scroll-padding-bottom: var(--sp-6); }
 .sheet-handle { display: none; }
-.sheet-close { display: none; }
+.sheet-close { all: unset; flex: none; display: grid; place-items: center; width: 36px; height: 36px; margin: calc(-1 * var(--sp-2)) calc(-1 * var(--sp-2)) calc(-1 * var(--sp-2)) 0; border-radius: var(--r-pill); color: var(--ink-2); cursor: pointer; }
+.sheet-close:hover { background: var(--hover); }
+.sheet-close:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 .agent-title { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
 .agent h1 { font-size: var(--t-2xl); font-weight: var(--w-bold); letter-spacing: var(--tr-display); line-height: 1; }
 .phase { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--t-sm); font-weight: var(--w-semi); color: var(--ink-2); }
@@ -635,6 +646,11 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
   html.agent-sheet-open .top, html.agent-sheet-open .layout > :not(.agent) { visibility: hidden; }
   .sheet-close { all: unset; flex: none; margin: calc(-1 * var(--sp-3)) calc(-1 * var(--sp-3)) calc(-1 * var(--sp-3)) 0; display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r-pill); color: var(--ink-2); cursor: pointer; }
   .agent.open .agent-title { justify-content: flex-start; align-items: center; }
+  .agent:not(.open) .sheet-close { display: none; }
+  /* 펼친 대화 화면에서는 입력칸을 위에 둔다. 키보드와 사파리 주소 표시줄이 아래에 몰려도 입력칸을 가리지 않는다 */
+  .agent.open .composer { order: -1; border-top: 0; border-bottom: 1px solid var(--line); }
+  .agent.open .agent-head { order: -2; border-bottom: 0; }
+  .agent.open .composer-go svg { transform: rotate(180deg); }
   .agent.open .agent-title .phase { margin-left: auto; }
   .sheet-close:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 }

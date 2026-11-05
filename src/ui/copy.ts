@@ -284,7 +284,7 @@ export const C = {
   send: { ko: '맡기기', en: 'Hand off' },
   busyHint: { ko: '찾는 중이에요. 결정이 필요하면 여기서 물어볼게요.', en: 'Working on it. I will ask here when I need you.' },
   waitHint: { ko: '위 카드에서 정해 주시면 이어서 할게요.', en: 'Decide on the card above and I will carry on.' },
-  goCard: { ko: '위 카드에서 먼저 정해 주세요', en: 'Decide on the card above first' },
+  goCard: { ko: '먼저 카드에서 정해 주세요', en: 'Decide on the card first' },
   open: { ko: '펼치기', en: 'Expand' },
   fold: { ko: '접기', en: 'Collapse' },
   presets: { ko: '자주 하는 요청', en: 'Popular requests' },

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
-import { ArrowUp, CaretDown, PaperPlaneTilt } from '@phosphor-icons/react';
+import { ArrowUp, CaretDown, CaretUp, PaperPlaneTilt } from '@phosphor-icons/react';
 import type { Dial, L, Lang, SizeProfile, StyleProfile } from '../engine/types';
 import type { ConsoleState, LogEntry, Phase } from '../state/console';
 import { Icon } from './Icon';
@@ -107,8 +107,8 @@ export function AgentPanel(p: Props) {
     window.setTimeout(() => { setDraft(null); setJustSaved(false); }, 900);
   };
   const [moreSg, setMoreSg] = useState(false);
-  // 모바일에서는 바텀 시트. 접힌 상태에서도 입력창과 현재 상태는 항상 보인다.
-  const [open, setOpen] = useState(false);
+  // 모바일에서는 바텀 시트(처음엔 접힘), 데스크톱에서는 오른쪽 패널(처음엔 펼침). 접혀도 현재 상태는 항상 보인다.
+  const [open, setOpen] = useState(() => window.matchMedia('(min-width: 1101px)').matches);
   // 가격 대기를 새로 시작하면 (모바일에서 접혀 있어도) 패널을 펼쳐 대기 카드를 보여준다
   const watching = p.watching ?? 0;
   const seenWatching = useRef(watching);
@@ -131,8 +131,9 @@ export function AgentPanel(p: Props) {
   // 접을 때 입력칸에 포커스가 남아 있으면 키보드가 따라 내려가지 않으므로 함께 푼다
   useEffect(() => {
     document.documentElement.classList.toggle('agent-sheet-open', open);
+    document.documentElement.classList.toggle('agent-folded', !open);
     if (!open && panel.current?.contains(document.activeElement)) (document.activeElement as HTMLElement).blur();
-    return () => document.documentElement.classList.remove('agent-sheet-open');
+    return () => document.documentElement.classList.remove('agent-sheet-open', 'agent-folded');
   }, [open]);
 
   // 키보드가 올라오면 그 높이만큼 시트를 올린다. iOS 사파리는 키보드가 화면을 줄이지 않고 덮기 때문에 visualViewport로 잰다.
@@ -195,7 +196,9 @@ export function AgentPanel(p: Props) {
         <div className="agent-title" onPointerDown={dragStart} onPointerUp={dragEnd} onClick={tapToggle}>
           <h1>{t(TH.title, lang)}</h1>
           <span className={`phase ${dotClass(phase)}`}><Mark size={10} phase={dotClass(phase) === "live" ? "busy" : dotClass(phase) === "ok" ? "done" : "idle"} />{phase === 'idle' && watching > 0 ? TH.watching[lang](watching) : t(PHASE[phase], lang)}</span>
-          {open && <button type="button" className="sheet-close" aria-label={t(C.fold, lang)} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setOpen(false); }}><CaretDown size={18} weight="bold" aria-hidden /></button>}
+          <button type="button" className="sheet-close" aria-expanded={open} aria-label={t(open ? C.fold : C.open, lang)} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>
+            {open ? <CaretDown size={18} weight="bold" aria-hidden /> : <CaretUp size={18} weight="bold" aria-hidden />}
+          </button>
         </div>
         <div className="agent-sub">
           <button className="settings-sum" aria-expanded={openSet} onClick={toggleSet} disabled={p.running}>
