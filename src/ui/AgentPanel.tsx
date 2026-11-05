@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent, type ReactNode } from 'react';
-import { ArrowUp, PaperPlaneTilt } from '@phosphor-icons/react';
+import { ArrowUp, CaretDown, PaperPlaneTilt } from '@phosphor-icons/react';
 import type { Dial, L, Lang, SizeProfile, StyleProfile } from '../engine/types';
 import type { ConsoleState, LogEntry, Phase } from '../state/console';
 import { Icon } from './Icon';
@@ -128,8 +128,10 @@ export function AgentPanel(p: Props) {
   useEffect(() => { if (phase === 'planning') setOpen(true); }, [phase]);
 
   // 모바일 시트가 펼쳐져 있는 동안은 뒤 페이지가 같이 스크롤되지 않게 막는다(가로 폭 조건은 CSS가 정한다)
+  // 접을 때 입력칸에 포커스가 남아 있으면 키보드가 따라 내려가지 않으므로 함께 푼다
   useEffect(() => {
     document.documentElement.classList.toggle('agent-sheet-open', open);
+    if (!open && panel.current?.contains(document.activeElement)) (document.activeElement as HTMLElement).blur();
     return () => document.documentElement.classList.remove('agent-sheet-open');
   }, [open]);
 
@@ -193,6 +195,7 @@ export function AgentPanel(p: Props) {
         <div className="agent-title" onPointerDown={dragStart} onPointerUp={dragEnd} onClick={tapToggle}>
           <h1>{t(TH.title, lang)}</h1>
           <span className={`phase ${dotClass(phase)}`}><Mark size={10} phase={dotClass(phase) === "live" ? "busy" : dotClass(phase) === "ok" ? "done" : "idle"} />{phase === 'idle' && watching > 0 ? TH.watching[lang](watching) : t(PHASE[phase], lang)}</span>
+          {open && <button type="button" className="sheet-close" aria-label={t(C.fold, lang)} onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setOpen(false); }}><CaretDown size={18} weight="bold" aria-hidden /></button>}
         </div>
         <div className="agent-sub">
           <button className="settings-sum" aria-expanded={openSet} onClick={toggleSet} disabled={p.running}>

@@ -147,6 +147,7 @@ fieldset.plain { border: 0; padding: 0; margin: 0; min-width: 0; }
 .agent-head { display: grid; gap: var(--sp-3); padding: var(--sp-6) var(--sp-6) var(--sp-4); }
 .agent-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--sp-6); scrollbar-width: thin; scroll-padding-bottom: var(--sp-6); }
 .sheet-handle { display: none; }
+.sheet-close { display: none; }
 .agent-title { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
 .agent h1 { font-size: var(--t-2xl); font-weight: var(--w-bold); letter-spacing: var(--tr-display); line-height: 1; }
 .phase { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--t-sm); font-weight: var(--w-semi); color: var(--ink-2); }
@@ -627,9 +628,15 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 }
 @media (max-width: 1100px) {
   .agent.open { background: var(--surface); backdrop-filter: none; }
-  /* 펼친 시트는 화면 양옆과 아래에 붙인다. 사파리 아래 주소창 뒤나 키보드 위 틈으로 뒤 페이지가 비치지 않게
-     같은 면을 아래로 늘려 채우고(첫 그림자), 시트 밖은 어둡게 덮는다(둘째 그림자). overflow: hidden이라 가상 요소 대신 그림자를 쓴다 */
-  .agent.open { left: 0; right: 0; bottom: var(--kb, 0px); border-bottom: 0; border-radius: var(--r-xl) var(--r-xl) 0 0; box-shadow: 0 400px 0 400px var(--surface), 0 0 0 100vmax var(--scrim); }
+  /* 펼치면 대화 화면이 전체 화면을 차지한다. 사파리는 아래 주소창 뒤와 키보드 위 틈에도 페이지를 그리므로,
+     펼친 동안은 뒤 페이지를 감추고 바탕을 시트와 같은 면으로 칠해 어디에도 상품이 비치지 않게 한다 */
+  .agent.open { top: var(--vvt, 0px); left: 0; right: 0; bottom: var(--kb, 0px); border: 0; border-radius: 0; box-shadow: none; z-index: 40; }
+  html.agent-sheet-open, html.agent-sheet-open body { background: var(--surface); }
+  html.agent-sheet-open .top, html.agent-sheet-open .layout > :not(.agent) { visibility: hidden; }
+  .sheet-close { all: unset; flex: none; margin: calc(-1 * var(--sp-3)) calc(-1 * var(--sp-3)) calc(-1 * var(--sp-3)) 0; display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r-pill); color: var(--ink-2); cursor: pointer; }
+  .agent.open .agent-title { justify-content: flex-start; align-items: center; }
+  .agent.open .agent-title .phase { margin-left: auto; }
+  .sheet-close:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 }
 @media (max-width: 560px) {
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-8) var(--sp-3); }
