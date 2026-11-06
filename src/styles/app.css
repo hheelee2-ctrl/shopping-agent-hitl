@@ -1202,7 +1202,10 @@ button.pb-row:focus-visible { outline: 2px solid var(--brand); }
 
 /* 에이전트 패널 머리: 설정 요약 + 설계 보기 토글 */
 .agent-sub { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
-.agent-sub .settings-sum { flex: 1; min-width: 0; }
+.agent-sub .settings-sum { flex: 1; min-width: 0; flex-wrap: nowrap; }
+/* 칩은 한 줄로. 자리가 모자라면 마지막 칩(사이즈)만 말줄임 */
+.agent-sub .settings-sum span { flex: none; white-space: nowrap; padding-inline: 10px; }
+.agent-sub .settings-sum span:last-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* 스위치: 켜짐은 라임 트랙 + 먹색 손잡이 */
 .switch { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: var(--sp-2); flex: none; min-height: 32px; cursor: pointer; font-size: var(--t-sm); font-weight: var(--w-medium); color: var(--ink-2); white-space: nowrap; }
 .switch:hover, .switch.on { color: var(--ink); }
